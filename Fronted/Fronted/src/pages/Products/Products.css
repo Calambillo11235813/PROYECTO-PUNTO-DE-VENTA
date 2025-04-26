@@ -1,0 +1,174 @@
+/* Crear archivo: src/pages/Products/Products.css
+   Ruta completa: d:\1.CARRERA UNIVERSITARIA\8.NOVENO SEMESTRE\1.SISTEMAS DE INFORMACION 2\PROYECTO PUNTO DE VENTA\Fronted\Fronted\src\pages\Products\Products.css */
+
+   .products-container {
+    padding: 20px;
+  }
+  
+  .products-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .products-header h1 {
+    margin: 0;
+    color: #2c3e50;
+  }
+  
+  .add-product-btn {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .add-product-btn:hover {
+    background-color: #45a049;
+  }
+  
+  .products-filters {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .search-box {
+    display: flex;
+    max-width: 400px;
+    width: 100%;
+  }
+  
+  .search-box input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+  }
+  
+  .search-box button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+  }
+  
+  .filter-options {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .filter-options select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+  }
+  
+  .products-table-container {
+    overflow-x: auto;
+  }
+  
+  .products-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  
+  .products-table th,
+  .products-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .products-table th {
+    background-color: #f9f9f9;
+    color: #333;
+    font-weight: 600;
+  }
+  
+  .products-table tr:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .low-stock {
+    color: #e74c3c;
+    font-weight: 600;
+  }
+  
+  .actions {
+    display: flex;
+    gap: 5px;
+  }
+  
+  .edit-btn, .delete-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 5px;
+    border-radius: 4px;
+  }
+  
+  .edit-btn {
+    color: #3498db;
+  }
+  
+  .delete-btn {
+    color: #e74c3c;
+  }
+  
+  .edit-btn:hover {
+    background-color: rgba(52, 152, 219, 0.1);
+  }
+  
+  .delete-btn:hover {
+    background-color: rgba(231, 76, 60, 0.1);
+  }
+  
+  .products-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .products-pagination button {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .products-pagination button:hover:not(:disabled) {
+    background-color: #f1f1f1;
+  }
+  
+  .products-pagination button:disabled {
+    color: #aaa;
+    cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    .products-filters {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .filter-options {
+      margin-top: 10px;
+      justify-content: space-between;
+    }
+  }
