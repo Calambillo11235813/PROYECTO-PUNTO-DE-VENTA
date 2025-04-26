@@ -1,0 +1,151 @@
+/* sidebar.css */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 250px;
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar.open {
+  width: 250px;
+}
+
+.sidebar.closed {
+  width: 70px;
+}
+
+.sidebar-header {
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #34495e;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar.closed .sidebar-header h2 {
+  display: none;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #ecf0f1;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 5px;
+}
+
+.sidebar-menu {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  text-decoration: none;
+  color: #ecf0f1;
+  transition: all 0.3s;
+}
+
+.menu-item:hover {
+  background-color: #34495e;
+  cursor: pointer;
+}
+
+.menu-item.active {
+  background-color: #3498db;
+}
+
+.menu-item .icon {
+  font-size: 1.2rem;
+  min-width: 30px;
+}
+
+.menu-item .text {
+  margin-left: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar.closed .menu-item .text {
+  display: none;
+}
+
+.sidebar-footer {
+  border-top: 1px solid #34495e;
+  padding: 10px 0;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: #ecf0f1;
+  padding: 12px 15px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebar.closed .theme-toggle .text {
+  display: none;
+}
+
+/* Estilos para el modo oscuro */
+body {
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+  background-color: #121212;
+  color: #f1f1f1;
+}
+
+/* Estilo para el contenido principal */
+.app-container {
+  display: flex;
+}
+
+.main-content {
+  margin-left: 250px;
+  padding: 20px;
+  width: calc(100% - 250px);
+  transition: all 0.3s;
+}
+
+.sidebar.closed + .main-content {
+  margin-left: 70px;
+  width: calc(100% - 70px);
+}
+
+/* Estilos para dispositivos móviles */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+  }
+
+  .sidebar.closed {
+    width: 0;
+  }
+
+  .sidebar .menu-item {
+    padding: 10px 15px;
+  }
+}
