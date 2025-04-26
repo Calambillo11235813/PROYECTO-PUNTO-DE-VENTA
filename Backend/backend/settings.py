@@ -40,7 +40,23 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'accounts',
+    'Productos',
+    'cloudinary',
+    'cloudinary_storage',
 ]
+
+import cloudinary
+cloudinary.config(
+    cloud_name='dywiyjoph',
+    api_key='199425179995799',
+    api_secret='QsiAhOzgHL2qwsCkl-gWBwBJKEI'
+)
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dywiyjoph',
+    'API_KEY': '199425179995799',
+    'API_SECRET': 'QsiAhOzgHL2qwsCkl-gWBwBJKEI'
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
