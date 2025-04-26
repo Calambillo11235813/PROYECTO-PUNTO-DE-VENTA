@@ -14,28 +14,44 @@ import { useNavigate } from 'react-router-dom';
 
 const Sidebar = ({ 
   initialOpen = true, 
-  initialDarkMode = false, 
   onNavigation = () => {}, 
   onDarkModeToggle = () => {}, 
   onLogout = () => {}, 
   activePage = 'Dashboard' 
 }) => {
-  const [darkMode, setDarkMode] = useState(initialDarkMode);
+  const [darkMode, setDarkMode] = useState(false);
   const navigate = useNavigate();
 
+  // Leer el tema guardado cuando se monta el Sidebar
   useEffect(() => {
-    onDarkModeToggle(darkMode);
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      setDarkMode(true);
+      document.body.classList.add('dark-mode');
+    }
+  }, []);
+
+  // Aplicar el tema cuando darkMode cambia
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-mode');
+      localStorage.setItem('theme', 'light');
+    }
+    onDarkModeToggle(darkMode); // por si quieres avisar al padre
   }, [darkMode, onDarkModeToggle]);
 
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
+    setDarkMode(prevMode => !prevMode);
   };
 
   const handleNavigation = useCallback((page) => {
     const routeMap = {
       'Dashboard': '/dashboard',
       'Ventas': '/ventas',
-      'Inventario': '/inventory',
+      'Inventario': '/Inventario',
       'Clientes': '/clientes',
       'Facturacion': '/facturacion',
       'Reportes': '/reportes',
@@ -58,11 +74,11 @@ const Sidebar = ({
   ];
 
   return (
-    <div className={`sidebar ${initialOpen ? 'open' : ''}`}> {/* Usar initialOpen si se quiere controlar la visibilidad */}
+    <div className={`sidebar ${initialOpen ? 'open' : ''}`}>
       <div className="sidebar-header">
         <h2>POS System</h2>
       </div>
-      
+
       <div className="sidebar-menu">
         {menuItems.map(item => (
           <a 
@@ -79,7 +95,7 @@ const Sidebar = ({
           </a>
         ))}
       </div>
-      
+
       <div className="sidebar-footer">
         <button className="theme-toggle" onClick={toggleDarkMode}>
           {darkMode ? <FaSun className="icon" /> : <FaMoon className="icon" />}
@@ -102,3 +118,4 @@ const Sidebar = ({
 };
 
 export default Sidebar;
+

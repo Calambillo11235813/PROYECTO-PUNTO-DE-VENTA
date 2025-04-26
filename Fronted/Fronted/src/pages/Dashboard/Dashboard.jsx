@@ -120,11 +120,11 @@ const Dashboard = () => {
             </div>
             <div className="quick-actions">
               <h3>Acciones Rápidas</h3>
-              <div className="actions-grid">
-                <button className="action-btn">Nueva Venta</button>
-                <button className="action-btn">Emitir Factura</button>
-                <button className="action-btn">Agregar Producto</button>
-                <button className="action-btn">Cierre de Caja</button>
+              <div className="actions-grid-d">
+                <button className="action-btn-d">Nueva Venta</button>
+                <button className="action-btn-d">Emitir Factura</button>
+                <button className="action-btn-d">Agregar Producto</button>
+                <button className="action-btn-d">Cierre de Caja</button>
               </div>
             </div>
           </div>

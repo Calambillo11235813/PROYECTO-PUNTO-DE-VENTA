@@ -105,7 +105,8 @@
 }
 
 .sidebar.closed .theme-toggle .text {
-  display: none;
+  color:#f1f1f1
+
 }
 
 /* Estilos para el modo oscuro */
