@@ -17,8 +17,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Punto de Venta y Facturación',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/login',
+      initialRoute: '/home',
       routes: {
+        
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
         '/panel': (context) => const Panel(),
