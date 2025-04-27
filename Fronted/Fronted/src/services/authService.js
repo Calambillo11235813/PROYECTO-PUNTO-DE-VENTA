@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+
 // URL base de la API (ajústala según tu configuración)
 const API_URL = 'http://localhost:8000/api/';
 
