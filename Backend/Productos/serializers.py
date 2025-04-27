@@ -21,21 +21,44 @@ class ProductoSerializer(serializers.ModelSerializer):
     proveedor_id = serializers.PrimaryKeyRelatedField(queryset=Proveedor.objects.all(), source='proveedor', write_only=True)
     imagen_url = serializers.SerializerMethodField()
 
+    # Campos nuevos para el inventario inicial
+    stock_inicial = serializers.IntegerField(write_only=True, required=False)
+    cantidad_minima = serializers.IntegerField(write_only=True, required=False)
+    cantidad_maxima = serializers.IntegerField(write_only=True, required=False)
+
     class Meta:
         model = Producto
-        fields = ['id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen_url',
-                  'categoria', 'proveedor', 'categoria_id', 'proveedor_id', 'stock']
+        fields = [
+            'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen_url',
+            'categoria', 'proveedor', 'categoria_id', 'proveedor_id', 'stock',
+            'stock_inicial', 'cantidad_minima', 'cantidad_maxima'
+        ]
 
     def get_imagen_url(self, obj):
-       if obj.imagen:
-        return obj.imagen.url
-       return None
-
+        if obj.imagen:
+            return obj.imagen.url
+        return None
 
     def validate_precio_venta(self, valor):
         if valor <= 0:
             raise serializers.ValidationError("El precio debe ser mayor a cero.")
         return valor
+
+    def create(self, validated_data):
+        stock_inicial = validated_data.pop('stock_inicial', 0)
+        cantidad_minima = validated_data.pop('cantidad_minima', 0)
+        cantidad_maxima = validated_data.pop('cantidad_maxima', 0)
+
+        producto = Producto.objects.create(**validated_data)
+
+        Inventario.objects.create(
+            producto=producto,
+            stock=stock_inicial,
+            cantidad_minima=cantidad_minima,
+            cantidad_maxima=cantidad_maxima
+        )
+
+        return producto
 
     
 
