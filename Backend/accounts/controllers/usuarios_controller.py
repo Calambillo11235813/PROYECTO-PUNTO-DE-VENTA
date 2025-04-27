@@ -48,3 +48,11 @@ class UsuarioDetail(APIView):
         usuario = get_object_or_404(Usuario, pk=pk)
         usuario.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ClienteListAPIView(APIView):
+    def get(self, request, empresa_id):
+        rol_id = 2  # Fijamos el rol_id en 2 de forma estática
+
+        clientes = Usuario.objects.filter(empresa_id=empresa_id, rol_id=rol_id)
+        serializer = UsuarioSerializer(clientes, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
