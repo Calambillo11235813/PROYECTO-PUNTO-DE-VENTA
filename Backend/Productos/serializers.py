@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Producto, Categoria, Proveedor, Inventario
 from Productos.models import Producto
+
 from cloudinary.utils import cloudinary_url
 
 class CategoriaSerializer(serializers.ModelSerializer):
@@ -19,12 +20,13 @@ class ProductoSerializer(serializers.ModelSerializer):
     proveedor = ProveedorSerializer(read_only=True)
     categoria_id = serializers.PrimaryKeyRelatedField(queryset=Categoria.objects.all(), source='categoria', write_only=True)
     proveedor_id = serializers.PrimaryKeyRelatedField(queryset=Proveedor.objects.all(), source='proveedor', write_only=True)
+  
     imagen_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Producto
         fields = ['id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen_url',
-                  'categoria', 'proveedor', 'categoria_id', 'proveedor_id', 'stock']
+                  'categoria', 'proveedor', 'categoria_id', 'proveedor_id', 'stock','empresa_id']
 
     def get_imagen_url(self, obj):
        if obj.imagen:
