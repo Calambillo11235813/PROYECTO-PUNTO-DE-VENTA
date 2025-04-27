@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'Productos',
     'cloudinary',
     'cloudinary_storage',
+    'corsheaders',
 ]
 
 import cloudinary
@@ -59,6 +60,7 @@ CLOUDINARY_STORAGE = {
 }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -101,8 +103,13 @@ DATABASES = {
         'PORT': '5432',
     }
 }
-
-
+CORS_ALLOW_ALL_ORIGINS = True
+ALLOWED_HOSTS = [
+    '127.0.0.1',  # Localhost
+    'localhost',  # Localhost
+    '10.0.2.2',   # Dirección desde el emulador de Android
+    '0.0.0.0',    # Permite todas las direcciones IP (útil para pruebas)
+]
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
