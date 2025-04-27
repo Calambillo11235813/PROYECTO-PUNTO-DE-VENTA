@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'Productos',
     'cloudinary',
     'cloudinary_storage',
-    'corsheaders',
+    'Ventas',
 ]
 
 import cloudinary
