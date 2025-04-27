@@ -14,7 +14,7 @@ class UsuarioListCreate(APIView):
 
     def post(self, request):
         data = request.data.copy()
-        contraseña = data.pop('contraseña', None)
+        contraseña = data.pop('password', None)
 
         serializer = UsuarioSerializer(data=data)
 

@@ -9,15 +9,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class LoginView(APIView):
     def post(self, request):
         correo = request.data.get("correo")
-        contraseña = request.data.get("contraseña")
-
+        contraseña = request.data.get("password")
+        
         try:
             user = Usuario.objects.get(correo=correo)
         except Usuario.DoesNotExist:
             return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not user.check_password(contraseña):
-            return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": "Credenciales inválidas hola "}, status=status.HTTP_401_UNAUTHORIZED)
 
         from accounts.models import Bitacora
 

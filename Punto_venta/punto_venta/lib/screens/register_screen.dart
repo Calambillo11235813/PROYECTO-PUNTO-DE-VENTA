@@ -93,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
 
       if (success) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/menu');
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error en el registro')),

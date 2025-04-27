@@ -25,6 +25,7 @@ class Usuario {
         required this.rol,
         required this.empresaId,
         required this.password,
+        
     });
 
     factory Usuario.fromJson(Map<String, dynamic> json) => Usuario(
