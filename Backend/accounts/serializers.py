@@ -22,6 +22,10 @@ class UsuarioSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'is_staff']
 
+    def create(self, validated_data):
+        validated_data['is_staff'] = True  
+        return super().create(validated_data)
+
 # serializers.py
 
 class RolSerializer(serializers.ModelSerializer):

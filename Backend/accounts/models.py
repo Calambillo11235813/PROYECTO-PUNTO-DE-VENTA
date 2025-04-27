@@ -67,7 +67,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     estado = models.BooleanField(default=True)
 
     is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=True)
 
     USERNAME_FIELD = 'correo'
     REQUIRED_FIELDS = ['nombre']
