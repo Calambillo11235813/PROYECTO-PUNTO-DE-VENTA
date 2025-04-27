@@ -1,52 +1,55 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import authService from '../../services/authService';
 
+// Crear el contexto
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-const [user, setUser] = useState(null);
-const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-// Verificar si hay una sesión guardada al cargar la página
-useEffect(() => {
-const storedUser = localStorage.getItem('user');
-if (storedUser) {
-setUser(JSON.parse(storedUser));
-}
-setLoading(false);
-}, []);
+  // Verificar si hay un usuario autenticado al cargar
+  useEffect(() => {
+    const initAuth = () => {
+      try {
+        // Verificar si hay un token y recuperar datos del usuario
+        if (authService.isAuthenticated()) {
+          const userData = authService.getCurrentUser();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error("Error al inicializar la autenticación:", error);
+        authService.logout();
+      } finally {
+        setLoading(false);
+      }
+    };
 
-// Función para iniciar sesión
-const login = (userData) => {
-setUser(userData);
-localStorage.setItem('user', JSON.stringify(userData));
-return true;
-};
+    initAuth();
+  }, []);
 
-// Función para cerrar sesión
-const logout = () => {
-setUser(null);
-localStorage.removeItem('user');
-};
+  // Función para iniciar sesión
+  const login = (userData) => {
+    setUser(userData);
+  };
 
-// Verificar si el usuario está autenticado
-const isAuthenticated = () => !!user;
+  // Función para cerrar sesión
+  const logout = () => {
+    authService.logout();
+    setUser(null);
+  };
 
-// Verificar si el usuario tiene rol admin
-const isAdmin = () => user?.role === 'admin';
+  // Verificar si el usuario es administrador
+  const isAdmin = () => {
+    return user?.rol?.nombre === 'admin';
+  };
 
-const value = {
-user,
-login,
-logout,
-isAuthenticated,
-isAdmin,
-loading
-};
-
-return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 // Hook personalizado para usar el contexto
-export const useAuth = () => {
-return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../Contexts/AuthContext';
 
 export const ProtectedRoute = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { user, loading } = useAuth();
   
   if (loading) {
     // Mostrar un indicador de carga mientras se verifica la autenticación
@@ -11,7 +11,7 @@ export const ProtectedRoute = () => {
   }
   
   // Si no está autenticado, redirigir al login
-  if (!isAuthenticated()) {
+  if (!user) {
     return <Navigate to="/login" />;
   }
   
@@ -20,19 +20,18 @@ export const ProtectedRoute = () => {
 };
 
 export const AdminRoute = () => {
-  const { isAdmin, loading } = useAuth();
+  const { user, loading } = useAuth();
   
   if (loading) {
     return <div>Cargando...</div>;
   }
   
   // Si no es admin, redirigir a la página principal
-  if (!isAdmin()) {
+  if (!user || !user.rol || user.rol.nombre !== 'admin') {
     return <Navigate to="/" />;
   }
   
   // Si es admin, mostrar el contenido
   return <Outlet />;
 };
-
  
