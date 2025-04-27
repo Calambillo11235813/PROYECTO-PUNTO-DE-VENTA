@@ -1,118 +1,116 @@
-import React from 'react';
-import './Dashboard.css';
+import React, { useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import "./Dashboard.css";
 
 const Dashboard = () => {
+  // Obtenemos el contexto del AdminLayout 
+  const [darkMode, toggleDarkMode, activePage, setActivePage] = useOutletContext();
+
+  // Aseguramos que el título de la página sea "Dashboard"
+  useEffect(() => {
+    setActivePage("Dashboard");
+  }, [setActivePage]);
+
   return (
-    <div className="home-dashboard">
-      <h1>Panel de Control</h1>
-      
-      <div className="stat-grid">
+    <div className="dashboard-content">
+      {/* Cards de estadísticas */}
+      <div className="stats-container">
         <div className="stat-card">
+          <h3>Ventas del día</h3>
           <div className="stat-value">120</div>
-          <div className="stat-label">Ventas del día</div>
-          <div className="stat-icon blue"><i className="fas fa-shopping-cart"></i></div>
+          <p className="stat-change positive">+15% vs. ayer</p>
         </div>
-        
+
         <div className="stat-card">
-          <div className="stat-value">45</div>
-          <div className="stat-label">Nuevos clientes</div>
-          <div className="stat-icon green"><i className="fas fa-users"></i></div>
+          <h3>Transacciones</h3>
+          <div className="stat-value">42</div>
+          <p className="stat-change positive">+8% vs. ayer</p>
         </div>
-        
+
         <div className="stat-card">
-          <div className="stat-value">$8,459</div>
-          <div className="stat-label">Ingresos</div>
-          <div className="stat-icon purple"><i className="fas fa-dollar-sign"></i></div>
+          <h3>Ticket Promedio</h3>
+          <div className="stat-value">$29.75</div>
+          <p className="stat-change positive">+5% vs. ayer</p>
         </div>
-        
+
         <div className="stat-card">
-          <div className="stat-value">1,254</div>
-          <div className="stat-label">Productos</div>
-          <div className="stat-icon orange"><i className="fas fa-box"></i></div>
+          <h3>Facturas Pendientes</h3>
+          <div className="stat-value">7</div>
+          <p className="stat-change negative">Requiere atención</p>
         </div>
       </div>
-      
-      <div className="dashboard-row">
-        <div className="dashboard-col">
-          <div className="dashboard-card">
-            <h3>Ventas Recientes</h3>
-            <table className="dashboard-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Cliente</th>
-                  <th>Fecha</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>#1234</td>
-                  <td>Juan Pérez</td>
-                  <td>Hoy, 14:30</td>
-                  <td>$120.00</td>
-                  <td><span className="badge success">Pagado</span></td>
-                </tr>
-                <tr>
-                  <td>#1233</td>
-                  <td>María López</td>
-                  <td>Hoy, 13:25</td>
-                  <td>$85.50</td>
-                  <td><span className="badge success">Pagado</span></td>
-                </tr>
-                <tr>
-                  <td>#1232</td>
-                  <td>Carlos Gómez</td>
-                  <td>Hoy, 11:20</td>
-                  <td>$245.00</td>
-                  <td><span className="badge warning">Pendiente</span></td>
-                </tr>
-                <tr>
-                  <td>#1231</td>
-                  <td>Ana Martínez</td>
-                  <td>Hoy, 10:15</td>
-                  <td>$65.75</td>
-                  <td><span className="badge success">Pagado</span></td>
-                </tr>
-              </tbody>
-            </table>
+
+      {/* Gráficos */}
+      <div className="charts-container">
+        <div className="chart-card">
+          <h3>Ventas de la Semana</h3>
+          <div className="chart-placeholder">
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                background: "linear-gradient(to right, #4CAF50, #2196F3)",
+                opacity: 0.7,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span style={{ color: "white", fontSize: "16px" }}>
+                Gráfico de Ventas
+              </span>
+            </div>
           </div>
         </div>
-        
-        <div className="dashboard-col">
-          <div className="dashboard-card">
-            <h3>Productos Populares</h3>
-            <ul className="product-list">
-              <li>
-                <div className="product-info">
-                  <div className="product-name">Laptop HP 15"</div>
-                  <div className="product-details">SKU: LP-001 | Stock: 24</div>
-                </div>
-                <div className="product-sales">125 vendidos</div>
-              </li>
-              <li>
-                <div className="product-info">
-                  <div className="product-name">Monitor Samsung 24"</div>
-                  <div className="product-details">SKU: MN-002 | Stock: 15</div>
-                </div>
-                <div className="product-sales">98 vendidos</div>
-              </li>
-              <li>
-                <div className="product-info">
-                  <div className="product-name">Mouse Logitech</div>
-                  <div className="product-details">SKU: MS-003 | Stock: 42</div>
-                </div>
-                <div className="product-sales">87 vendidos</div>
-              </li>
-              <li>
-                <div className="product-info">
-                  <div className="product-name">Teclado Mecánico</div>
-                  <div className="product-details">SKU: KB-004 | Stock: 12</div>
-                </div>
-                <div className="product-sales">65 vendidos</div>
-              </li>
-            </ul>
+        <div className="chart-card">
+          <h3>Productos Más Vendidos</h3>
+          <ul className="top-products">
+            <li>
+              <span className="product-name">Laptop HP 15"</span>
+              <span className="product-sales">125 vendidos</span>
+            </li>
+            <li>
+              <span className="product-name">Monitor Samsung 24"</span>
+              <span className="product-sales">98 vendidos</span>
+            </li>
+            <li>
+              <span className="product-name">Mouse Logitech</span>
+              <span className="product-sales">87 vendidos</span>
+            </li>
+            <li>
+              <span className="product-name">Teclado Mecánico</span>
+              <span className="product-sales">65 vendidos</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Contenedores inferiores */}
+      <div className="bottom-container">
+        <div className="inventory-alerts">
+          <h3>Alertas de Inventario</h3>
+          <ul className="alerts-list">
+            <li className="alert-item critical">
+              <span>Mouse Inalámbrico - Stock crítico (2)</span>
+              <span>Mínimo: 10</span>
+            </li>
+            <li className="alert-item warning">
+              <span>Pantalla Táctil - Stock bajo (8)</span>
+              <span>Mínimo: 15</span>
+            </li>
+            <li className="alert-item critical">
+              <span>Cable HDMI - Sin stock</span>
+              <span>Mínimo: 25</span>
+            </li>
+          </ul>
+        </div>
+        <div className="quick-actions">
+          <h3>Acciones Rápidas</h3>
+          <div className="actions-grid-d">
+            <button className="action-btn-d">Nueva Venta</button>
+            <button className="action-btn-d">Nuevo Producto</button>
+            <button className="action-btn-d">Nueva Factura</button>
+            <button className="action-btn-d">Reportes</button>
           </div>
         </div>
       </div>
