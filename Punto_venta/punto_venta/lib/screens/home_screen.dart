@@ -8,7 +8,6 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       body: Container(
         color: const Color(0xFFF9FAFB), // Fondo gris claro
         child: Padding(
@@ -57,6 +56,18 @@ class HomeScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                       ),
                       child: const Text('Login'),
+                    ),
+                    const SizedBox(height: 16), // Espacio entre botones
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/register');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF55B84B),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      ),
+                      child: const Text('Register'),
                     ),
                   ],
                 ),

@@ -13,4 +13,6 @@ class AuthenticationService {
     }
     return false;
   }
+
+  static register(String trim, String trim2, String trim3) {}
 }

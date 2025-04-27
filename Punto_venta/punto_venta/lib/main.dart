@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/panel.dart';
-
+import 'screens/menu_screen.dart';
+import 'screens/register_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -13,6 +14,7 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
+
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Punto de Venta y Facturación',
@@ -21,8 +23,10 @@ class MyApp extends StatelessWidget {
       routes: {
         
         '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
         '/panel': (context) => const Panel(),
+        '/menu': (context) => const HomePage(),
       },
     );
   }
