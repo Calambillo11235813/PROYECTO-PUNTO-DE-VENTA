@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+AUTH_USER_MODEL = 'accounts.Usuario'
 
 # Application definition
 
@@ -37,7 +38,26 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'accounts',
+    'Productos',
+    'cloudinary',
+    'cloudinary_storage',
+    'Ventas',
 ]
+
+import cloudinary
+cloudinary.config(
+    cloud_name='dywiyjoph',
+    api_key='199425179995799',
+    api_secret='QsiAhOzgHL2qwsCkl-gWBwBJKEI'
+)
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dywiyjoph',
+    'API_KEY': '199425179995799',
+    'API_SECRET': 'QsiAhOzgHL2qwsCkl-gWBwBJKEI'
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -74,8 +94,12 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'PuntoVenta',
+        'USER': 'postgres',
+        'PASSWORD': 'mcangel03',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
