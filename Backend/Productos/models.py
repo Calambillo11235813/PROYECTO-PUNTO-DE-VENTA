@@ -26,7 +26,7 @@ class Producto(models.Model):
     descripcion =models.TextField(blank=True)
     imagen = CloudinaryField('image', null=True, blank=True) 
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
-    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE,null=True , blank=True)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE,null=True , blank=True)
     def __str__(self):
         return self.nombre

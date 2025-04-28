@@ -18,7 +18,7 @@ class ProductoSerializer(serializers.ModelSerializer):
     stock = serializers.IntegerField(source='inventario.stock', read_only=True)
     categoria = CategoriaSerializer(read_only=True)
     proveedor = ProveedorSerializer(read_only=True)
-    categoria_id = serializers.PrimaryKeyRelatedField(queryset=Categoria.objects.all(), source='categoria', write_only=True,required=True)
+    categoria_id = serializers.PrimaryKeyRelatedField(queryset=Categoria.objects.all(), source='categoria', write_only=True,required=False,allow_null=True)
     proveedor_id = serializers.PrimaryKeyRelatedField(queryset=Proveedor.objects.all(), source='proveedor', write_only=True,required=False,allow_null=True)
     empresa_id = serializers.PrimaryKeyRelatedField(queryset=Empresa.objects.all(),source='empresa',write_only=True,required=True)
 
