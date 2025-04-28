@@ -3,6 +3,7 @@ from .models import Producto, Categoria, Proveedor, Inventario
 from Productos.models import Producto
 from cloudinary.utils import cloudinary_url
 from accounts.models import Empresa
+
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
