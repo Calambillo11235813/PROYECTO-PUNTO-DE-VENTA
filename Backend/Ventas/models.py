@@ -8,15 +8,22 @@ class Estado(models.Model):
 
     def __str__(self):
         return self.descripcion
-
+    
+# TipoVenta
+class TipoVenta(models.Model):
+    descripcion = models.CharField(max_length=50)
+   # estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)  
+    def __str__(self):
+        return self.descripcion
 
 class Pedido(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE) 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     fecha = models.DateField(auto_now_add=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)  
-    observaciones = models.TextField(blank=True, null=True) 
-
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE)
     def __str__(self):
         return f"Pedido #{self.id} - Usuario {self.usuario.correo}"
 
@@ -30,30 +37,10 @@ class DetallePedido(models.Model):
     def __str__(self):
         return f"{self.producto.nombre} x{self.cantidad}"
 
-# TipoVenta
-class TipoVenta(models.Model):
-    descripcion = models.CharField(max_length=50)
-    estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)  
-
-    def __str__(self):
-        return self.descripcion
-
-# Venta (relacionada 1 a 1 con Pedido)
-class Venta(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)  
-    pedido = models.OneToOneField(Pedido, on_delete=models.CASCADE)
-    total = models.DecimalField(max_digits=10, decimal_places=2)
-    tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE)
-    fecha = models.DateField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Venta #{self.id} - Total: {self.total}"
-
 # Factura de una Venta
 class Factura(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)  
-    venta = models.OneToOneField(Venta, on_delete=models.CASCADE)
+    #venta = models.OneToOneField(Venta, on_delete=models.CASCADE)
     fecha = models.DateField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     nit = models.CharField(max_length=20)
