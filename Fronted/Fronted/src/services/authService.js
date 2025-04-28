@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 // URL base de la API (ajústala según tu configuración)
-const API_URL = 'http://localhost:8000/api/';
+const API_URL = 'http://localhost:8000/accounts/';
 
 // Crea una instancia de axios con configuración base
 const apiClient = axios.create({
@@ -85,16 +85,16 @@ const authService = {
         password: contrasena  // Mantén la ñ si el backend la espera
       });
       console.log('Login exitoso:', response.data);
-      console.log('Respuesta del servidor:', response.data);
-      
+      console.log('Respuesta del servidor ------------:', response.data);
+     
 
      // Guardar tokens y datos en localStorage
     localStorage.setItem('access_token', response.data.access);
     localStorage.setItem('refresh_token', response.data.refresh);
     localStorage.setItem('user_data', JSON.stringify(response.data.usuario));
-    localStorage.setItem('empresa_data', JSON.stringify(response.data.empresa));
-    
-
+    localStorage.setItem('empresa_id', response.data.empresa.id.toString());
+    console.log("verificando storage --->>> " + localStorage.getItem('empresa_data'));
+   
       return response.data;
 
 
