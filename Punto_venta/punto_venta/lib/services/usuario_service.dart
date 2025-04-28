@@ -75,57 +75,54 @@ class UsuarioService {
       return false;
     }
   }
-static Future<bool> loginUsuario(String correo, String password) async {
-  final url = Uri.parse('$_baseUrl/login/');
 
-  try {
-    final Map<String, dynamic> loginData = {
-      'correo': correo,
-      'password': password,
-    };
+  static Future<bool> loginUsuario(String correo, String password) async {
+    final url = Uri.parse('$_baseUrl/login/');
 
-    print('URL de la petición: $url');
-    print('Datos enviados: ${jsonEncode(loginData)}');
+    try {
+      final Map<String, dynamic> loginData = {
+        'correo': correo,
+        'password': password,
+      };
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(loginData),
-    );
+      print('URL de la petición: $url');
+      print('Datos enviados: ${jsonEncode(loginData)}');
 
-    print('Código de respuesta: ${response.statusCode}');
-    print('Cuerpo de respuesta: ${response.body}');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(loginData),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      print('Código de respuesta: ${response.statusCode}');
+      print('Cuerpo de respuesta: ${response.body}');
 
-      // Guardar todo el cuerpo de la respuesta de forma encriptada
-      await _saveEncrypted('login_response', response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-      // Guardar tokens y datos de empresa de forma encriptada
-      await _saveEncrypted('access_token', data['access']);
-      await _saveEncrypted('refresh_token', data['refresh']);
+        // Guardar tokens y datos de empresa de forma encriptada
+        await _saveEncrypted('access_token', data['access']);
+        await _saveEncrypted('refresh_token', data['refresh']);
 
-      final empresa = data['empresa'];
-      if (empresa != null) {
-        await _saveEncrypted('empresa_id', empresa['id'].toString());
-        await _saveEncrypted('empresa_nombre', empresa['nombre']);
-        await _saveEncrypted('empresa_nit', empresa['nit']);
+        final empresa = data['empresa'];
+        if (empresa != null) {
+          await _saveEncrypted('empresa_id', empresa['id'].toString());
+          await _saveEncrypted('empresa_nombre', empresa['nombre']);
+          await _saveEncrypted('empresa_nit', empresa['nit']);
+        }
+
+        print('✅ Login exitoso y datos guardados de forma segura (encriptados)');
+        return true;
+      } else {
+        print('❌ Error en login: ${response.statusCode}');
+        print('Respuesta: ${response.body}');
+        return false;
       }
-
-      print('✅ Login exitoso y datos guardados de forma segura (encriptados)');
-      return true;
-    } else {
-      print('❌ Error en login: ${response.statusCode}');
-      print('Respuesta: ${response.body}');
+    } catch (e) {
+      print('❌ Error de conexión: $e');
       return false;
     }
-  } catch (e) {
-    print('❌ Error de conexión: $e');
-    return false;
   }
-}
-
   
   // Métodos para acceder a los datos guardados
   static Future<String?> getToken() async {
@@ -153,19 +150,87 @@ static Future<bool> loginUsuario(String correo, String password) async {
     await prefs.remove('empresa_nit');
   }
 
-  static Future<Map<String, dynamic>?> getLoginResponse() async {
-  final encryptedResponse = await _getEncrypted('login_response');
+
+
   
-  if (encryptedResponse != null) {
-    // Desencriptar y convertir a Map
-    final decryptedResponse = jsonDecode(encryptedResponse);
-    return decryptedResponse;
+
+
+  static Future<List<Usuario>> mostrarCliente() async {
+  // Obtener los datos de la empresa de manera asincrónica
+  final empresaData = await getEmpresaData();
+  final empresaId = empresaData['id'];
+
+  if (empresaId == null) {
+    print('❌ No se pudo obtener el ID de la empresa');
+    return [];
   }
+
+  final url = Uri.parse('$_baseUrl/usuarios/clientes/$empresaId/');
+
+  try {
+    final response = await http.get(
+      url,
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    print('Código de respuesta: ${response.statusCode}');
+    print('Cuerpo de respuesta: ${response.body}');
+
+    if (response.statusCode == 200) {
+      // Decodificar la respuesta JSON
+      final List<dynamic> responseData = jsonDecode(response.body);
+
+      // Convertir los datos a una lista de objetos Usuario
+      List<Usuario> clientes = responseData.map((json) {
+        return Usuario.fromJson(json); // Asegúrate de que el modelo Usuario tenga un método `fromJson`
+      }).toList();
+
+      print('✅ Clientes obtenidos correctamente');
+      return clientes;
+    } else {
+      print('❌ Error al obtener clientes: ${response.statusCode}');
+      print('Respuesta: ${response.body}');
+      return [];
+    }
+  } catch (e) {
+    print('❌ Error de conexión: $e');
+    return [];
+  }
+}
+
   
-  return null; // Si no se encuentra respuesta almacenada
+  static Future<bool> crearCliente(Usuario usuario) async {
+
+ // Código existente sin cambios
+    final url = Uri.parse('$_baseUrl/usuarios/');
+
+    try {
+      final usuarioJson = usuario.toJson();
+    
+      usuarioJson['rol_id'] = 3;
+      
+
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(usuarioJson),
+      );
+
+      print('Código de respuesta: ${response.statusCode}');
+      print('Cuerpo de respuesta: ${response.body}');
+
+      if (response.statusCode == 201) {
+        print('✅ Usuario creado correctamente');
+        return true;
+      } else {
+        print('❌ Error al crear usuario: ${response.statusCode}');
+        print('Respuesta: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Error de conexión: $e');
+      return false;
+    }
+  }
 }
-
-
-}
-
-

@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
         '/panel': (context) => const Panel(),
         '/menu': (context) => const HomePage(),
         '/balance': (context) => const BalanceScreen(),
-        '/clientes': (context) => const ClientesScreen(),
+        '/clientes': (context) => const ClientesL(),
         '/config': (context) => const ConfigScreen(),
         '/ventasg': (context) => const GestionarVentasScreen(),
         '/inventario': (context) => const InventarioScreen(),
