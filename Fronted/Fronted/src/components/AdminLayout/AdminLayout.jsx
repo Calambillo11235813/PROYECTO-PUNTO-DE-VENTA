@@ -82,16 +82,6 @@ const AdminLayout = () => {
               <h1>{activePage}</h1>
             </div>
           </div>
-          <div className="right">
-            <div className="user-info">
-              <img
-                src="https://via.placeholder.com/40"
-                alt="User"
-                className="user-avatar"
-              />
-              <span>{user?.name || "Admin"}</span>
-            </div>
-          </div>
         </header>
         <main className={`admin-main ${darkMode ? "dark-mode" : ""}`}>
           <Outlet
