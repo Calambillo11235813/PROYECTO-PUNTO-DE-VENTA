@@ -28,8 +28,6 @@ class Producto(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE,null=True , blank=True)
-    
-
     def __str__(self):
         return self.nombre
     

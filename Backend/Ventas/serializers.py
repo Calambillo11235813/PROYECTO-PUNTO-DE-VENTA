@@ -1,7 +1,7 @@
 # ventas/serializers.py
 
 from rest_framework import serializers
-from .models import Estado, TipoVenta, Venta, Factura, Pedido, DetallePedido
+from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido
 from accounts.models import Usuario, Empresa
 from Productos.models import Producto
 
@@ -17,36 +17,50 @@ class TipoVentaSerializer(serializers.ModelSerializer):
         model = TipoVenta
         fields = '__all__'
 
-class VentaSerializer(serializers.ModelSerializer):
-    tipo_venta = serializers.PrimaryKeyRelatedField(queryset=TipoVenta.objects.all())
-
-    class Meta:
-        model = Venta
-        fields = '__all__'
-
-class FacturaSerializer(serializers.ModelSerializer):
-    venta = VentaSerializer()
-
-    class Meta:
-        model = Factura
-        fields = '__all__'
-
 class DetallePedidoSerializer(serializers.ModelSerializer):
+    producto_id = serializers.PrimaryKeyRelatedField(queryset=Producto.objects.all(), source='producto', write_only=True)
+    producto = serializers.StringRelatedField(read_only=True)  # Mostrar nombre del producto al listar
+
     class Meta:
         model = DetallePedido
-        fields = ['producto', 'cantidad']
+        fields = ['id', 'producto', 'producto_id', 'cantidad']
+        read_only_fields = ['id']
+
 
 class PedidoSerializer(serializers.ModelSerializer):
-    detalles = DetallePedidoSerializer(many=True, write_only=True)  # para crear
-    detalle_pedido = DetallePedidoSerializer(many=True, read_only=True, source='detalles')  # para mostrar
+    detalles = DetallePedidoSerializer(many=True, write_only=True, required=False)
 
     class Meta:
         model = Pedido
-        fields = ['id', 'empresa', 'usuario', 'fecha', 'estado', 'observaciones', 'detalles', 'detalle_pedido']
+        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta', 'detalles']
+        read_only_fields = ['id', 'total']
 
     def create(self, validated_data):
-        detalles_data = validated_data.pop('detalles')
-        pedido = Pedido.objects.create(**validated_data)
+        detalles_data = validated_data.pop('detalles', [])
+        empresa = validated_data.pop('empresa')  # Obtener la empresa del controlador
+        
+        # Crear el pedido sin el total aún
+        pedido = Pedido.objects.create(empresa=empresa, total=0, **validated_data)
+        
+        total = 0
         for detalle in detalles_data:
-            DetallePedido.objects.create(pedido=pedido, empresa=pedido.empresa, **detalle)
+            subtotal = detalle['producto'].precio_venta * detalle['cantidad']
+            DetallePedido.objects.create(
+                pedido=pedido,
+                producto=detalle['producto'],
+                cantidad=detalle['cantidad'],
+                empresa=empresa
+            )
+            total += subtotal
+
+        # Actualizar el total del pedido
+        pedido.total = total
+        pedido.save()
+        
         return pedido
+    
+class FacturaSerializer(serializers.ModelSerializer):
+    #venta = VentaSerializer()
+    class Meta:
+        model = Factura
+        fields = '__all__'
