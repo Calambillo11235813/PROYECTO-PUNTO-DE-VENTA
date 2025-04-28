@@ -4,6 +4,7 @@ from rest_framework import status
 from accounts.models import Usuario
 from accounts.serializers import UsuarioSerializer
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 
 
 class UsuarioListCreate(APIView):
@@ -56,9 +57,18 @@ class UsuarioDetail(APIView):
 
 class ClienteListAPIView(APIView):
     def get(self, request, empresa_id):                         
-        rol_id = 3# Fijamos el rol_id en 2 de forma estática
 
-        clientes = Usuario.objects.filter(empresa_id=empresa_id, rol_id=rol_id)
+        rol_id = None
+        rol_id2 = 1
+
+        # Excluir usuarios con rol_id = None o rol_id = 1
+        clientes = Usuario.objects.filter(
+            empresa_id=empresa_id
+        ).exclude(
+            Q(rol_id=rol_id) | Q(rol_id=rol_id2)
+        )
+
+
         serializer = UsuarioSerializer(clientes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

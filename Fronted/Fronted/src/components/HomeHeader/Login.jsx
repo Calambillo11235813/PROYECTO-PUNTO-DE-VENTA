@@ -17,7 +17,7 @@ export default function Login() {
       try {
         await authService.testConnection();
       } catch (error) {
-        console.error("Fallo en prueba de conexión");
+        console.error("Fallo en prueba de conexión" + error);
       }
     };
 

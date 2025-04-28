@@ -82,9 +82,9 @@ const authService = {
       // Asegúrate de enviar exactamente lo que espera el backend
       const response = await apiClient.post('login/', { 
         correo: correo,
-        contraseña: contrasena  // Mantén la ñ si el backend la espera
+        password: contrasena  // Mantén la ñ si el backend la espera
       });
-      
+      console.log('Login exitoso:', response.data);
       console.log('Respuesta del servidor:', response.data);
       
 
@@ -144,7 +144,7 @@ const authService = {
     } catch (error) {
       // Si el token de refresco también expiró, cerrar sesión
       authService.logout();
-      throw new Error('Sesión expirada, por favor inicie sesión nuevamente');
+      throw new Error('Sesión expirada, por favor inicie sesión nuevamente' + error);
     }
   },
   

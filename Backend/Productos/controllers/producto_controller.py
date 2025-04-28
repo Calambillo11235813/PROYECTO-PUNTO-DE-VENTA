@@ -23,7 +23,7 @@ class ProductoListaCrearVista(APIView):
         Crear un nuevo producto asociado a una empresa específica (POST)
         """
         data = request.data.copy()
-        data['empresa'] = empresa_id  # Asignamos la empresa al producto
+        data['empresa_id'] = empresa_id  # Asignamos la empresa al producto
 
         serializer = ProductoSerializer(data=data)
         if serializer.is_valid():
