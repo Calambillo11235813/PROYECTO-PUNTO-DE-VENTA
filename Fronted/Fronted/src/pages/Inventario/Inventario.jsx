@@ -4,11 +4,11 @@ import '../../../src/global.css';
 
 const initialProductState = {
   id: '',
-  name: '',           // Cambiado de nombre a name para coincidir con createUser
-  precio_compra: '',  // Añadido para coincidir con createUser
+  name: '',
+  precio_compra: '',
   precio_venta: '',
-  descripcion: '',    // Añadido para coincidir con createUser
-  empresa_id: 1,      // Valor por defecto para empresa_id
+  descripcion: '',
+  empresa_id: 1,
 };
 
 const Inventario = () => {
@@ -53,9 +53,9 @@ const Inventario = () => {
         // Para la edición, necesitarías implementar un método updateUser en el servicio
         alert("La funcionalidad de edición no está implementada aún.");
       } else {
-        // Usar createUser para crear un nuevo producto
-        const newUser = await productoService.createProduct(productForm);
-        console.log("Nuevo producto creado:", newUser);
+        // Usar createProduct para crear un nuevo producto
+        const newProduct = await productoService.createProduct(productForm);
+        console.log("Nuevo producto creado:", newProduct);
         // Actualizar la lista de productos después de crear uno nuevo
         fetchProducts(); // Refetch todos los productos para asegurar datos actualizados
       }
@@ -84,11 +84,15 @@ const Inventario = () => {
 
   const handleDeleteProduct = async (id) => {
     if (!window.confirm('¿Desea eliminar este producto?')) return;
+    
     try {
-      // Aquí necesitarías implementar un método deleteUser en el servicio
-      alert("La funcionalidad de eliminación no está implementada aún.");
-      // Después de eliminar, actualizar la lista
-      fetchProducts();
+      // Llamar al servicio deleteProduct con el objeto que contiene el id del producto
+      await productoService.deleteProduct({ id });
+      console.log("Producto eliminado con éxito, id:", id);
+      
+      // Actualizar la lista de productos después de eliminar
+      setProducts(prev => prev.filter(p => p.id !== id));
+      
     } catch (err) {
       console.error("Error al eliminar producto:", err);
       alert("No se pudo eliminar el producto.");
@@ -180,7 +184,7 @@ const Inventario = () => {
         )}
       </div>
 
-      {/* Modal actualizado para usar los campos del servicio createUser */}
+      {/* Modal para crear/editar productos */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg w-96 max-w-md">
