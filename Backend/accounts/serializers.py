@@ -13,12 +13,14 @@ class UsuarioSerializer(serializers.ModelSerializer):
     empresa_id = serializers.PrimaryKeyRelatedField(
         queryset=Empresa.objects.all(), source='empresa', write_only=True
     )
-
+    role_id = serializers.PrimaryKeyRelatedField(
+        queryset=Rol.objects.all(), source='rol', write_only=True
+    )
     class Meta:
         model = Usuario
         fields = [
             'id', 'nombre', 'correo', 'fecha_de_nacimiento', 'genero',
-            'direccion', 'estado', 'empresa', 'empresa_id', 'is_staff'
+            'direccion', 'estado', 'empresa', 'empresa_id', 'is_staff','role_id'
         ]
         read_only_fields = ['id', 'is_staff']
 

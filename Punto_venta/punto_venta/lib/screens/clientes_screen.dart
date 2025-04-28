@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import '../models/usuario.dart';
 import '../services/usuario_service.dart';
 
 void main() {

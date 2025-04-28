@@ -55,8 +55,8 @@ class UsuarioDetail(APIView):
 
 
 class ClienteListAPIView(APIView):
-    def get(self, request, empresa_id):
-        rol_id = 2  # Fijamos el rol_id en 2 de forma estática
+    def get(self, request, empresa_id):                         
+        rol_id = 3# Fijamos el rol_id en 2 de forma estática
 
         clientes = Usuario.objects.filter(empresa_id=empresa_id, rol_id=rol_id)
         serializer = UsuarioSerializer(clientes, many=True)
