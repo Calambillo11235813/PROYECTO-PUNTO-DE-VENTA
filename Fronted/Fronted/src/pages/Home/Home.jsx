@@ -1,13 +1,12 @@
 // Home.jsx
 import React from 'react';
-import HomeHeader from '../../components/HomeHeader/HomeHeader';
 import punto_venta from '../../assets/punto_de_venta.png';
 import './Home.css';
 
 const Home = () => {
   return (
     <div className="home-container">
-      <HomeHeader />
+
       
       <div className="hero-section">
         <div className="hero-content">

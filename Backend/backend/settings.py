@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv # type: ignore
+import os
+
+# Cargar variables de entorno desde el archivo .env
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,9 +49,35 @@ INSTALLED_APPS = [
     'cloudinary',
     'cloudinary_storage',
     'Ventas',
+    'corsheaders',
+    'drf_spectacular',
 ]
 
-import cloudinary
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+# DRF Spectacular Settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'API Punto de Venta',
+    'DESCRIPTION': 'API para sistema de punto de venta',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Otros ajustes opcionales:
+    'SWAGGER_UI_SETTINGS': {
+        'persistAuthorization': True,
+    },
+    'COMPONENT_SPLIT_REQUEST': True,
+}
+
+
+
+
+import cloudinary # type: ignore
 cloudinary.config(
     cloud_name='dywiyjoph',
     api_key='199425179995799',
@@ -69,6 +100,16 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Configuración de CORS
+CORS_ALLOW_ALL_ORIGINS = False  # En producción, esto debería ser False
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Para Vite (ajusta según tu puerto)
+    "http://localhost:3000",  # Para create-react-app
+]
+
+# Permitir credenciales en las solicitudes CORS
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'backend.urls'
 
@@ -95,12 +136,12 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'PuntoVenta',
-        'USER': 'postgres',
-        'PASSWORD': 'mcangel03',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': os.getenv('DB_ENGINE'),
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
 CORS_ALLOW_ALL_ORIGINS = True

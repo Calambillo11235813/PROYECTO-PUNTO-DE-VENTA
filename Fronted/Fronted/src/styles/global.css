@@ -1,12 +1,40 @@
-/* Variables CSS */
 :root {
-    --primary-color: #2c3e50;
-    --secondary-color: #4CAF50;
-  }
+  /* Colores base */
+  --bg-primary-light: #f8f9fa;
+  --bg-secondary-light: #e9ecef;
+  --bg-tertiary-light: #ffffff;
+  --text-primary-light: #2d3748;
+  --text-secondary-light: #4a5568;
   
-  /* Reset básico */
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+  /* Colores del modo oscuro */
+  --bg-primary-dark: #121212;
+  --bg-secondary-dark: #1e1e1e;
+  --bg-tertiary-dark: #2d2d2d;
+  --text-primary-dark: #e2e8f0;
+  --text-secondary-dark: #a0aec0;
+  
+  /* Variables activas (por defecto modo claro) */
+  --bg-primary: var(--bg-primary-light);
+  --bg-secondary: var(--bg-secondary-light);
+  --bg-tertiary: var(--bg-tertiary-light);
+  --text-primary: var(--text-primary-light);
+  --text-secondary: var(--text-secondary-light);
+  
+  /* Otros colores */
+  --accent-color: #45a049;
+  --accent-hover: #367c39;
+  --border-color: #dee2e6;
+  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --alert-color: #e53e3e;
+}
+
+/* Modo oscuro */
+.dark-mode {
+  --bg-primary: var(--bg-primary-dark);
+  --bg-secondary: var(--bg-secondary-dark);
+  --bg-tertiary: var(--bg-tertiary-dark);
+  --text-primary: var(--text-primary-dark);
+  --text-secondary: var(--text-secondary-dark);
+  --border-color: #383838;
+  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
