@@ -1,156 +1,256 @@
 import React, { useState, useEffect } from "react";
-import { FaBars, FaMoon, FaSun } from "react-icons/fa";
 import {
   Package,
   CircleAlert,
   List,
   Search,
   PlusCircle,
-  Pencil,
-  Trash,
-  Sun,
-  Moon,
-} from "lucide-react"; // Ajusta los íconos según tu proyecto
-
+} from "lucide-react";
 import { useOutletContext } from 'react-router-dom';
 import "./Inventario.css";
-
-// Datos de ejemplo para el inventario
-const initialProducts = [
-  {
-    id: 1,
-    name: "Camisa Polo",
-    sku: "RP001",
-    category: "Ropa",
-    stock: 25,
-    minStock: 10,
-    price: 29.99,
-  },
-  {
-    id: 2,
-    name: "Pantalón Jeans",
-    sku: "RP002",
-    category: "Ropa",
-    stock: 8,
-    minStock: 10,
-    price: 39.99,
-  },
-  {
-    id: 3,
-    name: "Zapatos Deportivos",
-    sku: "CZ001",
-    category: "Calzado",
-    stock: 15,
-    minStock: 5,
-    price: 59.99,
-  },
-  {
-    id: 4,
-    name: "Reloj Inteligente",
-    sku: "AC001",
-    category: "Accesorios",
-    stock: 3,
-    minStock: 5,
-    price: 89.99,
-  },
-  {
-    id: 5,
-    name: "Laptop HP",
-    sku: "EL001",
-    category: "Electrónicos",
-    stock: 12,
-    minStock: 3,
-    price: 699.99,
-  },
-];
+import axios from "axios";
 
 const Inventario = () => {
   // Obtenemos el contexto del AdminLayout
-  const [darkMode, toggleDarkMode, activePage, setActivePage] =
+  const [darkMode, toggleDarkMode, activePage, setActivePage, empresaId] =
     useOutletContext();
+
+  // Estado para productos, categorías y el inventario
+  const [products, setProducts] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [newProduct, setNewProduct] = useState({
+    nombre: "",
+    precio_compra: 0,
+    precio_venta: 0,
+    descripcion: "",
+    categoria_id: "",
+    proveedor_id: "",
+    stock: 0,
+    cantidad_minima: 0,
+    cantidad_maxima: 0,
+  });
+  const [activeTab, setActiveTab] = useState("all");
+  const [categories, setCategories] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
+  const [inventarios, setInventarios] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Configuramos el título de la página
   useEffect(() => {
     setActivePage("Gestión de Inventario");
   }, [setActivePage]);
 
-  const [products, setProducts] = useState(initialProducts);
-  const [showModal, setShowModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [newProduct, setNewProduct] = useState({
-    name: "",
-    sku: "",
-    category: "",
-    stock: 0,
-    minStock: 0,
-    price: 0,
-  });
-  const [activeTab, setActiveTab] = useState("all");
-  const [categories, setCategories] = useState([]);
-
+  // Fetch data al montar el componente
   useEffect(() => {
-    const uniqueCategories = [
-      ...new Set(products.map((product) => product.category)),
-    ];
-    setCategories(uniqueCategories);
-  }, [products]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch categorías
+        const catResponse = await axios.get(`/api/categorias/${empresaId}/`);
+        setCategories(catResponse.data);
 
+        // Fetch proveedores
+        const provResponse = await axios.get(`/api/proveedores/${empresaId}/`);
+        setProveedores(provResponse.data);
+
+        // Fetch productos
+        const prodResponse = await axios.get(`/api/productos/${empresaId}/`);
+        setProducts(prodResponse.data);
+
+        // Fetch inventarios
+        const invResponse = await axios.get('/api/inventarios/');
+        setInventarios(invResponse.data);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setLoading(false);
+      }
+    };
+
+    if (empresaId) {
+      fetchData();
+    }
+  }, [empresaId]);
+
+  // Filtrado de productos
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchTerm.toLowerCase());
+      product.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.descripcion && product.descripcion.toLowerCase().includes(searchTerm.toLowerCase()));
 
     if (activeTab === "all") return matchesSearch;
     if (activeTab === "lowStock")
-      return matchesSearch && product.stock < product.minStock;
-    return matchesSearch && product.category === activeTab;
+      return matchesSearch && product.stock < product.cantidad_minima;
+    return matchesSearch && product.categoria.nombre === activeTab;
   });
 
+  // Manejar cambios en el formulario
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const parsedValue =
-      name === "stock" || name === "minStock" || name === "price"
-        ? parseFloat(value)
-        : value;
-    setNewProduct({ ...newProduct, [name]: parsedValue });
-  };
-
-  const handleSaveProduct = () => {
-    if (editingProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === editingProduct.id ? { ...newProduct, id: p.id } : p
-        )
-      );
-    } else {
-      const id = Math.max(...products.map((p) => p.id), 0) + 1;
-      setProducts([...products, { ...newProduct, id }]);
+  
+    // Campos numéricos
+    if (
+      name === "stock" ||
+      name === "cantidad_minima" ||
+      name === "cantidad_maxima" ||
+      name === "precio_compra" ||
+      name === "precio_venta"
+    ) {
+      // Solo permitir que el input sea número o vacío (permitiendo escribir)
+      if (value === "" || /^[0-9]*\.?[0-9]*$/.test(value)) {
+        setNewProduct({
+          ...newProduct,
+          [name]: value, // Guardamos como texto para no molestar al usuario mientras escribe
+        });
+      }
     }
-    setShowModal(false);
-    setEditingProduct(null);
-    setNewProduct({
-      name: "",
-      sku: "",
-      category: "",
-      stock: 0,
-      minStock: 0,
-      price: 0,
-    });
+    // Campos de relación (categoría y proveedor)
+    else if (name === "categoria_id" || name === "proveedor_id") {
+      setNewProduct({
+        ...newProduct,
+        [name]: value === "" ? "" : parseInt(value, 10)
+      });
+    }
+    // Otros campos de texto
+    else {
+      setNewProduct({
+        ...newProduct,
+        [name]: value
+      });
+    }
+  };
+    
+
+  // Guardar producto
+  const handleSaveProduct = async () => {
+    try {
+      // Preparar los datos del producto, convirtiendo strings vacías a null
+      const productData = {
+        nombre: newProduct.nombre,
+        precio_compra: newProduct.precio_compra,
+        precio_venta: newProduct.precio_venta,
+        descripcion: newProduct.descripcion,
+        categoria_id: newProduct.categoria_id === "" ? null : newProduct.categoria_id,
+        proveedor_id: newProduct.proveedor_id === "" ? null : newProduct.proveedor_id
+      };
+  
+      let savedProduct;
+  
+      if (editingProduct) {
+        // Actualizar producto existente
+        const response = await axios.put(
+          `/api/productos/${empresaId}/${editingProduct.id}/`, 
+          productData
+        );
+        savedProduct = response.data;
+        
+        // Actualizar inventario
+        await axios.put(`/api/inventarios/${savedProduct.inventario.id}/`, {
+          producto: savedProduct.id,
+          stock: newProduct.stock,
+          cantidad_minima: newProduct.cantidad_minima,
+          cantidad_maxima: newProduct.cantidad_maxima
+        });
+        
+        // Actualizar lista de productos
+        setProducts(products.map(p => p.id === savedProduct.id ? savedProduct : p));
+      } else {
+        // Crear nuevo producto
+        const response = await axios.post(
+          `/api/productos/${empresaId}/`, 
+          productData
+        );
+        savedProduct = response.data;
+        
+        // Crear inventario para el producto
+        await axios.post('/api/inventarios/', {
+          producto: savedProduct.id,
+          stock: newProduct.stock,
+          cantidad_minima: newProduct.cantidad_minima,
+          cantidad_maxima: newProduct.cantidad_maxima
+        });
+        
+        // Añadir a la lista de productos
+        setProducts([...products, savedProduct]);
+      }
+      
+      // Cerrar modal y resetear estados
+      setShowModal(false);
+      setEditingProduct(null);
+      setNewProduct({
+        nombre: "",
+        precio_compra: 0,
+        precio_venta: 0,
+        descripcion: "",
+        categoria_id: "",
+        proveedor_id: "",
+        stock: 0,
+        cantidad_minima: 0,
+        cantidad_maxima: 0,
+      });
+      
+      // Refrescar datos
+      const prodResponse = await axios.get(`/api/productos/${empresaId}/`);
+      setProducts(prodResponse.data);
+      
+    } catch (error) {
+      console.error("Error saving product:", error);
+      alert("Error al guardar el producto. Por favor intente nuevamente.");
+    }
   };
 
-  const handleEditProduct = (product) => {
-    setEditingProduct(product);
-    setNewProduct({ ...product });
-    setShowModal(true);
+  // Editar producto
+  const handleEditProduct = async (product) => {
+    try {
+      // Obtener datos del inventario de este producto
+      const inventarioResponse = await axios.get(`/api/inventarios/${product.inventario?.id || ''}`);
+      const inventario = inventarioResponse.data;
+      
+      setEditingProduct(product);
+      setNewProduct({
+        nombre: product.nombre,
+        precio_compra: product.precio_compra,
+        precio_venta: product.precio_venta,
+        descripcion: product.descripcion || "",
+        categoria_id: product.categoria.id,
+        proveedor_id: product.proveedor.id,
+        stock: inventario.stock,
+        cantidad_minima: inventario.cantidad_minima,
+        cantidad_maxima: inventario.cantidad_maxima
+      });
+      setShowModal(true);
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      alert("Error al cargar los detalles del producto.");
+    }
   };
 
-  const handleDeleteProduct = (id) => {
-    setProducts(products.filter((p) => p.id !== id));
+  // Eliminar producto
+  const handleDeleteProduct = async (id) => {
+    if (window.confirm("¿Está seguro que desea eliminar este producto?")) {
+      try {
+        await axios.delete(`/api/productos/${empresaId}/${id}/`);
+        setProducts(products.filter(p => p.id !== id));
+      } catch (error) {
+        console.error("Error deleting product:", error);
+        alert("Error al eliminar el producto.");
+      }
+    }
   };
 
-  const lowStockCount = products.filter((p) => p.stock < p.minStock).length;
+  // Contar productos con stock bajo
+  const lowStockCount = products.filter(p => p.stock < p.cantidad_minima).length;
+
+  // Obtener categorías únicas
+  useEffect(() => {
+    if (categories.length > 0) {
+      const uniqueCategories = [...new Set(categories.map(cat => cat.nombre))];
+      setActiveTab("all");
+    }
+  }, [categories]);
 
   return (
     <div className="inventory-content">
@@ -194,7 +294,17 @@ const Inventario = () => {
           className="add-product-btn"
           onClick={() => {
             setEditingProduct(null);
-            setNewProduct({ name: '', sku: '', category: '', stock: 0, minStock: 0, price: 0 });
+            setNewProduct({
+              nombre: "",
+              precio_compra: 0,
+              precio_venta: 0,
+              descripcion: "",
+              categoria_id: categories.length > 0 ? categories[0].id : "",
+              proveedor_id: proveedores.length > 0 ? proveedores[0].id : "",
+              stock: 0,
+              cantidad_minima: 0,
+              cantidad_maxima: 0,
+            });
             setShowModal(true);
           }}
         >
@@ -219,78 +329,82 @@ const Inventario = () => {
         </button>
         {categories.map((category) => (
           <button
-            key={category}
-            className={activeTab === category ? "active" : ""}
-            onClick={() => setActiveTab(category)}
+            key={category.id}
+            className={activeTab === category.nombre ? "active" : ""}
+            onClick={() => setActiveTab(category.nombre)}
           >
-            {category}
+            {category.nombre}
           </button>
         ))}
       </div>
 
       {/* Tabla */}
       <div className="inventory-table-container">
-        <table className="inventory-table">
-          <thead>
-            <tr>
-              <th>SKU</th>
-              <th>Nombre</th>
-              <th>Categoría</th>
-              <th>Stock</th>
-              <th>Stock Mínimo</th>
-              <th>Precio</th>
-              <th className="texto-acciones">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <tr
-                  key={product.id}
-                  className={
-                    product.stock < product.minStock ? "low-stock" : ""
-                  }
-                >
-                  <td>{product.sku}</td>
-                  <td>{product.name}</td>
-                  <td>{product.category}</td>
-                  <td className="stock-cell">
-                    {product.stock}
-                    {product.stock < product.minStock && (
-                      <CircleAlert
-                        size={18}
-                        color="currentColor"
-                        className="alert-icon"
-                      />
-                    )}
-                  </td>
-                  <td>{product.minStock}</td>
-                  <td>${product.price.toFixed(2)}</td>
-                  <td className="actions-cell">
-                    <button
-                      className="action-btn edit"
-                      onClick={() => handleEditProduct(product)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="action-btn delete"
-                      onClick={() => handleDeleteProduct(product.id)}
-                    >
-                      Eliminar
-                    </button>
+        {loading ? (
+          <p className="loading">Cargando productos...</p>
+        ) : (
+          <table className="inventory-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Stock</th>
+                <th>Stock Mínimo</th>
+                <th>Precio de Venta</th>
+                <th className="texto-acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <tr
+                    key={product.id}
+                    className={
+                      product.stock < product.cantidad_minima ? "low-stock" : ""
+                    }
+                  >
+                    <td>{product.id}</td>
+                    <td>{product.nombre}</td>
+                    <td>{product.categoria.nombre}</td>
+                    <td className="stock-cell">
+                      {product.stock}
+                      {product.stock < product.cantidad_minima && (
+                        <CircleAlert
+                          size={18}
+                          color="currentColor"
+                          className="alert-icon"
+                        />
+                      )}
+                    </td>
+                    <td>{product.inventario?.cantidad_minima || "N/A"}</td>
+                    <td>${product.precio_venta.toFixed(2)}</td>
+                    <td className="actions-cell">
+                      <button
+                        className="action-btn edit"
+                        onClick={() => handleEditProduct(product)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="action-btn delete"
+                        onClick={() => handleDeleteProduct(product.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="no-data">
+                    No se encontraron productos
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" className="no-data">
-                  No se encontraron productos
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* Modal */}
@@ -302,31 +416,77 @@ const Inventario = () => {
               <label>Nombre del Producto</label>
               <input
                 type="text"
-                name="name"
-                value={newProduct.name}
+                name="nombre"
+                value={newProduct.nombre}
                 onChange={handleInputChange}
                 placeholder="Nombre"
               />
             </div>
             <div className="form-group">
-              <label>SKU</label>
-              <input
-                type="text"
-                name="sku"
-                value={newProduct.sku}
+              <label>Descripción</label>
+              <textarea
+                name="descripcion"
+                value={newProduct.descripcion}
                 onChange={handleInputChange}
-                placeholder="SKU"
-              />
+                placeholder="Descripción"
+              ></textarea>
             </div>
+            {/* Campo Categoría */}
             <div className="form-group">
               <label>Categoría</label>
-              <input
-                type="text"
-                name="category"
-                value={newProduct.category}
+              <select
+                name="categoria_id"
+                value={newProduct.categoria_id || ""}
                 onChange={handleInputChange}
-                placeholder="Categoría"
-              />
+              >
+                <option value="">Sin categoría</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Campo Proveedor */}
+            <div className="form-group">
+              <label>Proveedor</label>
+              <select
+                name="proveedor_id"
+                value={newProduct.proveedor_id || ""}
+                onChange={handleInputChange}
+              >
+                <option value="">Sin proveedor</option>
+                {proveedores.map(prov => (
+                  <option key={prov.id} value={prov.id}>
+                    {prov.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-row">
+              <div className="form-group half">
+                <label>Precio de Compra</label>
+                <input
+                  type="number"
+                  name="precio_compra"
+                  value={newProduct.precio_compra}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div className="form-group half">
+                <label>Precio de Venta</label>
+                <input
+                  type="number"
+                  name="precio_venta"
+                  value={newProduct.precio_venta}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                />
+              </div>
             </div>
             <div className="form-row">
               <div className="form-group half">
@@ -343,22 +503,21 @@ const Inventario = () => {
                 <label>Stock Mínimo</label>
                 <input
                   type="number"
-                  name="minStock"
-                  value={newProduct.minStock}
+                  name="cantidad_minima"
+                  value={newProduct.cantidad_minima}
                   onChange={handleInputChange}
                   min="0"
                 />
               </div>
             </div>
             <div className="form-group">
-              <label>Precio</label>
+              <label>Stock Máximo</label>
               <input
                 type="number"
-                name="price"
-                value={newProduct.price}
+                name="cantidad_maxima"
+                value={newProduct.cantidad_maxima}
                 onChange={handleInputChange}
                 min="0"
-                step="0.01"
               />
             </div>
             <div className="modal-actions">
