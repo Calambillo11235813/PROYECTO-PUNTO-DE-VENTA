@@ -55,7 +55,7 @@ class LoginView(APIView):
         if user.rol:
             rol_data = {
                 "id": user.rol.id,
-                "nombre": user.rol.nombre,
+                "nombre": user.rol.nombre_rol,
             }
 
         # Preparar respuesta

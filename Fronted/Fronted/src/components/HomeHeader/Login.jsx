@@ -28,24 +28,32 @@ export default function Login() {
     e.preventDefault();
     setError("");
     setLoading(true);
-
+  
     try {
       // Llamar al servicio de autenticación
       const response = await authService.login(correo, contrasena);
-
-      // Extraer datos del usuario de la respuesta
+  
+      // Guardar el usuario completo, incluyendo todos los datos relevantes
       const userData = {
+        ...response.usuario,
+        // Asegurar que estos campos clave existen
         id: response.usuario.id,
-        nombre: response.usuario.nombre, // Cambio "name" a "nombre" para mantener consistencia
-        correo: response.usuario.correo, // Cambio "email" a "correo" para mantener consistencia
-        rol: response.usuario.rol || { nombre: "admin" }, // Mantener la estructura anidada completa
+        nombre: response.usuario.nombre,
+        correo: response.usuario.correo,
+        // Asegurar que rol tiene una estructura consistente
+        rol: response.usuario.rol || { 
+          id: 1, 
+          nombre: "admin" 
+        },
+        // Preservar cualquier otro dato (is_staff, estado, etc.)
+        is_staff: response.usuario.is_staff
       };
-
+  
       console.log("Usuario autenticado:", userData);
-
+  
       // Usar el contexto de autenticación para guardar los datos
       login(userData);
-
+  
       // Redireccionar al panel de administración
       navigate("/admin");
     } catch (error) {

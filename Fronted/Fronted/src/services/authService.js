@@ -47,7 +47,27 @@ const authService = {
     }
   },
     
-    
+  register: async (nombre, correo, contrasena, empresa) => {
+    try {
+      console.log('Intentando registro con:', { nombre, correo, empresa });
+      
+      const response = await apiClient.post('register/', {
+        nombre: nombre,
+        correo: correo,
+        contraseña: contrasena,
+        empresa: empresa
+      });
+      
+      console.log('Registro exitoso:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error en registro:', error);
+      const errorMessage = 
+        error.response?.data?.error || 
+        'Error al conectar con el servidor';
+      throw new Error(errorMessage);
+    }
+  },
 
 
   // Iniciar sesión

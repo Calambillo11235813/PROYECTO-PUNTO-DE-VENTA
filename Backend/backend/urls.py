@@ -25,6 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('api/login/', LoginView.as_view(), name='login'),
+     path('api/', include('accounts.urls')),  # Esto incluirá register/ como api/register/
     path('productos/', include('Productos.urls')),
     path('ventas/', include('Ventas.urls')),
     

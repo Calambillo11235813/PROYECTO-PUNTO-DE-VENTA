@@ -15,6 +15,7 @@ import {
 
 // Componentes públicos
 import Header from "./components/HomeHeader/Homeheader";
+import Register from './components/HomeHeader/Register';
 import Login from "./components/HomeHeader/login";
 import Home from "./pages/Home/Home";
 import Plans from "./components/HomeHeader/plans";
@@ -56,6 +57,7 @@ function App() {
               </>
             }
           />
+          <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
 
           {/* Rutas protegidas - solo para administradores */}
