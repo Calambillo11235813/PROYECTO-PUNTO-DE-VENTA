@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom"; // 👈 AGREGA useNavigate AQUÍ
 import {
   FaChartBar,
   FaShoppingCart,
@@ -15,6 +15,7 @@ import "./Sidebar.css";
 
 const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
   const [isOpen, setIsOpen] = useState(true);
+  const navigate = useNavigate(); // 👈 INICIALIZA navigate AQUÍ
 
   useEffect(() => {
     console.log("Modo oscuro: ", darkMode);
@@ -26,7 +27,14 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
 
   const handleLogout = (e) => {
     e.preventDefault();
-    console.log("Cerrando sesión");
+    console.log("Cerrando sesión...");
+
+    // Elimina los tokens del localStorage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+
+    // Redirige al login
+    navigate('/login'); // 👈 AHORA FUNCIONA
   };
 
   const menuItems = [
