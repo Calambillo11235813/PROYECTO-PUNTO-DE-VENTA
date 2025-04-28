@@ -77,9 +77,6 @@ const AdminLayout = () => {
       <div className={`admin-content ${sidebarOpen ? "" : "expanded"}`}>
         <header className="admin-header">
           <div className="left">
-            <button className="menu-btn" onClick={toggleSidebar}>
-              <FaBars />
-            </button>
             <div className="page-title">
               {getPageIcon()}
               <h1>{activePage}</h1>
