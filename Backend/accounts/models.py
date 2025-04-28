@@ -14,6 +14,7 @@ class Rol(models.Model):
     nombre_rol = models.CharField(max_length=100)
 
     def __str__(self):
+        
         return self.nombre_rol
 
 
@@ -87,4 +88,3 @@ class Bitacora(models.Model):
 
     def __str__(self):
         return f"{self.usuario.correo} - {self.accion}"
-

@@ -15,7 +15,7 @@ class UsuarioListCreate(APIView):
 
     def post(self, request):
         data = request.data.copy()
-        contraseña = data.pop('contraseña', None)
+        contraseña = data.pop('password', None)
 
         serializer = UsuarioSerializer(data=data)
 
@@ -50,8 +50,14 @@ class UsuarioDetail(APIView):
         usuario.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+        
+
+
+
+
 class ClienteListAPIView(APIView):
     def get(self, request, empresa_id):                         
+
         rol_id = None
         rol_id2 = 1
 
@@ -62,5 +68,7 @@ class ClienteListAPIView(APIView):
             Q(rol_id=rol_id) | Q(rol_id=rol_id2)
         )
 
+
         serializer = UsuarioSerializer(clientes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+

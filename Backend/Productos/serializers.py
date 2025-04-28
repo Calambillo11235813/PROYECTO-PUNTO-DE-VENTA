@@ -1,9 +1,8 @@
 from rest_framework import serializers
 from .models import Producto, Categoria, Proveedor, Inventario
 from Productos.models import Producto
-from accounts.models import Empresa
 from cloudinary.utils import cloudinary_url
-
+from accounts.models import Empresa
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
@@ -31,6 +30,7 @@ class ProductoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Producto
+
         fields = [
            'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen_url',
             'categoria', 'proveedor', 'categoria_id', 'proveedor_id', 'empresa_id', 'stock',
