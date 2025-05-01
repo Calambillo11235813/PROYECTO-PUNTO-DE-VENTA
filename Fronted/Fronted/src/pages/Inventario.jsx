@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { productoService } from '../../services/productoService.js';
-import '../../../src/global.css';
+import { productoService } from '../services/productoService.js';
 
 const initialProductState = {
   id: '',
@@ -50,17 +49,14 @@ const Inventario = () => {
   const handleSaveProduct = async () => {
     try {
       if (isEditing) {
-        // Para la edición, necesitarías implementar un método updateUser en el servicio
         alert("La funcionalidad de edición no está implementada aún.");
       } else {
-        // Usar createProduct para crear un nuevo producto
         const newProduct = await productoService.createProduct(productForm);
         console.log("Nuevo producto creado:", newProduct);
-        // Actualizar la lista de productos después de crear uno nuevo
-        fetchProducts(); // Refetch todos los productos para asegurar datos actualizados
+        fetchProducts();
       }
-      setShowModal(false); // Cerrar el modal
-      resetForm(); // Resetear el formulario
+      setShowModal(false);
+      resetForm();
     } catch (err) {
       console.error("Error al guardar producto:", err);
       alert("Ocurrió un error al guardar el producto.");
@@ -68,7 +64,6 @@ const Inventario = () => {
   };
 
   const handleEditProduct = (product) => {
-    // Adaptar los campos del producto para el formulario
     const formattedProduct = {
       id: product.id,
       name: product.nombre,
@@ -86,13 +81,9 @@ const Inventario = () => {
     if (!window.confirm('¿Desea eliminar este producto?')) return;
     
     try {
-      // Llamar al servicio deleteProduct con el objeto que contiene el id del producto
       await productoService.deleteProduct({ id });
       console.log("Producto eliminado con éxito, id:", id);
-      
-      // Actualizar la lista de productos después de eliminar
       setProducts(prev => prev.filter(p => p.id !== id));
-      
     } catch (err) {
       console.error("Error al eliminar producto:", err);
       alert("No se pudo eliminar el producto.");
@@ -184,7 +175,6 @@ const Inventario = () => {
         )}
       </div>
 
-      {/* Modal para crear/editar productos */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg w-96 max-w-md">
@@ -192,7 +182,6 @@ const Inventario = () => {
               {isEditing ? 'Editar Producto' : 'Nuevo Producto'}
             </h2>
             <div className="space-y-4">
-              {/* Campo para el nombre */}
               <div className="form-group">
                 <label className="block text-sm font-medium text-gray-700">
                   Nombre
@@ -206,8 +195,6 @@ const Inventario = () => {
                   placeholder="Nombre del producto"
                 />
               </div>
-              
-              {/* Campo para el precio de compra */}
               <div className="form-group">
                 <label className="block text-sm font-medium text-gray-700">
                   Precio de Compra
@@ -222,8 +209,6 @@ const Inventario = () => {
                   placeholder="Precio de compra"
                 />
               </div>
-              
-              {/* Campo para el precio de venta */}
               <div className="form-group">
                 <label className="block text-sm font-medium text-gray-700">
                   Precio de Venta
@@ -238,8 +223,6 @@ const Inventario = () => {
                   placeholder="Precio de venta"
                 />
               </div>
-              
-              {/* Campo para la descripción */}
               <div className="form-group">
                 <label className="block text-sm font-medium text-gray-700">
                   Descripción
@@ -257,7 +240,7 @@ const Inventario = () => {
             <div className="mt-6 flex justify-between">
               <button
                 onClick={() => setShowModal(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
               >
                 Cancelar
               </button>

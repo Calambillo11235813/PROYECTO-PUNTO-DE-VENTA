@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Search, Barcode, PlusCircle, MinusCircle, ShoppingCart } from "lucide-react";
-import "./Sales.css";
+
 
 const Sales = () => {
   // Utilizamos el contexto de AdminLayout

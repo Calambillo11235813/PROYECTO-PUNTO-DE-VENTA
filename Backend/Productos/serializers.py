@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Producto, Categoria, Proveedor, Inventario
 from Productos.models import Producto
 from cloudinary.utils import cloudinary_url
-from accounts.models import Empresa
+
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
@@ -19,8 +19,6 @@ class ProductoSerializer(serializers.ModelSerializer):
     proveedor = ProveedorSerializer(read_only=True)
     categoria_id = serializers.PrimaryKeyRelatedField(queryset=Categoria.objects.all(), source='categoria', write_only=True,required=False,allow_null=True)
     proveedor_id = serializers.PrimaryKeyRelatedField(queryset=Proveedor.objects.all(), source='proveedor', write_only=True,required=False,allow_null=True)
-    empresa_id = serializers.PrimaryKeyRelatedField(queryset=Empresa.objects.all(),source='empresa',write_only=True,required=True)
-
     imagen_url = serializers.SerializerMethodField()
 
     # Campos nuevos para el inventario inicial

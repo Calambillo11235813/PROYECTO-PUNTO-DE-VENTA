@@ -51,23 +51,9 @@ class UsuarioDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
         
-
-
-
-
 class ClienteListAPIView(APIView):
-    def get(self, request, empresa_id):                         
-
-        rol_id = None
-        rol_id2 = 1
-
-        # Excluir usuarios con rol_id = None o rol_id = 1
-        clientes = Usuario.objects.filter(
-            empresa_id=empresa_id
-        ).exclude(
-            Q(rol_id=rol_id) | Q(rol_id=rol_id2)
-        )
-
+    def get(self, request):                         
+        rol_id = 3# Fijamos el rol_id en 2 de forma estática
 
         serializer = UsuarioSerializer(clientes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
