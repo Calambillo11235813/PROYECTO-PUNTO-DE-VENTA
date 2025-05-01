@@ -53,12 +53,13 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     correo = models.EmailField(unique=True)
     direccion = models.TextField(blank=True, null=True)
     estado = models.BooleanField(default=True)
-    # todo los atributos de empresa que pasen a usuario y se elimine la tabla empresa 
+    fecha_expiracion = models.DateField(blank=True, null=True)
+    plan = models.CharField(max_length=50, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=True)
     USERNAME_FIELD = 'correo'
     REQUIRED_FIELDS = ['nombre']
-    fecha_expiracion = models.DateField(blank=True, null=True)
+   
 
     objects = UsuarioManager()
 

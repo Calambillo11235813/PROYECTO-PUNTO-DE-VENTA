@@ -50,11 +50,4 @@ class UsuarioDetail(APIView):
         usuario.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-        
-class ClienteListAPIView(APIView):
-    def get(self, request):                         
-        rol_id = 3# Fijamos el rol_id en 2 de forma estática
-
-        serializer = UsuarioSerializer(clientes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 

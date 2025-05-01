@@ -19,11 +19,11 @@ from django.contrib import admin
 from django.urls import path,include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from accounts.controllers.auth_controller import LoginView
+from Productos.controllers.producto_controller import (ProductoListaCrearVista, ProductoDetalleVista, ProductosPorCategoriaView)
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
-    path('api/login/', LoginView.as_view(), name='login'),
-    path('api/', include('accounts.urls')),  # Esto incluirá register/ como api/register/
-   
+    path('productos/', include('Productos.urls')),
 ]
