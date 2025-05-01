@@ -15,8 +15,8 @@ const apiClient = axios.create({
 // Interceptor para añadir el token de autenticación a las solicitudes
 apiClient.interceptors.request.use(
   (config) => {
-    // Solo añade token a rutas que NO sean de autenticación
-    if (!config.url.includes('login/')) {
+    // Excluir rutas de autenticación
+    if (!config.url.includes('login') && !config.url.includes('usuarios')) {
       const token = localStorage.getItem('access_token');
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
@@ -68,7 +68,7 @@ const authService = {
           nombre_empresa,
           direccion,
           nit_empresa,
-          role_id
+
         });
         
         console.log('Registro exitoso:', response.data);
