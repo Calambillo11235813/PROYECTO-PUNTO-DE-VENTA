@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import Producto, Categoria, Proveedor, Inventario
+from accounts.serializers import UsuarioSerializer
+from accounts.models import Usuario
 from Productos.models import Producto
 from cloudinary.utils import cloudinary_url
 
@@ -17,9 +19,11 @@ class ProductoSerializer(serializers.ModelSerializer):
     stock = serializers.IntegerField(source='inventario.stock', read_only=True)
     categoria = CategoriaSerializer(read_only=True)
     proveedor = ProveedorSerializer(read_only=True)
+    usuario = UsuarioSerializer(read_only=True)
     categoria_id = serializers.PrimaryKeyRelatedField(queryset=Categoria.objects.all(), source='categoria', write_only=True,required=False,allow_null=True)
     proveedor_id = serializers.PrimaryKeyRelatedField(queryset=Proveedor.objects.all(), source='proveedor', write_only=True,required=False,allow_null=True)
     imagen_url = serializers.SerializerMethodField()
+    usuario_id = serializers.PrimaryKeyRelatedField( queryset=Usuario.objects.all(), source='usuario', write_only=True)
 
     # Campos nuevos para el inventario inicial
     stock_inicial = serializers.IntegerField(write_only=True, required=False)
@@ -31,10 +35,9 @@ class ProductoSerializer(serializers.ModelSerializer):
 
         fields = [
            'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen_url',
-            'categoria', 'proveedor', 'categoria_id', 'proveedor_id', 'empresa_id', 'stock',
+            'categoria', 'proveedor', 'categoria_id', 'proveedor_id','usuario_id','usuario', 'stock',
             'stock_inicial', 'cantidad_minima', 'cantidad_maxima'
      ]
-
 
     def get_imagen_url(self, obj):
         if obj.imagen:

@@ -6,20 +6,20 @@ from Productos.serializers import CategoriaSerializer
 from django.shortcuts import get_object_or_404
 
 class CategoriaListaCrearVista(APIView):
-    def get(self, request,empresa_id):
+    def get(self, request, usuario_id):
         """
         Listar todas las categorías (GET)
         """
-        categorias = Categoria.objects.filter(empresa_id=empresa_id)
+        categorias = Categoria.objects.filter(usuario_id=usuario_id)
         serializer = CategoriaSerializer(categorias, many=True)
         return Response(serializer.data)
 
-    def post(self, request,empresa_id):
+    def post(self, request,usuario_id):
         """
         Crear nueva categoría (POST)
         """
         data = request.data.copy()
-        data['empresa'] = empresa_id
+        data['usuario'] = usuario_id 
         serializer = CategoriaSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
@@ -28,29 +28,29 @@ class CategoriaListaCrearVista(APIView):
 
 
 class CategoriaDetalleVista(APIView):
-    def get(self, request,empresa_id, pk):
+    def get(self, request,usuario_id, pk):
         """
         Obtener una categoría específica (GET)
         """
-        categoria = get_object_or_404(Categoria, pk=pk,empresa_id=empresa_id)
+        categoria = get_object_or_404(Categoria, pk=pk,usuario_id=usuario_id)
         serializer = CategoriaSerializer(categoria)
         return Response(serializer.data)
 
-    def put(self, request,empresa_id, pk):
+    def put(self, request,usuario_id, pk):
         """
         Actualizar una categoría existente (PUT)
         """
-        categoria = get_object_or_404(Categoria, pk=pk, empresa_id=empresa_id)
+        categoria = get_object_or_404(Categoria, pk=pk, usuario_id=usuario_id)
         serializer = CategoriaSerializer(categoria, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, empresa_id, pk):
+    def delete(self, request, usuario_id, pk):
         """
         Eliminar una categoría (DELETE)
         """
-        categoria = get_object_or_404(Categoria, pk=pk, empresa_id=empresa_id)
+        categoria = get_object_or_404(Categoria, pk=pk, usuario_id=usuario_id)
         categoria.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

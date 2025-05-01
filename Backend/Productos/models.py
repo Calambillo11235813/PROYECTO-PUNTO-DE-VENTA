@@ -2,17 +2,18 @@
 # Create your models here.
 from django.db import models
 from cloudinary.models import CloudinaryField
+from accounts.models import Usuario
 # Create your models here.
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
-
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='categorias')
     def __str__(self):
         return self.nombre
 
 class Proveedor(models.Model):
     nombre = models.CharField(max_length=100)
-  
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='proveedores')
 
     def __str__(self):
         return self.nombre
@@ -25,6 +26,7 @@ class Producto(models.Model):
     imagen = CloudinaryField('image', null=True, blank=True) 
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE,null=True , blank=True)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE,null=True , blank=True)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='productos') 
     def __str__(self):
         
         return self.nombre
@@ -36,6 +38,5 @@ class Inventario(models.Model):
     cantidad_maxima = models.IntegerField()
 
     def __str__(self):
-        
         return f'Inventario de {self.producto.nombre}'
     
