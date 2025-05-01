@@ -20,18 +20,10 @@ from django.urls import path,include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from accounts.controllers.auth_controller import LoginView
 
- 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('api/login/', LoginView.as_view(), name='login'),
-     path('api/', include('accounts.urls')),  # Esto incluirá register/ como api/register/
-    path('productos/', include('Productos.urls')),
-    path('ventas/', include('Ventas.urls')),
-    
-     # URLs para la documentación API
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    # Opcional: UI para visualizar la documentación
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/', include('accounts.urls')),  # Esto incluirá register/ como api/register/
+   
 ]

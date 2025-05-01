@@ -51,12 +51,8 @@ class UsuarioDetail(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
         
-
-
-
-
 class ClienteListAPIView(APIView):
-    def get(self, request, empresa_id):                         
+    def get(self, request):                         
         rol_id = 3# Fijamos el rol_id en 2 de forma estática
 
         serializer = UsuarioSerializer(clientes, many=True)

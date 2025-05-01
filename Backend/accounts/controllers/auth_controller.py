@@ -8,31 +8,24 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
 class LoginView(APIView):
     permission_classes = [AllowAny]  # Esto es crucial
-    
-    
     def post(self, request):
         correo = request.data.get("correo")
 
         contraseña = request.data.get("password")
-        
-
-
 
         try:
             user = Usuario.objects.get(correo=correo)
         except Usuario.DoesNotExist:
             return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
 
-
         if not user.check_password(contraseña):
-            return Response({"error": "Credenciales inválidas hola "}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"error": "Credenciales inválidas "}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Verificar contraseña
       
         # Verificar si el usuario está activo
         if not user.estado:
             return Response({"error": "Usuario inactivo"}, status=status.HTTP_403_FORBIDDEN)
-
 
         # Registrar en bitácora
         Bitacora.objects.create(
@@ -47,16 +40,6 @@ class LoginView(APIView):
         # Obtener datos del usuario
         usuario_data = UsuarioSerializer(user).data
 
-        # Obtener datos de la empresa
-        empresa_data = None
-        if user.empresa:
-            empresa_data = {
-                "id": user.empresa.id,
-                "nombre": user.empresa.nombre,
-                "nit": user.empresa.nit,
-                "estado": user.empresa.estado,
-            }
-
         # Obtener datos del rol
         rol_data = None
         if user.rol:
@@ -70,11 +53,5 @@ class LoginView(APIView):
             "mensaje": "Login exitoso",
             "refresh": str(refresh),
             "access": str(refresh.access_token),
-            "usuario": {
-                "id": user.id,
-                "nombre": user.nombre,
-                "correo": user.correo,
-                "rol": rol_data
-            },
-            "empresa": empresa_data
+            "usuario": usuario_data
         }, status=status.HTTP_200_OK)

@@ -2,8 +2,7 @@ import uuid
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from accounts.models import Usuario, Empresa, Rol
-from accounts.serializers import EmpresaSerializer
+from accounts.models import Usuario, Rol
 from rest_framework.permissions import AllowAny
 from django.db import transaction
 

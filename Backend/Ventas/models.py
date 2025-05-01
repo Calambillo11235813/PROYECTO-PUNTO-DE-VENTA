@@ -1,11 +1,9 @@
 from django.db import models
-from accounts.models import Usuario, Empresa
+from accounts.models import Usuario
 from Productos.models import Producto
 
 class Estado(models.Model):
     descripcion = models.CharField(max_length=50)
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE,related_name='estados_ventas')  
-
     def __str__(self):
         return self.descripcion
     
@@ -13,12 +11,10 @@ class Estado(models.Model):
 class TipoVenta(models.Model):
     descripcion = models.CharField(max_length=50)
    # estado = models.ForeignKey(Estado, on_delete=models.CASCADE)
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)  
     def __str__(self):
         return self.descripcion
 
 class Pedido(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE) 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     fecha = models.DateField(auto_now_add=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)  
@@ -29,7 +25,6 @@ class Pedido(models.Model):
 
 # DetallePedido (antes OrdenItem)
 class DetallePedido(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)  
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='detalles')
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField()
@@ -39,7 +34,6 @@ class DetallePedido(models.Model):
 
 # Factura de una Venta
 class Factura(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE)  
     #venta = models.OneToOneField(Venta, on_delete=models.CASCADE)
     fecha = models.DateField(auto_now_add=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)

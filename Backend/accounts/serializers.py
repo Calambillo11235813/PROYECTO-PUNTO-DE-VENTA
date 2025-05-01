@@ -1,26 +1,15 @@
 from rest_framework import serializers
-from accounts.models import Usuario, Empresa,Rol, Privilegio,Bitacora
-
-
-class EmpresaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Empresa
-        fields = ['id', 'nombre', 'nit', 'estado']
-
+from accounts.models import Usuario,Rol, Privilegio,Bitacora
 
 class UsuarioSerializer(serializers.ModelSerializer):
-    empresa = EmpresaSerializer(read_only=True)
-    empresa_id = serializers.PrimaryKeyRelatedField(
-        queryset=Empresa.objects.all(), source='empresa', write_only=True
-    )
     role_id = serializers.PrimaryKeyRelatedField(
          queryset=Rol.objects.all(), source='rol', write_only=True
      )
     class Meta:
         model = Usuario
         fields = [
-            'id', 'nombre', 'correo', 'fecha_de_nacimiento', 'genero',
-            'direccion', 'estado', 'empresa', 'empresa_id', 'is_staff','role_id'
+            'id', 'nombre', 'correo',
+            'direccion', 'estado', 'nombre_empresa', 'nit_empresa', 'is_staff','role_id'
         ]
         read_only_fields = ['id', 'is_staff']
 
