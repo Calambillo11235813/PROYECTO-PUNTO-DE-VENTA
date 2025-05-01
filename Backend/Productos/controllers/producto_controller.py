@@ -6,7 +6,7 @@ from Productos.serializers import ProductoSerializer
 from accounts.models import Usuario
 from accounts.serializers import UsuarioSerializer
 from django.shortcuts import get_object_or_404
-
+from rest_framework.permissions import AllowAny
 class ProductoListaCrearVista(APIView):
     """
     Vista para listar todos los productos de una empresa o crear uno nuevo.

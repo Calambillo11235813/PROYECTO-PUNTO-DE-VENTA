@@ -7,6 +7,14 @@ class Estado(models.Model):
     def __str__(self):
         return self.descripcion
     
+class Cliente(models.Model):
+    nombre = models.CharField(max_length=100)
+    nit = models.CharField(max_length=20, blank=True, null=True)
+    cedula_identidad = models.CharField(max_length=20)
+
+    def __str__(self):
+        return "self.nombre ({self.cedula_identidad})"
+
 # TipoVenta
 class TipoVenta(models.Model):
     descripcion = models.CharField(max_length=50)
@@ -20,6 +28,7 @@ class Pedido(models.Model):
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)  
     total = models.DecimalField(max_digits=10, decimal_places=2)
     tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE)
+    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos')
     def __str__(self):
         return f"Pedido #{self.id} - Usuario {self.usuario.correo}"
 
@@ -45,3 +54,4 @@ class Factura(models.Model):
 
     def __str__(self):
         return f"Factura #{self.id} - Venta #{self.venta.id}"
+

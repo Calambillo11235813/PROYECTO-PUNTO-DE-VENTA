@@ -74,9 +74,6 @@ SPECTACULAR_SETTINGS = {
     'COMPONENT_SPLIT_REQUEST': True,
 }
 
-
-
-
 import cloudinary # type: ignore
 cloudinary.config(
     cloud_name='dywiyjoph',
@@ -144,6 +141,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
 CORS_ALLOW_ALL_ORIGINS = True
 ALLOWED_HOSTS = [
     '127.0.0.1',  # Localhost

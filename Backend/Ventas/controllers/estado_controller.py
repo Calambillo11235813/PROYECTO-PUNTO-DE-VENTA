@@ -4,7 +4,7 @@ from rest_framework import status
 from Ventas.models import Estado
 from Ventas.serializers import EstadoSerializer
 from accounts.models import Empresa
-
+from rest_framework.permissions import AllowAny
 class EstadoListCreateAPIView(APIView):
     def get(self, request):
         empresa_id = request.query_params.get('empresa_id')

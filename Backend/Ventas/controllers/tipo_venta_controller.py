@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from Ventas.models import TipoVenta
 from Ventas.serializers import TipoVentaSerializer
-
+from rest_framework.permissions import AllowAny
 class TipoVentaListCreateAPIView(APIView):
     def get(self, request):
         empresa_id = request.query_params.get('empresa_id')
