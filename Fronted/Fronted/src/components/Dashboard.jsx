@@ -3,7 +3,7 @@ import { useOutletContext } from "react-router-dom";
 
 const Dashboard = () => {
   // Obtenemos el contexto del AdminLayout 
-  const [ setActivePage] = useOutletContext();
+  const [ , , , setActivePage ] = useOutletContext();
 
   // Aseguramos que el título de la página sea "Dashboard"
   useEffect(() => {

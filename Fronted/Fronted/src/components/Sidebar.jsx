@@ -34,7 +34,7 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
   const menuItems = [
     { id: "Dashboard", icon: <FaChartBar />, text: "Dashboard", path: "/admin", exact: true },
     { id: "Ventas", icon: <FaShoppingCart />, text: "Ventas", path: "/admin/ventas" },
-    { id: "Inventario", icon: <FaBoxOpen />, text: "Inventario", path: "/admin/products" },
+    { id: "Inventario", icon: <FaBoxOpen />, text: "Inventario", path: "/admin/inventario" },
     { id: "Clientes", icon: <FaUsers />, text: "Clientes", path: "/admin/clientes" },
     { id: "Facturacion", icon: <FaFileInvoiceDollar />, text: "Facturación", path: "/admin/facturacion" },
     { id: "Reportes", icon: <FaChartBar />, text: "Reportes", path: "/admin/reportes" },

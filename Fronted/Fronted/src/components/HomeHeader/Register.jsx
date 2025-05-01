@@ -8,7 +8,9 @@ export default function Register() {
     correo: "",
     contrasena: "",
     confirmContrasena: "",
-    empresa: "",
+    nombre_empresa: "",
+    direccion: "",
+    nit_empresa: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export default function Register() {
       return;
     }
 
-    if (!formData.empresa.trim()) {
+    if (!formData.nombre_empresa.trim()) {
       setError("El nombre de la empresa es obligatorio");
       return;
     }
@@ -39,12 +41,16 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await authService.register(
-        formData.nombre,
-        formData.correo,
-        formData.contrasena,
-        formData.empresa
-      );
+      // Pasar como un solo objeto, renombrando contrasena a password
+      await authService.register({
+        nombre: formData.nombre,
+        correo: formData.correo,
+        password: formData.contrasena, // Nota: aquí se renombra contrasena a password
+        nombre_empresa: formData.nombre_empresa,
+        direccion: formData.direccion,
+        nit_empresa: formData.nit_empresa,
+        // El valor role_id ya tiene un valor predeterminado en el servicio
+      });
       navigate("/login");
     } catch (error) {
       console.error("Error de registro:", error);
@@ -79,22 +85,6 @@ export default function Register() {
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none"
             placeholder="Tu nombre"
             value={formData.nombre}
-            onChange={handleChange}
-            disabled={loading}
-            required
-          />
-        </div>
-
-        <div className="mb-6 relative">
-          <label className="absolute top-[-8px] left-2 text-xs text-gray-500 bg-white px-1">
-            Empresa
-          </label>
-          <input
-            type="text"
-            name="empresa"
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none"
-            placeholder="Nombre de tu empresa"
-            value={formData.empresa}
             onChange={handleChange}
             disabled={loading}
             required
@@ -143,6 +133,54 @@ export default function Register() {
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none"
             placeholder="Confirma tu contraseña"
             value={formData.confirmContrasena}
+            onChange={handleChange}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <div className="mb-6 relative">
+          <label className="absolute top-[-8px] left-2 text-xs text-gray-500 bg-white px-1">
+            Nombre de la empresa
+          </label>
+          <input
+            type="text"
+            name="nombre_empresa"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none"
+            placeholder="Nombre de tu empresa"
+            value={formData.nombre_empresa}
+            onChange={handleChange}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <div className="mb-6 relative">
+          <label className="absolute top-[-8px] left-2 text-xs text-gray-500 bg-white px-1">
+            Dirección
+          </label>
+          <input
+            type="text"
+            name="direccion"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none"
+            placeholder="Dirección de la empresa"
+            value={formData.direccion}
+            onChange={handleChange}
+            disabled={loading}
+            required
+          />
+        </div>
+
+        <div className="mb-6 relative">
+          <label className="absolute top-[-8px] left-2 text-xs text-gray-500 bg-white px-1">
+            NIT
+          </label>
+          <input
+            type="text"
+            name="nit_empresa"
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:outline-none"
+            placeholder="Número de Identificación Tributaria"
+            value={formData.nit_empresa}
             onChange={handleChange}
             disabled={loading}
             required

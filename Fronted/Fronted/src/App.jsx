@@ -26,6 +26,7 @@ import Dashboard from "./components/Dashboard";
 
 
 import Sales from "./pages/Sales"
+import Inventario from './pages/Inventario';
 
 const Ventas = () => <div>Página de Ventas en desarrollo</div>;
 
@@ -72,15 +73,7 @@ function App() {
 
 
                 <Route index element={<Dashboard />} />
-
-
-
-
-
-
-
-
-             
+                <Route path="inventario" element={<Inventario />} />{" "}
                 <Route path="ventas" element={<Sales />} />{" "}
                 <Route path="facturacion" element={<Facturacion />} />{" "}
                 <Route path="reportes" element={<Reportes />} />{" "}
