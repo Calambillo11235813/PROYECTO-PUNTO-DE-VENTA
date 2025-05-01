@@ -9,8 +9,6 @@ class Estado(models.Model):
     
 class Cliente(models.Model):
     nombre = models.CharField(max_length=100)
-    nit = models.CharField(max_length=20, blank=True, null=True)
-    cedula_identidad = models.CharField(max_length=20)
 
     def __str__(self):
         return "self.nombre ({self.cedula_identidad})"
