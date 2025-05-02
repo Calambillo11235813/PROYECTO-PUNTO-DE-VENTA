@@ -17,15 +17,26 @@ import {
 import Header from "./components/HomeHeader/Homeheader";
 import Register from './components/HomeHeader/Register';
 import Login from "./components/HomeHeader/login";
+<<<<<<< HEAD
 import Home from "./pages/Home/Home";
+=======
+import Home from "./pages/Home";
+>>>>>>> origin/Diogo
 import Plans from "./components/HomeHeader/plans";
 
 // Componentes de administración
 import AdminLayout from "./components/AdminLayout";
 import Dashboard from "./components/Dashboard";
+<<<<<<< HEAD
 import Users from "./pages/Users/Users";
 import Inventario from "./pages/Inventario/Inventario";
 import Sales from "./pages/Sales/Sales"
+=======
+
+
+import Sales from "./pages/Sales"
+import Inventario from './pages/Inventario';
+>>>>>>> origin/Diogo
 
 const Ventas = () => <div>Página de Ventas en desarrollo</div>;
 
@@ -57,6 +68,7 @@ function App() {
               </>
             }
           />
+<<<<<<< HEAD
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
 
@@ -77,6 +89,28 @@ function App() {
                 {/* Añadir cuando tengas este componente */}
                 <Route path="configuracion" element={<Configuracion />} />{" "}
                 {/* Añadir cuando tengas este componente */}
+=======
+
+
+          <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+
+
+
+          {/* Rutas protegidas - solo para administradores */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AdminRoute />}>
+
+              <Route path="/admin" element={<AdminLayout />}>
+
+
+                <Route index element={<Dashboard />} />
+                <Route path="inventario" element={<Inventario />} />{" "}
+                <Route path="ventas" element={<Sales />} />{" "}
+                <Route path="facturacion" element={<Facturacion />} />{" "}
+                <Route path="reportes" element={<Reportes />} />{" "}
+                <Route path="configuracion" element={<Configuracion />} />{" "}
+>>>>>>> origin/Diogo
               </Route>
             </Route>
           </Route>

@@ -43,49 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'accounts',
-    'Productos',
-    'cloudinary',
-    'cloudinary_storage',
-    'Ventas',
-    'corsheaders',
-    'drf_spectacular',
 ]
-
-
-REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-}
-
-# DRF Spectacular Settings
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'API Punto de Venta',
-    'DESCRIPTION': 'API para sistema de punto de venta',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    # Otros ajustes opcionales:
-    'SWAGGER_UI_SETTINGS': {
-        'persistAuthorization': True,
-    },
-    'COMPONENT_SPLIT_REQUEST': True,
-}
-
-import cloudinary # type: ignore
-cloudinary.config(
-    cloud_name='dywiyjoph',
-    api_key='199425179995799',
-    api_secret='QsiAhOzgHL2qwsCkl-gWBwBJKEI'
-)
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dywiyjoph',
-    'API_KEY': '199425179995799',
-    'API_SECRET': 'QsiAhOzgHL2qwsCkl-gWBwBJKEI'
-}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
