@@ -26,7 +26,6 @@ class Pedido(models.Model):
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE)  
     total = models.DecimalField(max_digits=10, decimal_places=2)
     tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE)
-    cliente = models.ForeignKey('Cliente', on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos')
     def __str__(self):
         return f"Pedido #{self.id} - Usuario {self.usuario.correo}"
 
