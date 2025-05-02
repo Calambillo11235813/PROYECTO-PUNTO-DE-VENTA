@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from "react";
+import { productoService } from "../services/productoService";
 
 const Inventario = () => {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState([]);
 
-  // Simular carga de datos
   useEffect(() => {
-    setTimeout(() => {
-      // Aquí reemplaza con tu llamada real a la API
-      const fetchedData = []; // o algo como [{ id: 1, name: 'Producto A' }]
-      setProducts(fetchedData);
-      setLoading(false);
-    }, 2000); // Simula 2 segundos de carga
+    const fetchProducts = async () => {
+      try {
+        const fetchedData = await productoService.getAllProducts();
+        setProducts(fetchedData);
+      } catch (error) {
+        console.error("Error al cargar productos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
   }, []);
 
   return (
@@ -42,8 +48,8 @@ const Inventario = () => {
               {products.map((product) => (
                 <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-600">
                   <td className="px-4 py-2 border-b">{product.id}</td>
-                  <td className="px-4 py-2 border-b">{product.name}</td>
-                  <td className="px-4 py-2 border-b">{product.price}</td>
+                  <td className="px-4 py-2 border-b">{product.nombre}</td>
+                  <td className="px-4 py-2 border-b">{product.pricio}</td>
                   <td className="px-4 py-2 border-b">{product.stock}</td>
                 </tr>
               ))}

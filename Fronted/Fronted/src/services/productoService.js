@@ -11,7 +11,7 @@ export const productoService = {
         const id = localStorage.getItem('id');
         console.log('id actual ->>>>>>>>>>>>>>:', id);
         
-        const response = await api.get(`productos/productos/1/`);
+        const response = await api.get(`productos/crear/usuario/1/`);
         
         console.log('✅ Productos obtenidos:', response.data);
         console.log('verificando storage --->>>', localStorage.getItem('empresa_data'));

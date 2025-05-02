@@ -4,7 +4,7 @@ from rest_framework import status
 from Productos.models import Inventario
 from Productos.serializers import InventarioSerializer
 from django.shortcuts import get_object_or_404
-
+from rest_framework.permissions import AllowAny
 
 class InventarioListaCrearVista(APIView):
     def get(self, request):

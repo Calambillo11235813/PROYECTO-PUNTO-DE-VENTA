@@ -7,6 +7,12 @@ class Estado(models.Model):
     def __str__(self):
         return self.descripcion
     
+class Cliente(models.Model):
+    nombre = models.CharField(max_length=100)
+
+    def __str__(self):
+        return "self.nombre ({self.cedula_identidad})"
+
 # TipoVenta
 class TipoVenta(models.Model):
     descripcion = models.CharField(max_length=50)
@@ -45,3 +51,4 @@ class Factura(models.Model):
 
     def __str__(self):
         return f"Factura #{self.id} - Venta #{self.venta.id}"
+

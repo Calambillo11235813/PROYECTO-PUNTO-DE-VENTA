@@ -1,14 +1,19 @@
 # ventas/serializers.py
 
 from rest_framework import serializers
-from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido
-from accounts.models import Usuario, Empresa
+from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido, Cliente
+from accounts.models import Usuario
 from Productos.models import Producto
 
 class EstadoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Estado
         fields = '__all__'
+
+class ClienteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cliente
+        fields = ['id', 'nombre']
 
 class TipoVentaSerializer(serializers.ModelSerializer):
     estado = EstadoSerializer()
@@ -28,36 +33,36 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
 
 
 class PedidoSerializer(serializers.ModelSerializer):
-    detalles = DetallePedidoSerializer(many=True, write_only=True, required=False)
+    detalles = DetallePedidoSerializer(many=True, read_only=True)  
+    detalles_input = DetallePedidoSerializer(many=True, write_only=True, required=False)
 
     class Meta:
         model = Pedido
-        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta', 'detalles']
+        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta', 'detalles','detalles_input']
         read_only_fields = ['id', 'total']
 
     def create(self, validated_data):
         detalles_data = validated_data.pop('detalles', [])
-        empresa = validated_data.pop('empresa')  # Obtener la empresa del controlador
-        
+
         # Crear el pedido sin el total aún
-        pedido = Pedido.objects.create(empresa=empresa, total=0, **validated_data)
-        
+        pedido = Pedido.objects.create(total=0, **validated_data)
+
         total = 0
         for detalle in detalles_data:
             subtotal = detalle['producto'].precio_venta * detalle['cantidad']
             DetallePedido.objects.create(
                 pedido=pedido,
                 producto=detalle['producto'],
-                cantidad=detalle['cantidad'],
-                empresa=empresa
+                cantidad=detalle['cantidad']
             )
             total += subtotal
 
         # Actualizar el total del pedido
         pedido.total = total
         pedido.save()
-        
+
         return pedido
+
     
 class FacturaSerializer(serializers.ModelSerializer):
     #venta = VentaSerializer()

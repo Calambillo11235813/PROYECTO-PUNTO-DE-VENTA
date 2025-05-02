@@ -55,12 +55,10 @@ INSTALLED_APPS = [
 
 
 REST_FRAMEWORK = {
-   
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
-    
-    
 }
 
 # DRF Spectacular Settings
@@ -75,9 +73,6 @@ SPECTACULAR_SETTINGS = {
     },
     'COMPONENT_SPLIT_REQUEST': True,
 }
-
-
-
 
 import cloudinary # type: ignore
 cloudinary.config(
@@ -104,7 +99,7 @@ MIDDLEWARE = [
 ]
 
 # Configuración de CORS
-CORS_ALLOW_ALL_ORIGINS = True  # En producción, esto debería ser False
+CORS_ALLOW_ALL_ORIGINS = False  # En producción, esto debería ser False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Para Vite (ajusta según tu puerto)
     "http://localhost:3000",  # Para create-react-app
@@ -146,6 +141,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
 CORS_ALLOW_ALL_ORIGINS = True
 ALLOWED_HOSTS = [
     '127.0.0.1',  # Localhost
