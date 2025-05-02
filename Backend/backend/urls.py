@@ -20,10 +20,12 @@ from django.urls import path,include
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from accounts.controllers.auth_controller import LoginView
 from Productos.controllers.producto_controller import (ProductoListaCrearVista, ProductoDetalleVista, ProductosPorCategoriaView)
+from Ventas.controllers.pedido_controller import PedidoListCreateAPIView
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('productos/', include('Productos.urls')),
+    path('ventas/', include('Ventas.urls')),
 ]
