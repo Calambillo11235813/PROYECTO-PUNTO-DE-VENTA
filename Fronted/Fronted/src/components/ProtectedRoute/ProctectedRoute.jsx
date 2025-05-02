@@ -4,15 +4,7 @@ import { useAuth } from '../Contexts/AuthContext';
 
 export const ProtectedRoute = () => {
   const { user, loading } = useAuth();
-<<<<<<< HEAD
   console.log('user:', user, 'loading:', loading);
-=======
-<<<<<<< HEAD
-  
-=======
-  console.log('user:', user, 'loading:', loading);
->>>>>>> origin/Diogo
->>>>>>> dad9002c0bb161c35b7ec24da904d0f688d84050
   if (loading) {
     // Mostrar un indicador de carga mientras se verifica la autenticación
     return <div>Cargando...</div>;
@@ -66,20 +58,9 @@ export const AdminRoute = () => {
   // Si no es admin, redirigir a la página principal
   if (!isAdmin) {
     return <Navigate to="/" />;
-<<<<<<< HEAD
     
   }
   console.log('es admin');
-=======
-<<<<<<< HEAD
-  }
-  
-=======
-    
-  }
-  console.log('es admin');
->>>>>>> origin/Diogo
->>>>>>> dad9002c0bb161c35b7ec24da904d0f688d84050
   // Si es admin, mostrar el contenido
   return <Outlet />;
 };
