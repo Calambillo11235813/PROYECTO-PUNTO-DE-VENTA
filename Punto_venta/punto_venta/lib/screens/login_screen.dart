@@ -1,8 +1,6 @@
-// lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
-import '../services/authentication_service.dart';
+import '../services/usuario_service.dart';
 
-/// Pantalla de login que recibe las credenciales del usuario y dirige a la pantalla principal al iniciar sesión.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -11,31 +9,27 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controladores para capturar la entrada del usuario
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // Llave global utilizada para validar el formulario
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
 
-  // Indicador de carga para mostrar mientras se procesan las credenciales
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool isLoading = false;
 
-  /// Método que valida el formulario y realiza el login mediante el servicio de autenticación.
-  /// En caso de éxito, se navega a la pantalla principal ('/home').
   void _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         isLoading = true;
       });
 
-      // Espera asíncrona – puede haber "async gap"
-      bool success = await AuthenticationService.login(
+      // Llamar al método loginUsuario con email y password directamente
+      bool success = await UsuarioService.loginUsuario(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
 
-      // Verifica que el widget aún esté montado
       if (!mounted) return;
 
       setState(() {
@@ -43,66 +37,115 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       if (success) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/menu');
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error en inicio de sesión')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Correo o contraseña incorrectos')),
+        );
       }
     }
   }
 
   @override
+  void dispose() {
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey, // Llave del formulario para validaciones
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Campo para correo electrónico
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(labelText: 'Correo Electrónico'),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingresa tu correo';
-                  }
-                  if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                    return 'Por favor, ingresa un correo válido';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              // Campo para contraseña
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Contraseña'),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Ingresa tu contraseña';
-                  }
-                  if (value.length < 6) {
-                    return 'La contraseña debe tener al menos 6 caracteres';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 24),
-              // Botón o indicador de carga
-              isLoading
-                  ? CircularProgressIndicator()
-                  : ElevatedButton(
-                    onPressed: _login,
-                    child: Text('Iniciar Sesión'),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 60),
+                const Text(
+                  'Iniciar Sesión',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF55B84B),
                   ),
-            ],
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Accede a tu cuenta para continuar.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+                TextFormField(
+                  controller: _emailController,
+                  focusNode: _emailFocusNode,
+                  decoration: InputDecoration(
+                    labelText: 'Correo Electrónico',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  onFieldSubmitted: (_) {
+                    FocusScope.of(context).requestFocus(_passwordFocusNode);
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Ingresa tu correo';
+                    }
+                    if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
+                      return 'Por favor, ingresa un correo válido';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  focusNode: _passwordFocusNode,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  obscureText: true,
+                  textInputAction: TextInputAction.done,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Ingresa tu contraseña';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 30),
+                isLoading
+                    ? const CircularProgressIndicator()
+                    : ElevatedButton(
+                        onPressed: _login,
+                        child: const Text('Iniciar Sesión'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 15),
+                          textStyle: const TextStyle(fontSize: 16),
+                          minimumSize: const Size(double.infinity, 50),
+                        ),
+                      ),
+              ],
+            ),
           ),
         ),
       ),
