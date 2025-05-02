@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 // URL base de la API (ajústala según tu configuración)
-const API_URL = 'http://127.0.0.1:8000/accounts/';
+const API_URL = 'http://18.117.138.19:8000/accounts/';
 
 // Crea una instancia de axios con configuración base
 const apiClient = axios.create({
