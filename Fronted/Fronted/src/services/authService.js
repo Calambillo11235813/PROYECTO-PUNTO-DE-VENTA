@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 // URL base de la API (ajústala según tu configuración)
-const API_URL = 'http://localhost:8000/accounts/';
+const API_URL = 'http://127.0.0.1:8000/accounts/';
 
 // Crea una instancia de axios con configuración base
 const apiClient = axios.create({
@@ -15,8 +15,8 @@ const apiClient = axios.create({
 // Interceptor para añadir el token de autenticación a las solicitudes
 apiClient.interceptors.request.use(
   (config) => {
-    // Solo añade token a rutas que NO sean de autenticación
-    if (!config.url.includes('login/')) {
+    // Excluir rutas de autenticación
+    if (!config.url.includes('login') && !config.url.includes('usuarios')) {
       const token = localStorage.getItem('access_token');
       if (token) {
         config.headers['Authorization'] = `Bearer ${token}`;
@@ -33,7 +33,7 @@ const authService = {
   
   testConnection: async () => {
     try {
-      await apiClient.get('');
+      // await apiClient.get('');
       console.log('Conexión exitosa');
       return true;
     } catch (error) {
@@ -47,27 +47,44 @@ const authService = {
     }
   },
     
-  register: async (nombre, correo, contrasena, empresa) => {
-    try {
-      console.log('Intentando registro con:', { nombre, correo, empresa });
-      
-      const response = await apiClient.post('register/', {
-        nombre: nombre,
-        correo: correo,
-        contraseña: contrasena,
-        empresa: empresa
-      });
-      
-      console.log('Registro exitoso:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error en registro:', error);
-      const errorMessage = 
-        error.response?.data?.error || 
-        'Error al conectar con el servidor';
-      throw new Error(errorMessage);
-    }
-  },
+  
+    // Utilizando destructuring de parámetros para mayor claridad
+    register: async ({ nombre, correo, password, nombre_empresa, direccion, nit_empresa, role_id = 1 }) => {
+      try {
+        console.log('Intentando registro con:', {
+          nombre,
+          correo,
+          password,
+          nombre_empresa,
+          direccion,
+          nit_empresa,
+          role_id
+        });
+        
+        const response = await apiClient.post('usuarios/', {
+          nombre,
+          correo,
+          password,
+          nombre_empresa,
+          direccion,
+          nit_empresa,
+
+        });
+        
+        console.log('Registro exitoso:', response.data);
+        return response.data;
+      } catch (error) {
+        console.error('Error en registro:', error);
+        const errorMessage =
+          error.response?.data?.error ||
+          'Error al conectar con el servidor';
+        throw new Error(errorMessage);
+      }
+    },
+    
+    // ...otros métodos del servicio
+  
+  
 
 
   // Iniciar sesión
@@ -92,7 +109,7 @@ const authService = {
     localStorage.setItem('access_token', response.data.access);
     localStorage.setItem('refresh_token', response.data.refresh);
     localStorage.setItem('user_data', JSON.stringify(response.data.usuario));
-    localStorage.setItem('empresa_id', response.data.empresa.id.toString());
+    localStorage.setItem('id', response.data.usuario.id);
     console.log("verificando storage --->>> " + localStorage.getItem('empresa_data'));
    
       return response.data;

@@ -53,26 +53,6 @@
 .header-links a:hover {
   color: #4CAF50;                 /* Color verde al hover */
 }
-/* ----------------------------------------- */
-/* BOTÓN DE REGISTRO */
-/* ----------------------------------------- */
-
-.register-btn {
-  background-color: white;         /* Fondo blanco */
-  color: #4CAF50 !important;       /* Texto verde (important para sobrescribir) */
-  padding: 0.5rem 1.5rem;         /* Mismo padding que el botón de login */
-  border-radius: 5px;             /* Bordes redondeados */
-  border: 1px solid #4CAF50;      /* Borde verde */
-  margin-right: 1rem;             /* Espacio entre el botón registro y login */
-  transition: all 0.3s;           /* Transición suave */
-}
-
-.register-btn:hover {
-  background-color: #4CAF50;      /* Fondo verde al hover */
-  color: white !important;        /* Texto blanco al hover */
-}
-
-
 
 /* ----------------------------------------- */
 /* BOTÓN ESPECIAL DE LOGIN */
