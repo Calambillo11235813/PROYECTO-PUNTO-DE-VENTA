@@ -2,11 +2,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from Productos.models import Inventario, Producto
-from Ventas.models import Pedido, DetallePedido
+from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta
 from Ventas.serializers import PedidoSerializer
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
+from decimal import Decimal
 
 class PedidoListCreateAPIView(APIView):
     def get(self, request, usuario_id):
@@ -62,10 +63,62 @@ class PedidoListCreateAPIView(APIView):
 
 class PedidoDetailAPIView(APIView):
     def get(self, request, usuario_id, pedido_id):
-        # Obtener un pedido específico
-        pedido = get_object_or_404(Pedido, id=pedido_id, usuario_id=usuario_id)
-        serializer = PedidoSerializer(pedido)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        """
+        Obtiene los detalles completos de un pedido específico
+        """
+        try:
+            # Obtener el pedido
+            pedido = get_object_or_404(Pedido, id=pedido_id, usuario_id=usuario_id)
+            
+            # Obtener los detalles asociados al pedido
+            detalles_pedido = DetallePedido.objects.filter(pedido=pedido)
+            
+            # Obtener la información básica del pedido
+            pedido_data = {
+                'id': pedido.id,
+                'fecha': pedido.fecha,
+                'fecha_creacion': pedido.fecha.strftime('%Y-%m-%d'),
+                'estado': pedido.estado.id if pedido.estado else None,
+                'estado_nombre': pedido.estado.descripcion if pedido.estado else "No definido",
+                'total': float(pedido.total),
+                'tipo_venta': pedido.tipo_venta.id if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else None,
+                'tipo_venta_nombre': pedido.tipo_venta.descripcion if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else "Venta directa",
+                'cliente': "Cliente general",  # Puedes personalizar esto si tienes clientes asociados
+                'detalles': []
+            }
+            
+            # Agregar los detalles de productos
+            for detalle in detalles_pedido:
+                producto = detalle.producto
+                precio = float(producto.precio_venta) if producto else 0
+                subtotal = precio * detalle.cantidad
+                
+                detalle_data = {
+                    'id': detalle.id,
+                    'producto': producto.id if producto else None,
+                    'producto_nombre': producto.nombre if producto else "Producto no disponible",
+                    'cantidad': detalle.cantidad,
+                    'precio_unitario': precio,
+                    'subtotal': subtotal
+                }
+                pedido_data['detalles'].append(detalle_data)
+            
+            # Calcular subtotal e impuestos
+            subtotal = sum(detalle['subtotal'] for detalle in pedido_data['detalles'])
+            impuestos = subtotal * 0.16  # Asumiendo IVA del 16%
+            
+            # Agregar información adicional
+            pedido_data['subtotal'] = subtotal
+            pedido_data['impuestos'] = impuestos
+            pedido_data['total_con_impuestos'] = subtotal + impuestos
+            
+            return Response(pedido_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {"error": f"Error al obtener detalles del pedido: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @transaction.atomic
     def delete(self, request, usuario_id, pedido_id):

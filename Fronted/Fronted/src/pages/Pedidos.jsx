@@ -147,8 +147,15 @@ const Pedidos = () => {
   };
 
   const formatDate = (dateString) => {
-    const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-    return new Date(dateString).toLocaleDateString('es-ES', options);
+    if (!dateString) return "Fecha no disponible";
+    
+    try {
+      const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+      return new Date(dateString).toLocaleDateString('es-ES', options);
+    } catch (e) {
+      console.error("Error al formatear fecha:", e);
+      return dateString; // Devolver el string original si hay error
+    }
   };
 
   const formatCurrency = (amount) => {
@@ -463,16 +470,16 @@ const Pedidos = () => {
                         {selectedPedido.detalles && selectedPedido.detalles.map((detalle, index) => (
                           <tr key={index} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {detalle.producto_nombre}
+                              {detalle.producto_nombre || "Producto sin nombre"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {detalle.cantidad}
+                              {detalle.cantidad || 0}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {formatCurrency(detalle.precio_unitario)}
+                              {formatCurrency(detalle.precio_unitario || 0)}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                              {formatCurrency(detalle.cantidad * detalle.precio_unitario)}
+                              {formatCurrency((detalle.subtotal) || (detalle.cantidad * detalle.precio_unitario) || 0)}
                             </td>
                           </tr>
                         ))}
@@ -485,19 +492,19 @@ const Pedidos = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-600">Subtotal:</span>
                     <span className="text-sm text-gray-800">
-                      {formatCurrency(selectedPedido.total * 0.84)}
+                      {formatCurrency(selectedPedido.subtotal || selectedPedido.total * 0.84 || 0)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-sm font-medium text-gray-600">IVA (16%):</span>
                     <span className="text-sm text-gray-800">
-                      {formatCurrency(selectedPedido.total * 0.16)}
+                      {formatCurrency(selectedPedido.impuestos || selectedPedido.total * 0.16 || 0)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
                     <span className="text-base font-bold text-gray-900">Total:</span>
                     <span className="text-base font-bold text-gray-900">
-                      {formatCurrency(selectedPedido.total)}
+                      {formatCurrency(selectedPedido.total_con_impuestos || selectedPedido.total || 0)}
                     </span>
                   </div>
                 </div>
