@@ -10,6 +10,7 @@ import {
   FaSun,
   FaMoon,
   FaSignOutAlt,
+  FaShoppingBag,
 } from "react-icons/fa";
 
 const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
@@ -34,6 +35,7 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
   const menuItems = [
     { id: "Dashboard", icon: <FaChartBar />, text: "Dashboard", path: "/admin", exact: true },
     { id: "Ventas", icon: <FaShoppingCart />, text: "Ventas", path: "/admin/ventas" },
+    { id: "Pedidos", icon: <FaShoppingBag />, text: "Pedidos", path: "/admin/pedidos" },
     { id: "Inventario", icon: <FaBoxOpen />, text: "Inventario", path: "/admin/inventario" },
     { id: "Clientes", icon: <FaUsers />, text: "Clientes", path: "/admin/clientes" },
     { id: "Facturacion", icon: <FaFileInvoiceDollar />, text: "Facturación", path: "/admin/facturacion" },

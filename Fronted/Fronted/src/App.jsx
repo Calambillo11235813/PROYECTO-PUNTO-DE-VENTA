@@ -24,11 +24,11 @@ import Plans from "./components/HomeHeader/Plans";
 import AdminLayout from "./components/AdminLayout";
 import Dashboard from "./components/Dashboard";
 
-
-import Sales from "./pages/Sales"
+// Páginas de la aplicación
+import Sales from "./pages/Sales";
 import Inventario from './pages/Inventario';
+import Pedidos from './pages/Pedidos'; // Importar el nuevo componente de pedidos
 
-const Ventas = () => <div>Página de Ventas en desarrollo</div>;
 
 const Facturacion = () => <div>Página de Facturación en desarrollo</div>;
 const Reportes = () => <div>Página de Reportes en desarrollo</div>;
@@ -59,25 +59,20 @@ function App() {
             }
           />
 
-
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
-
-
 
           {/* Rutas protegidas - solo para administradores */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AdminRoute />}>
-
               <Route path="/admin" element={<AdminLayout />}>
-
-
                 <Route index element={<Dashboard />} />
-                <Route path="inventario" element={<Inventario />} />{" "}
-                <Route path="ventas" element={<Sales />} />{" "}
-                <Route path="facturacion" element={<Facturacion />} />{" "}
-                <Route path="reportes" element={<Reportes />} />{" "}
-                <Route path="configuracion" element={<Configuracion />} />{" "}
+                <Route path="inventario" element={<Inventario />} />
+                <Route path="ventas" element={<Sales />} />
+                <Route path="pedidos" element={<Pedidos />} /> {/* Nueva ruta para pedidos */}
+                <Route path="facturacion" element={<Facturacion />} />
+                <Route path="reportes" element={<Reportes />} />
+                <Route path="configuracion" element={<Configuracion />} />
               </Route>
             </Route>
           </Route>
