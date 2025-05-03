@@ -53,8 +53,3 @@ class InventarioDetalleVista(APIView):
         inventario = get_object_or_404(Inventario, pk=pk)
         inventario.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
-    
-class filtarInventario(APIView):
-   
-
