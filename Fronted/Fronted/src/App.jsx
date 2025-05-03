@@ -16,9 +16,9 @@ import {
 // Componentes públicos
 import Header from "./components/HomeHeader/Homeheader";
 import Register from './components/HomeHeader/Register';
-import Login from "./components/HomeHeader/login";
+import Login from "./components/HomeHeader/Login";
 import Home from "./pages/Home";
-import Plans from "./components/HomeHeader/plans";
+import Plans from "./components/HomeHeader/Plans";
 
 // Componentes de administración
 import AdminLayout from "./components/AdminLayout";
