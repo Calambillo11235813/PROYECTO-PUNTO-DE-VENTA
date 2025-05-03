@@ -2,7 +2,7 @@ import axios from 'axios';
 
 
 // URL base de la API (ajústala según tu configuración)
-const API_URL = 'http://127.0.0.1:8000/accounts/';
+const API_URL = 'http://18.117.138.19:8000/accounts/';
 
 // Crea una instancia de axios con configuración base
 const apiClient = axios.create({
@@ -15,7 +15,7 @@ const apiClient = axios.create({
 // Interceptor para añadir el token de autenticación a las solicitudes
 apiClient.interceptors.request.use(
   (config) => {
-    // Solo añade token a rutas que NO sean de autenticación
+    // Excluir rutas de autenticación
     if (!config.url.includes('login') && !config.url.includes('usuarios')) {
       const token = localStorage.getItem('access_token');
       if (token) {
@@ -67,7 +67,8 @@ const authService = {
           password,
           nombre_empresa,
           direccion,
-          nit_empresa,      
+          nit_empresa,
+
         });
         
         console.log('Registro exitoso:', response.data);
