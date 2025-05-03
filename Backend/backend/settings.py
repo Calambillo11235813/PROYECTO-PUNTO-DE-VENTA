@@ -60,9 +60,9 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
-        # Asegúrate de que esta configuración no bloquee el registro
-        'rest_framework.permissions.AllowAny',
-    ],
+         # Asegúrate de que esta configuración no bloquee el registro
+         'rest_framework.permissions.AllowAny',
+     ],
 }
 
 # DRF Spectacular Settings
