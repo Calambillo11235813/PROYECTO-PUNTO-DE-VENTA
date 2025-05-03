@@ -39,26 +39,18 @@ class PedidoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pedido
         fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta', 'detalles','detalles_input']
-        read_only_fields = ['id', 'total']
+        read_only_fields = ['id']
 
     def create(self, validated_data):
-        detalles_data = validated_data.pop('detalles', [])
-
+        detalles_data = validated_data.pop('detalles_input', [])
         # Crear el pedido sin el total aún
-        pedido = Pedido.objects.create(total=0, **validated_data)
-
-        total = 0
+        pedido = Pedido.objects.create(**validated_data)
         for detalle in detalles_data:
-            subtotal = detalle['producto'].precio_venta * detalle['cantidad']
             DetallePedido.objects.create(
                 pedido=pedido,
                 producto=detalle['producto'],
                 cantidad=detalle['cantidad']
-            )
-            total += subtotal
-
-        # Actualizar el total del pedido
-        pedido.total = total
+            )   
         pedido.save()
 
         return pedido
