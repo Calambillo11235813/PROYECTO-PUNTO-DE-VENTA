@@ -27,7 +27,7 @@ class PedidoListCreateAPIView(APIView):
         data = request.data.copy()
         data['usuario'] = usuario_id
 
-        detalles_data = data.get('detalles', [])
+        detalles_data = data.get('detalles_input', [])
         if not detalles_data:
             return Response(
                 {"error": "Debes enviar al menos un detalle de pedido."},
