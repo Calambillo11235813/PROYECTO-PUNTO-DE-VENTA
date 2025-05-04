@@ -23,9 +23,9 @@ class TipoVenta(models.Model):
 class Pedido(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     fecha = models.DateField(auto_now_add=True)
-    estado = models.ForeignKey(Estado, on_delete=models.CASCADE)  
+    estado = models.ForeignKey(Estado, on_delete=models.CASCADE,null=True, blank=True)  
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE)
+    tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE,null=True, blank=True)
     def __str__(self):
         return f"Pedido #{self.id} - Usuario {self.usuario.correo}"
 
