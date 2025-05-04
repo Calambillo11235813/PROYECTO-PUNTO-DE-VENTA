@@ -37,7 +37,6 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
     { id: "Ventas", icon: <FaShoppingCart />, text: "Ventas", path: "/admin/ventas" },
     { id: "Pedidos", icon: <FaShoppingBag />, text: "Pedidos", path: "/admin/pedidos" },
     { id: "Inventario", icon: <FaBoxOpen />, text: "Inventario", path: "/admin/inventario" },
-    { id: "Clientes", icon: <FaUsers />, text: "Clientes", path: "/admin/clientes" },
     { id: "Facturacion", icon: <FaFileInvoiceDollar />, text: "Facturación", path: "/admin/facturacion" },
     { id: "Reportes", icon: <FaChartBar />, text: "Reportes", path: "/admin/reportes" },
     { id: "Configuracion", icon: <FaCog />, text: "Configuración", path: "/admin/configuracion" },
