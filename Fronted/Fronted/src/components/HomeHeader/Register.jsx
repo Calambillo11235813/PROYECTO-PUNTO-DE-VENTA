@@ -51,7 +51,8 @@ export default function Register() {
         nit_empresa: formData.nit_empresa,
         // El valor role_id ya tiene un valor predeterminado en el servicio
       });
-      navigate("/login");
+      
+      navigate("/admin");
     } catch (error) {
       console.error("Error de registro:", error);
       setError(
@@ -203,7 +204,7 @@ export default function Register() {
 
         <div className="text-center mt-4 text-sm text-gray-600">
           ¿Ya tienes una cuenta?{" "}
-          <a href="/login" className="text-green-500 font-semibold hover:underline">
+          <a href="/admin" className="text-green-500 font-semibold hover:underline">
             Inicia sesión
           </a>
         </div>
