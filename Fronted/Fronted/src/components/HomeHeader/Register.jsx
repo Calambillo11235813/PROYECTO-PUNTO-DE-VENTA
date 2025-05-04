@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../../services/authService";
+import { useAuth } from "../Contexts/AuthContext";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth(); // Importamos la función login del contexto de autenticación
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,22 +43,48 @@ export default function Register() {
     setLoading(true);
 
     try {
-      // Pasar como un solo objeto, renombrando contrasena a password
-      await authService.register({
+      // 1. Primero registramos al usuario
+      const registerResponse = await authService.register({
         nombre: formData.nombre,
         correo: formData.correo,
-        password: formData.contrasena, // Nota: aquí se renombra contrasena a password
+        password: formData.contrasena,
         nombre_empresa: formData.nombre_empresa,
         direccion: formData.direccion,
         nit_empresa: formData.nit_empresa,
-        // El valor role_id ya tiene un valor predeterminado en el servicio
       });
       
+      console.log("Usuario registrado exitosamente:", registerResponse);
+      
+      // 2. Ahora iniciamos sesión automáticamente con las credenciales
+      const loginResponse = await authService.login(formData.correo, formData.contrasena);
+      
+      console.log("Inicio de sesión automático exitoso:", loginResponse);
+      
+      // 3. Guardamos los tokens y datos del usuario en localStorage
+      localStorage.setItem('access_token', loginResponse.access);
+      localStorage.setItem('refresh_token', loginResponse.refresh);
+      localStorage.setItem('id', loginResponse.usuario.id);
+      
+      // 4. Establecer el estado de autenticación en el contexto
+      const userData = {
+        id: loginResponse.usuario.id,
+        nombre: loginResponse.usuario.nombre,
+        correo: loginResponse.usuario.correo,
+        rol: loginResponse.usuario.rol || { id: 1, nombre: "admin" },
+        is_staff: loginResponse.usuario.is_staff
+      };
+      
+      login(userData); // Actualizamos el contexto de autenticación
+      
+      // 5. Redireccionamos directamente a la vista de administración
       navigate("/admin");
+      
     } catch (error) {
-      console.error("Error de registro:", error);
+      console.error("Error en el proceso de registro/login:", error);
       setError(
-        error.response?.data?.detail || error.message || "Error al registrarse"
+        error.response?.data?.detail || 
+        error.message || 
+        "Error al registrarse. Por favor intenta nuevamente."
       );
     } finally {
       setLoading(false);
@@ -199,12 +227,12 @@ export default function Register() {
           className="w-full p-3 bg-green-500 text-white font-semibold rounded-md transition-colors duration-300 hover:bg-green-600 focus:outline-none"
           disabled={loading}
         >
-          {loading ? "Registrando..." : "Registrarse"}
+          {loading ? "Procesando..." : "Registrarse e Iniciar Sesión"}
         </button>
 
         <div className="text-center mt-4 text-sm text-gray-600">
           ¿Ya tienes una cuenta?{" "}
-          <a href="/admin" className="text-green-500 font-semibold hover:underline">
+          <a href="/login" className="text-green-500 font-semibold hover:underline">
             Inicia sesión
           </a>
         </div>
