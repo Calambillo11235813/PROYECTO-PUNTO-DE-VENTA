@@ -32,16 +32,19 @@ class ProductoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Producto
-
         fields = [
-           'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen_url',
+            'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen', 'imagen_url',
             'categoria', 'proveedor', 'categoria_id', 'proveedor_id','usuario_id','usuario', 'stock',
             'stock_inicial', 'cantidad_minima', 'cantidad_maxima'
-     ]
+        ]
 
     def get_imagen_url(self, obj):
         if obj.imagen:
-            return obj.imagen.url
+            try:
+                return obj.imagen.url
+            except Exception as e:
+                print(f"Error al obtener URL de imagen: {e}")
+                return None
         return None
 
     def validate_precio_venta(self, valor):

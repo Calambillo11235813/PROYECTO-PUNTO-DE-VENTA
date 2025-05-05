@@ -27,8 +27,7 @@ export const pedidoService = {
     try {
       // Estructura correcta según el formato requerido por el backend
       const formattedData = {
-        estado: pedidoData.estado_id,
-        tipo_venta: pedidoData.tipo_venta_id,
+    
         total: pedidoData.total, // Agregar el campo total
         detalles_input: pedidoData.detalles_input.map(item => ({
           producto_id: item.producto_id,

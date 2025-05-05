@@ -16,7 +16,7 @@ class ClienteSerializer(serializers.ModelSerializer):
         fields = ['id', 'nombre']
 
 class TipoVentaSerializer(serializers.ModelSerializer):
-    estado = EstadoSerializer()
+ 
 
     class Meta:
         model = TipoVenta

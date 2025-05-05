@@ -79,11 +79,16 @@ SPECTACULAR_SETTINGS = {
 }
 
 import cloudinary # type: ignore
+import cloudinary.uploader
+import cloudinary.api
+
 cloudinary.config(
     cloud_name='dywiyjoph',
     api_key='199425179995799',
     api_secret='QsiAhOzgHL2qwsCkl-gWBwBJKEI'
 )
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': 'dywiyjoph',
