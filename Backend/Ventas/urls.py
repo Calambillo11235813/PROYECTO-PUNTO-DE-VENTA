@@ -2,7 +2,7 @@ from django.urls import path
 from Ventas.controllers.tipo_venta_controller import (TipoVentaListCreateAPIView, TipoVentaRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.estado_controller import (EstadoListCreateAPIView, EstadoRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.pedido_controller import PedidoListCreateAPIView
-
+from Ventas.controllers.pedido_controller import PedidoListCreateAPIView, PedidoDetailAPIView
 urlpatterns = [
     # Tipos de venta (globales)
     path('tipos-venta/', TipoVentaListCreateAPIView.as_view(), name='tipo-venta-lista-crear'),
@@ -14,4 +14,5 @@ urlpatterns = [
 
     # Pedidos por usuario
     path('pedidos/usuario/<int:usuario_id>/', PedidoListCreateAPIView.as_view(), name='pedido-lista-crear'),
+    path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/', PedidoDetailAPIView.as_view(), name='pedido-detail'),
 ]

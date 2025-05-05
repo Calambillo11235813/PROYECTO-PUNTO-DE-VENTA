@@ -130,10 +130,10 @@ const VentasView = () => {
       const pedidoData = {
         estado_id: 1, // Estado inicial (por ejemplo: 1 = pendiente)
         tipo_venta_id: getMetodoPagoId(metodoPago), // Convertir método de pago a ID
-        detalles: cartItems.map(item => ({
+        total: total, 
+        detalles_input: cartItems.map(item => ({
           producto_id: item.id,
           cantidad: item.cantidad
-          // No incluimos precio_unitario ya que el backend no lo espera
         }))
       };
 

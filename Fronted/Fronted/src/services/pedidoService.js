@@ -9,7 +9,7 @@ export const pedidoService = {
       const id = localStorage.getItem('id');
       console.log('id actual ->>>>>>>>>>>>>:', id);
       
-      const response = await api.get(`pedidos/usuario/${id}/`);
+      const response = await api.get(`ventas/pedidos/usuario/${id}/`);
       
       console.log('✅ Pedidos obtenidos:', response.data);
       console.log('Pedidos obtenidos con éxito');
@@ -29,10 +29,10 @@ export const pedidoService = {
       const formattedData = {
         estado: pedidoData.estado_id,
         tipo_venta: pedidoData.tipo_venta_id,
-        detalles: pedidoData.detalles.map(item => ({
+        total: pedidoData.total, // Agregar el campo total
+        detalles_input: pedidoData.detalles_input.map(item => ({
           producto_id: item.producto_id,
           cantidad: item.cantidad
-          // Eliminamos precio_unitario ya que el backend no lo espera aquí
         }))
       };
       
@@ -52,7 +52,7 @@ export const pedidoService = {
   deletePedido: async (pedidoId) => {
     try {
       const id = localStorage.getItem('id');  // ID del usuario
-      const response = await api.delete(`pedidos/detalles/usuario/${id}/${pedidoId}/`);
+      const response = await api.delete(`ventas/pedidos/usuario/${id}/${pedidoId}/`);
       return response.data;
     } catch (error) {
       console.error('Error al eliminar pedido:', error);
@@ -60,12 +60,11 @@ export const pedidoService = {
     }
   },
   
-  // Función adicional para obtener detalles de un pedido específico
   getPedidoById: async (pedidoId) => {
     console.log('Entrando a getPedidoById()');
     try {
       const id = localStorage.getItem('id');
-      const response = await api.get(`pedidos/detalles/usuario/${id}/${pedidoId}/`);
+      const response = await api.get(`ventas/pedidos/usuario/${id}/${pedidoId}/`);
       console.log('✅ Detalles del pedido obtenidos:', response.data);
       return response.data;
     } catch (error) {
@@ -74,13 +73,12 @@ export const pedidoService = {
     }
   },
   
-  // Función para actualizar el estado de un pedido
   updatePedidoEstado: async (pedidoId, nuevoEstadoId) => {
     console.log('Entrando a updatePedidoEstado()');
     try {
       const id = localStorage.getItem('id');
-      const response = await api.patch(`pedidos/detalles/usuario/${id}/${pedidoId}/`, {
-        estado: nuevoEstadoId  // Cambiado de estado_id a estado para coincidir con el serializer
+      const response = await api.patch(`ventas/pedidos/usuario/${id}/${pedidoId}/`, {
+        estado: nuevoEstadoId
       });
       console.log('✅ Estado del pedido actualizado:', response.data);
       return response.data;
