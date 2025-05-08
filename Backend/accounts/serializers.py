@@ -14,8 +14,6 @@ class UsuarioSerializer(serializers.ModelSerializer):
         validated_data['is_staff'] = True  
         return super().create(validated_data)
 
-# serializers.py
-
 class RolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rol
@@ -34,4 +32,8 @@ class BitacoraSerializer(serializers.ModelSerializer):
 class EmpleadoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleado
-        fields = ['id', 'usuario', 'nombre', 'correo', 'direccion', 'estado', 'fecha_nacimiento', 'rol']
+        fields = ['id', 'usuario', 'nombre', 'correo', 'password', 'direccion', 'estado', 'fecha_contratacion', 'rol']
+        extra_kwargs = {
+            'rol': {'required': False},
+            'password': {'write_only': True}  # evita que se muestre en el GET
+        }
