@@ -1,6 +1,7 @@
 from django.urls import path
 from accounts.controllers.auth_controller import LoginView
 from accounts.controllers.usuarios_controller import UsuarioListCreate, UsuarioDetail
+from accounts.controllers.empleados_controller import EmpleadoListCreate
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from accounts.controllers.bitacora_controller import BitacoraCreate
 
@@ -14,5 +15,8 @@ urlpatterns = [
     path('usuarios/', UsuarioListCreate.as_view(), name='usuarios-list-create'),
     path('usuarios/<int:pk>/', UsuarioDetail.as_view(), name='usuarios-detail'),
     path('bitacora/', BitacoraCreate.as_view(), name='bitacora-create'),
+    path('empleados/<int:usuario_id>/', EmpleadoListCreate.as_view(), name='empleados-list-create'),
+
+
 
 ]
