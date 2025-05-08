@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaSearch } from 'react-icons/fa';
-//mport { empleadoService } from '../../services/EmpleadoService'; // Necesitarás crear este servicio
+import { empleadoService } from '../../services/EmpleadoService';
 
 const Empleados = () => {
   const [empleados, setEmpleados] = useState([]);
@@ -9,18 +9,54 @@ const Empleados = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [error, setError] = useState(null); // Agregamos state para manejar errores
   const navigate = useNavigate();
+
+  // Mapeo de roles
+  const rolMapping = {
+    1: "Supervisor",
+    2: "Cajero",
+    3: "Gestor de Inventario"
+  };
 
   // Cargar empleados al montar el componente
   useEffect(() => {
     const fetchEmpleados = async () => {
       try {
         setLoading(true);
+        setError(null); // Reiniciar errores previos
         const data = await empleadoService.getAllEmpleados();
         setEmpleados(data);
       } catch (error) {
         console.error('Error al cargar empleados:', error);
-        alert('Error al cargar la lista de empleados');
+        setError('No se pudieron cargar los empleados. Por favor, inténtalo de nuevo.');
+        // Datos de demostración en caso de error
+        setEmpleados([
+          { 
+            id: 1, 
+            nombre: 'Juan', 
+            apellido: 'Pérez', 
+            email: 'juan@ejemplo.com', 
+            rol: 'Supervisor', 
+            telefono: '555-1234' 
+          },
+          { 
+            id: 2, 
+            nombre: 'María', 
+            apellido: 'González', 
+            email: 'maria@ejemplo.com', 
+            rol: 'Cajero', 
+            telefono: '555-5678' 
+          },
+          { 
+            id: 3, 
+            nombre: 'Carlos', 
+            apellido: 'Rodríguez', 
+            email: 'carlos@ejemplo.com', 
+            rol: 'Gestor de Inventario', 
+            telefono: '555-9012' 
+          }
+        ]);
       } finally {
         setLoading(false);
       }
@@ -31,9 +67,10 @@ const Empleados = () => {
 
   // Filtrar empleados por término de búsqueda
   const filteredEmpleados = empleados.filter(empleado => 
-    empleado.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    empleado.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    empleado.email.toLowerCase().includes(searchTerm.toLowerCase())
+    empleado.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    empleado.apellido?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    empleado.correo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    empleado.rol?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Paginación
@@ -78,6 +115,13 @@ const Empleados = () => {
         </button>
       </div>
 
+      {/* Mensaje de error */}
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+          <p>{error}</p>
+        </div>
+      )}
+
       {/* Barra de búsqueda */}
       <div className="relative mb-6">
         <input
@@ -114,7 +158,7 @@ const Empleados = () => {
                       Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cargo
+                      Rol
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Teléfono
@@ -130,8 +174,10 @@ const Empleados = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         {empleado.nombre} {empleado.apellido}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{empleado.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{empleado.cargo || 'N/A'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{empleado.correo}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {rolMapping[empleado.rol] || empleado.rol || 'N/A'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">{empleado.telefono || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex space-x-2">

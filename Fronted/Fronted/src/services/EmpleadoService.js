@@ -1,10 +1,16 @@
-import api from './api';
+import apiClient from './apiClient';
 
 export const empleadoService = {
+  // Obtener todos los empleados de un usuario/empresa
   getAllEmpleados: async () => {
     try {
-      const id = localStorage.getItem('id'); // ID del usuario/empresa actual
-      const response = await api.get(`/empleados/usuario/${id}/`);
+      // Obtenemos el ID del usuario/empresa del localStorage
+      const id = localStorage.getItem('id');
+      if (!id) {
+        throw new Error('No se encontró ID de usuario');
+      }
+      
+      const response = await apiClient.get(`/accounts/empleados/${id}/`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener empleados:', error);
@@ -12,9 +18,10 @@ export const empleadoService = {
     }
   },
 
+  // Obtener un empleado específico por su ID
   getEmpleadoById: async (empleadoId) => {
     try {
-      const response = await api.get(`/empleados/${empleadoId}/`);
+      const response = await apiClient.get(`/accounts/empleado/${empleadoId}/`);
       return response.data;
     } catch (error) {
       console.error(`Error al obtener el empleado con ID ${empleadoId}:`, error);
@@ -22,10 +29,16 @@ export const empleadoService = {
     }
   },
 
+  // Crear un nuevo empleado
   createEmpleado: async (empleadoData) => {
     try {
-      const id = localStorage.getItem('id'); // ID del usuario/empresa actual
-      const response = await api.post(`/empleados/usuario/${id}/`, empleadoData);
+      // Obtenemos el ID del usuario/empresa del localStorage
+      const id = localStorage.getItem('id');
+      if (!id) {
+        throw new Error('No se encontró ID de usuario');
+      }
+      
+      const response = await apiClient.post(`/accounts/empleados/${id}/`, empleadoData);
       return response.data;
     } catch (error) {
       console.error('Error al crear empleado:', error);
@@ -33,9 +46,10 @@ export const empleadoService = {
     }
   },
 
+  // Actualizar un empleado existente
   updateEmpleado: async (empleadoId, empleadoData) => {
     try {
-      const response = await api.put(`/empleados/${empleadoId}/`, empleadoData);
+      const response = await apiClient.put(`/accounts/empleado/${empleadoId}/`, empleadoData);
       return response.data;
     } catch (error) {
       console.error(`Error al actualizar el empleado con ID ${empleadoId}:`, error);
@@ -43,13 +57,16 @@ export const empleadoService = {
     }
   },
 
+  // Eliminar un empleado
   deleteEmpleado: async (empleadoId) => {
     try {
-      const response = await api.delete(`/empleados/${empleadoId}/`);
+      const response = await apiClient.delete(`/accounts/empleado/${empleadoId}/`);
       return response.data;
     } catch (error) {
       console.error(`Error al eliminar el empleado con ID ${empleadoId}:`, error);
       throw error;
     }
-  },
+  }
 };
+
+export default empleadoService;

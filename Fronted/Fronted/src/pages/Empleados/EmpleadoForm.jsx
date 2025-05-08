@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaSave, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
-//import { empleadoService } from '../services/EmpleadoService';
+import { empleadoService } from '../../services/EmpleadoService';
 
 const EmpleadoForm = () => {
   const { id } = useParams();
@@ -68,17 +68,49 @@ const EmpleadoForm = () => {
     
     try {
       setLoading(true);
+      
+      // Datos adaptados al formato esperado por la API
+      const empleadoData = {
+        nombre: `${formData.nombre} ${formData.apellido}`.trim(), // Combinar nombre y apellido
+        correo: formData.email,
+        password: formData.contraseña,
+        telefono: formData.telefono || "", 
+        rol: formData.rol,
+        direccion: formData.direccion || "",
+        fecha_contratacion: formData.fecha_contratacion || null
+      };
+      
+      // Eliminar campos que no espera la API
+      delete empleadoData.telefono; // Si el backend no espera este campo
+      
+      console.log('Datos a enviar:', empleadoData);
+      
       if (isEditing) {
-        await empleadoService.updateEmpleado(id, formData);
+        if (!empleadoData.password) {
+          delete empleadoData.password;
+        }
+        
+        await empleadoService.updateEmpleado(id, empleadoData);
         alert('Empleado actualizado con éxito');
       } else {
-        await empleadoService.createEmpleado(formData);
+        await empleadoService.createEmpleado(empleadoData);
         alert('Empleado creado con éxito');
       }
       navigate('/admin/empleados');
     } catch (error) {
       console.error('Error al guardar empleado:', error);
-      setError('Error al guardar. Por favor, intente nuevamente.');
+      
+      if (error.response && error.response.data) {
+        console.log('Respuesta detallada del error:', error.response.data);
+        
+        const errorMessages = Object.entries(error.response.data)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join('\n');
+        
+        setError(`Error al guardar: ${errorMessages}`);
+      } else {
+        setError('Error al guardar. Por favor, intente nuevamente.');
+      }
     } finally {
       setLoading(false);
     }
@@ -178,9 +210,9 @@ const EmpleadoForm = () => {
               required
             >
               <option value="">Seleccionar rol</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="cajero">Cajero</option>
-              <option value="inventario">Gestor de Inventario</option>
+              <option value="Supervisor">Supervisor</option>
+              <option value="Cajero">Cajero</option>
+              <option value="Gestion de inventario">Gestor de Inventario</option>
             </select>
           </div>
 
