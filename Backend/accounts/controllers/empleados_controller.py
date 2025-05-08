@@ -32,6 +32,7 @@ class EmpleadoListCreate(APIView):
             "nombre": request.data.get("nombre"),
             "correo": request.data.get("correo"),
             "direccion": request.data.get("direccion"),
+            "telefono": request.data.get("telefono"),
             "fecha_contratacion": request.data.get("fecha_contratacion"),
             "rol": rol.id if rol else None,
             "password": password_encriptada,

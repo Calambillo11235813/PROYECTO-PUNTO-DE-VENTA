@@ -32,7 +32,7 @@ class BitacoraSerializer(serializers.ModelSerializer):
 class EmpleadoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleado
-        fields = ['id', 'usuario', 'nombre', 'correo', 'password', 'direccion', 'estado', 'fecha_contratacion', 'rol']
+        fields = ['id', 'usuario', 'nombre', 'correo', 'password','telefono', 'direccion', 'estado', 'fecha_contratacion', 'rol']
         extra_kwargs = {
             'rol': {'required': False},
             'password': {'write_only': True}  # evita que se muestre en el GET
