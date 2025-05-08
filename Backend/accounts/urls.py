@@ -4,7 +4,7 @@ from accounts.controllers.usuarios_controller import UsuarioListCreate, UsuarioD
 from accounts.controllers.empleados_controller import EmpleadoListCreate
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from accounts.controllers.bitacora_controller import BitacoraCreate
-
+from accounts.controllers.rol_controller import RolListCreate
 urlpatterns = [
     # Autenticación
     path('login/', LoginView.as_view(), name='login'),
@@ -16,7 +16,5 @@ urlpatterns = [
     path('usuarios/<int:pk>/', UsuarioDetail.as_view(), name='usuarios-detail'),
     path('bitacora/', BitacoraCreate.as_view(), name='bitacora-create'),
     path('empleados/<int:usuario_id>/', EmpleadoListCreate.as_view(), name='empleados-list-create'),
-
-
-
+    path('roles/', RolListCreate.as_view(), name='roles-list-create'),
 ]
