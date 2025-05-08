@@ -30,6 +30,10 @@ import Inventario from './pages/Inventario';
 import Pedidos from './pages/Pedidos'; 
 import Configuracion from './pages/Configuracion'; // Importar el nuevo componente de configuración
 
+// Importar los nuevos componentes de empleados
+import Empleados from './pages/Empleados/Empleados';
+import EmpleadoForm from './pages/Empleados/EmpleadoForm';
+
 const Facturacion = () => <div>Página de Facturación en desarrollo</div>;
 const Reportes = () => <div>Página de Reportes en desarrollo</div>;
 
@@ -69,6 +73,9 @@ function App() {
                 <Route path="inventario" element={<Inventario />} />
                 <Route path="ventas" element={<Sales />} />
                 <Route path="pedidos" element={<Pedidos />} />
+                <Route path="empleados" element={<Empleados />} /> {/* Nueva ruta para empleados */}
+                <Route path="empleados/crear" element={<EmpleadoForm />} /> {/* Nueva ruta para crear empleados */}
+                <Route path="empleados/editar/:id" element={<EmpleadoForm />} /> {/* Nueva ruta para editar empleados */}
                 <Route path="facturacion" element={<Facturacion />} />
                 <Route path="reportes" element={<Reportes />} />
                 <Route path="configuracion" element={<Configuracion />} /> {/* Usar el nuevo componente */}

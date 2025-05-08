@@ -11,6 +11,7 @@ import {
   FaMoon,
   FaSignOutAlt,
   FaShoppingBag,
+  FaUserTie, // Nuevo ícono para Empleados
 } from "react-icons/fa";
 
 const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
@@ -37,6 +38,8 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
     { id: "Ventas", icon: <FaShoppingCart />, text: "Ventas", path: "/admin/ventas" },
     { id: "Pedidos", icon: <FaShoppingBag />, text: "Pedidos", path: "/admin/pedidos" },
     { id: "Inventario", icon: <FaBoxOpen />, text: "Inventario", path: "/admin/inventario" },
+    // Nuevo elemento para Empleados
+    { id: "Empleados", icon: <FaUserTie />, text: "Empleados", path: "/admin/empleados" },
     { id: "Facturacion", icon: <FaFileInvoiceDollar />, text: "Facturación", path: "/admin/facturacion" },
     { id: "Reportes", icon: <FaChartBar />, text: "Reportes", path: "/admin/reportes" },
     { id: "Configuracion", icon: <FaCog />, text: "Configuración", path: "/admin/configuracion" },

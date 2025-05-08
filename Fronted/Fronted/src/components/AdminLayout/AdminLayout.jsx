@@ -12,6 +12,7 @@ import {
   FaFileAlt,
   FaChartPie,
   FaBox,
+  FaUserTie, // Nuevo ícono para Empleados
 } from "react-icons/fa";
 
 
@@ -53,6 +54,8 @@ const AdminLayout = () => {
         return <FaBox size={24} />;
       case "Ventas":
         return <FaShoppingCart size={24} />;
+      case "Empleados": // Nuevo caso para Empleados
+        return <FaUserTie size={24} />;
       case "Clientes":
         return <FaUsers size={24} />;
       case "Facturación":
