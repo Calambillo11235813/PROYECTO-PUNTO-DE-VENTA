@@ -29,12 +29,21 @@ const EmpleadoForm = () => {
         try {
           setLoading(true);
           const data = await empleadoService.getEmpleadoById(id);
+          
+          // Separar el nombre completo en nombre y apellido
+          const nombreCompleto = data.nombre || '';
+          let nombrePartes = nombreCompleto.split(' ');
+          
+          // La primera palabra es el nombre, el resto es apellido
+          let primerNombre = nombrePartes[0] || '';
+          let apellido = nombrePartes.slice(1).join(' ');
+          
           setFormData({
-            nombre: data.nombre || '',
-            apellido: data.apellido || '',
-            email: data.email || '',
+            nombre: primerNombre,
+            apellido: apellido,
+            email: data.correo || '',
             telefono: data.telefono || '',
-            rol: data.rol || '', // Añadir campo de rol
+            rol: data.rol || '',
             direccion: data.direccion || '',
             fecha_contratacion: data.fecha_contratacion ? data.fecha_contratacion.split('T')[0] : '',
             contraseña: '' // Mantener contraseña en blanco al editar
@@ -80,8 +89,7 @@ const EmpleadoForm = () => {
         fecha_contratacion: formData.fecha_contratacion || null
       };
       
-      // Eliminar campos que no espera la API
-      delete empleadoData.telefono; // Si el backend no espera este campo
+
       
       console.log('Datos a enviar:', empleadoData);
       

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaBan, FaUserCheck, FaSearch } from 'react-icons/fa';
 import { empleadoService } from '../../services/EmpleadoService';
 
 const Empleados = () => {
@@ -38,7 +38,8 @@ const Empleados = () => {
             apellido: 'Pérez', 
             email: 'juan@ejemplo.com', 
             rol: 'Supervisor', 
-            telefono: '555-1234' 
+            telefono: '555-1234',
+            estado: true
           },
           { 
             id: 2, 
@@ -46,7 +47,8 @@ const Empleados = () => {
             apellido: 'González', 
             email: 'maria@ejemplo.com', 
             rol: 'Cajero', 
-            telefono: '555-5678' 
+            telefono: '555-5678',
+            estado: false
           },
           { 
             id: 3, 
@@ -54,7 +56,8 @@ const Empleados = () => {
             apellido: 'Rodríguez', 
             email: 'carlos@ejemplo.com', 
             rol: 'Gestor de Inventario', 
-            telefono: '555-9012' 
+            telefono: '555-9012',
+            estado: true
           }
         ]);
       } finally {
@@ -66,12 +69,20 @@ const Empleados = () => {
   }, []);
 
   // Filtrar empleados por término de búsqueda
-  const filteredEmpleados = empleados.filter(empleado => 
-    empleado.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    empleado.apellido?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    empleado.correo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    empleado.rol?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEmpleados = empleados.filter(empleado => {
+    const searchTermLower = searchTerm.toLowerCase();
+    
+    // Convertir el ID del rol a su nombre usando el mapeo
+    const rolNombre = rolMapping[empleado.rol] || 'N/A';
+    
+    return (
+      empleado.nombre?.toLowerCase().includes(searchTermLower) ||
+      (empleado.apellido && empleado.apellido.toLowerCase().includes(searchTermLower)) ||
+      empleado.correo?.toLowerCase().includes(searchTermLower) ||
+      rolNombre.toLowerCase().includes(searchTermLower) ||
+      (empleado.telefono && empleado.telefono.includes(searchTerm))
+    );
+  });
 
   // Paginación
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -89,16 +100,24 @@ const Empleados = () => {
     navigate(`/admin/empleados/editar/${id}`);
   };
 
-  // Eliminar un empleado
-  const handleDeleteEmpleado = async (id, nombre) => {
-    if (window.confirm(`¿Está seguro que desea eliminar al empleado ${nombre}?`)) {
+  // Reemplaza la función handleDeleteEmpleado
+  const handleToggleEstado = async (id, nombre, estadoActual) => {
+    const accion = estadoActual ? 'desactivar' : 'activar';
+    
+    if (window.confirm(`¿Está seguro que desea ${accion} al empleado ${nombre}?`)) {
       try {
-        await empleadoService.deleteEmpleado(id);
-        setEmpleados(empleados.filter(emp => emp.id !== id));
-        alert('Empleado eliminado con éxito');
+        // Llamamos al servicio con el estado opuesto al actual
+        await empleadoService.toggleEmpleadoEstado(id, !estadoActual);
+        
+        // Actualizamos el estado en la interfaz
+        setEmpleados(empleados.map(emp => 
+          emp.id === id ? { ...emp, estado: !estadoActual } : emp
+        ));
+        
+        alert(`Empleado ${accion === 'activar' ? 'activado' : 'desactivado'} con éxito`);
       } catch (error) {
-        console.error('Error al eliminar empleado:', error);
-        alert('Error al eliminar el empleado');
+        console.error(`Error al ${accion} empleado:`, error);
+        alert(`Error al ${accion} el empleado`);
       }
     }
   };
@@ -164,6 +183,9 @@ const Empleados = () => {
                       Teléfono
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Estado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Acciones
                     </th>
                   </tr>
@@ -180,18 +202,29 @@ const Empleados = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">{empleado.telefono || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          empleado.estado 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {empleado.estado ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex space-x-2">
                           <button 
                             onClick={() => handleEditEmpleado(empleado.id)}
                             className="text-blue-600 hover:text-blue-800"
+                            title="Editar"
                           >
                             <FaEdit />
                           </button>
                           <button 
-                            onClick={() => handleDeleteEmpleado(empleado.id, empleado.nombre)}
-                            className="text-red-600 hover:text-red-800"
+                            onClick={() => handleToggleEstado(empleado.id, empleado.nombre, empleado.estado)}
+                            className={empleado.estado ? "text-red-600 hover:text-red-800" : "text-green-600 hover:text-green-800"}
+                            title={empleado.estado ? "Desactivar" : "Activar"}
                           >
-                            <FaTrash />
+                            {empleado.estado ? <FaBan /> : <FaUserCheck />}
                           </button>
                         </div>
                       </td>
