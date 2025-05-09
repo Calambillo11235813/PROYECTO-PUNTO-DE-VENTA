@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from accounts.models import Usuario,Rol, Privilegio,Bitacora,Empleado
+from accounts.models import Usuario,Rol, Privilegio,Bitacora,Empleado,Permisos
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,6 +23,11 @@ class PrivilegioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Privilegio
         fields = ['id', 'descripcion']
+
+class PermisosSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Permisos
+        fields = ['id', 'rol', 'privilegio', 'estado']
 
 class BitacoraSerializer(serializers.ModelSerializer):
     class Meta:

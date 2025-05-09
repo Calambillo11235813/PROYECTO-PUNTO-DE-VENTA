@@ -23,6 +23,7 @@ class Permisos(models.Model):
 
     def __str__(self):
         return f"{self.rol} - {self.privilegio}"
+    
 class UsuarioManager(BaseUserManager):
     """Manager personalizado para el modelo Usuario"""
 
