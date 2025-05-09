@@ -54,7 +54,7 @@ const AdminLayout = () => {
         return <FaBox size={24} />;
       case "Ventas":
         return <FaShoppingCart size={24} />;
-      case "Empleados": // Nuevo caso para Empleados
+      case "Empleados":
         return <FaUserTie size={24} />;
       case "Clientes":
         return <FaUsers size={24} />;
