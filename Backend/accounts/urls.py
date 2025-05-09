@@ -6,6 +6,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from accounts.controllers.bitacora_controller import BitacoraCreate
 from accounts.controllers.rol_controller import RolListCreate
 from accounts.controllers.empleados_controller import EmpleadoListCreate, EmpleadoDetail
+from accounts.controllers.privilegios_controller import PrivilegioListCreate
+from accounts.controllers.permisos_controller import RolPrivilegiosView
 urlpatterns = [
     # Autenticación
     path('login/', LoginView.as_view(), name='login'),
@@ -19,4 +21,7 @@ urlpatterns = [
     path('empleados/<int:usuario_id>/', EmpleadoListCreate.as_view(), name='empleados-list-create'),
     path('roles/', RolListCreate.as_view(), name='roles-list-create'),
     path('empleado/<int:usuario_id>/<int:pk>/', EmpleadoDetail.as_view(), name='empleado-detail'),
+    path('privilegios/', PrivilegioListCreate.as_view(), name='privilegios'),
+    path('roles/<int:rol_id>/privilegios/', RolPrivilegiosView.as_view(), name='rol-privilegios'),
+
 ]
