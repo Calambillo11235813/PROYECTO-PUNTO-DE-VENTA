@@ -2,9 +2,29 @@ import React, { useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../Contexts/AuthContext';
 
-export const ProtectedRoute = () => {
+// Añadir allowedRoles como parámetro aquí
+export const ProtectedRoute = ({ allowedRoles }) => {
   const { user, loading } = useAuth();
-  console.log('user:', user, 'loading:', loading);
+  console.log('user:', user, 'loading:', loading, 'allowedRoles:', allowedRoles);
+  
+  const hasAccess = () => {
+    // Si no hay roles específicos, permitir acceso
+    if (!allowedRoles || allowedRoles.length === 0) return true;
+    
+    // Si no hay usuario, no permitir acceso
+    if (!user) return false;
+    
+    // Verificar según el tipo de usuario
+    if (user.tipo === 'empleado') {
+      // Para empleados, el rol es un string como "Supervisor"
+      return allowedRoles.includes(user.rol);
+    } else {
+      // Para usuarios, el rol es un número u objeto con ID
+      const rolId = typeof user.rol === 'object' ? user.rol.id : user.rol;
+      return allowedRoles.includes(rolId);
+    }
+  };
+
   if (loading) {
     // Mostrar un indicador de carga mientras se verifica la autenticación
     return <div>Cargando...</div>;
@@ -15,8 +35,12 @@ export const ProtectedRoute = () => {
     return <Navigate to="/login" />;
   }
   
-  // Si está autenticado, mostrar el contenido
-  return <Outlet />;
+  // Comprobar si tiene los roles adecuados
+  if (hasAccess()) {
+    return <Outlet />;
+  } else {
+    return <Navigate to="/acceso-denegado" replace />;
+  }
 };
 
 export const AdminRoute = () => {
@@ -32,6 +56,17 @@ export const AdminRoute = () => {
     return <div>Cargando...</div>;
   }
   
+  // Si no hay usuario, redirigir al login
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  // TEMPORALMENTE: permitir acceso a todos los usuarios y empleados
+  // Independientemente de su rol o tipo
+  console.log('Permitiendo acceso temporal para:', user);
+  return <Outlet />;
+  
+  /* COMENTAMOS LA VERIFICACIÓN DE ROLES HASTA IMPLEMENTAR LOS PERMISOS EN BACKEND
   // Verificación más robusta que maneja diferentes estructuras de datos
   const isAdmin = user && (
     // Verificar is_staff
@@ -63,5 +98,5 @@ export const AdminRoute = () => {
   console.log('es admin');
   // Si es admin, mostrar el contenido
   return <Outlet />;
+  */
 };
- 
