@@ -38,6 +38,21 @@ class DetallePedido(models.Model):
     def __str__(self):
         return f"{self.producto.nombre} x{self.cantidad}"
 
+class TipoPago(models.Model):
+    nombre = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.nombre
+
+class Transaccion(models.Model):
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='transacciones')
+    tipo_pago = models.ForeignKey(TipoPago, on_delete=models.CASCADE)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.tipo_pago.nombre}: {self.monto} Bs."
+
+
 # Factura de una Venta
 class Factura(models.Model):
     #venta = models.OneToOneField(Venta, on_delete=models.CASCADE)
