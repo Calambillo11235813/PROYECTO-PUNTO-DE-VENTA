@@ -27,12 +27,31 @@ import Dashboard from "./components/Dashboard";
 // Páginas de la aplicación
 import Sales from "./pages/Sales";
 import Inventario from './pages/Inventario';
-import Pedidos from './pages/Pedidos'; // Importar el nuevo componente de pedidos
+import Pedidos from './pages/Pedidos'; 
+import Configuracion from './pages/Configuracion'; // Importar el nuevo componente de configuración
 
+// Importar los nuevos componentes de empleados
+import Empleados from './pages/Empleados/Empleados';
+import EmpleadoForm from './pages/Empleados/EmpleadoForm';
+
+// Componente para acceso denegado
+const AccesoDenegado = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+    <div className="p-8 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold text-red-600 mb-4">Acceso Denegado</h1>
+      <p className="text-gray-700 mb-4">No tienes permisos para acceder a esta sección.</p>
+      <button 
+        onClick={() => window.history.back()} 
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Volver
+      </button>
+    </div>
+  </div>
+);
 
 const Facturacion = () => <div>Página de Facturación en desarrollo</div>;
 const Reportes = () => <div>Página de Reportes en desarrollo</div>;
-const Configuracion = () => <div>Página de Configuración en desarrollo</div>;
 
 function App() {
   return (
@@ -62,6 +81,9 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
 
+          {/* Ruta de acceso denegado */}
+          <Route path="/acceso-denegado" element={<AccesoDenegado />} />
+
           {/* Rutas protegidas - solo para administradores */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AdminRoute />}>
@@ -69,10 +91,13 @@ function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="inventario" element={<Inventario />} />
                 <Route path="ventas" element={<Sales />} />
-                <Route path="pedidos" element={<Pedidos />} /> {/* Nueva ruta para pedidos */}
+                <Route path="pedidos" element={<Pedidos />} />
+                <Route path="empleados" element={<Empleados />} /> {/* Nueva ruta para empleados */}
+                <Route path="empleados/crear" element={<EmpleadoForm />} /> {/* Nueva ruta para crear empleados */}
+                <Route path="empleados/editar/:id" element={<EmpleadoForm />} /> {/* Nueva ruta para editar empleados */}
                 <Route path="facturacion" element={<Facturacion />} />
                 <Route path="reportes" element={<Reportes />} />
-                <Route path="configuracion" element={<Configuracion />} />
+                <Route path="configuracion" element={<Configuracion />} /> {/* Usar el nuevo componente */}
               </Route>
             </Route>
           </Route>
