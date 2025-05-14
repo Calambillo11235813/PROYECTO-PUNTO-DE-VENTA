@@ -23,9 +23,9 @@ class TipoVenta(models.Model):
 class Pedido(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     fecha = models.DateField(auto_now_add=True)
-    estado = models.ForeignKey(Estado, on_delete=models.CASCADE)  
+    estado = models.ForeignKey(Estado, on_delete=models.CASCADE,null=True, blank=True)  
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE)
+    tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE,null=True, blank=True)
     def __str__(self):
         return f"Pedido #{self.id} - Usuario {self.usuario.correo}"
 
@@ -37,6 +37,21 @@ class DetallePedido(models.Model):
 
     def __str__(self):
         return f"{self.producto.nombre} x{self.cantidad}"
+
+class TipoPago(models.Model):
+    nombre = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.nombre
+
+class Transaccion(models.Model):
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='transacciones')
+    tipo_pago = models.ForeignKey(TipoPago, on_delete=models.CASCADE)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.tipo_pago.nombre}: {self.monto} Bs."
+
 
 # Factura de una Venta
 class Factura(models.Model):

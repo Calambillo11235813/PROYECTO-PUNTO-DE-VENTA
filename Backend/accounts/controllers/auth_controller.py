@@ -1,57 +1,74 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth import login
-from accounts.models import Usuario, Bitacora
-from accounts.serializers import UsuarioSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
+from django.contrib.auth import login
+from django.contrib.auth.hashers import check_password
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from accounts.models import Usuario, Empleado, Bitacora
+from accounts.serializers import UsuarioSerializer
+
 class LoginView(APIView):
-    permission_classes = [AllowAny]  # Esto es crucial
+    permission_classes = [AllowAny]
+
     def post(self, request):
         correo = request.data.get("correo")
-
         contraseña = request.data.get("password")
 
+        # Intentar login como Usuario
         try:
             user = Usuario.objects.get(correo=correo)
-        except Usuario.DoesNotExist:
+
+            if not user.check_password(contraseña):
+                raise ValueError("Contraseña incorrecta")
+
+            if not user.estado:
+                return Response({"error": "Usuario inactivo"}, status=status.HTTP_403_FORBIDDEN)
+
+            # Bitácora
+            Bitacora.objects.create(
+                ip=request.META.get('REMOTE_ADDR'),
+                accion="Inicio de sesión exitoso",
+                usuario=user
+            )
+
+            # JWT tokens
+            refresh = RefreshToken.for_user(user)
+            usuario_data = UsuarioSerializer(user).data
+
+            return Response({
+                "mensaje": "Login exitoso (usuario)",
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "usuario": usuario_data,
+                "tipo": "usuario"
+            }, status=status.HTTP_200_OK)
+
+        except (Usuario.DoesNotExist, ValueError):
+            pass  # Intentamos login como empleado
+
+        # Intentar login como Empleado
+        try:
+            empleado = Empleado.objects.get(correo=correo)
+
+            if not check_password(contraseña, empleado.password):
+                return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
+
+            if not empleado.estado:
+                return Response({"error": "Empleado inactivo"}, status=status.HTTP_403_FORBIDDEN)
+
+            # Login exitoso (sin token JWT)
+            return Response({
+                "mensaje": "Login exitoso (empleado)",
+                "empleado": {
+                    "id": empleado.id,
+                    "nombre": empleado.nombre,
+                    "correo": empleado.correo,
+                    "rol": empleado.rol.nombre_rol if empleado.rol else None
+                },
+                "tipo": "empleado"
+            }, status=status.HTTP_200_OK)
+
+        except Empleado.DoesNotExist:
             return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        if not user.check_password(contraseña):
-            return Response({"error": "Credenciales inválidas "}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # Verificar contraseña
-      
-        # Verificar si el usuario está activo
-        if not user.estado:
-            return Response({"error": "Usuario inactivo"}, status=status.HTTP_403_FORBIDDEN)
-
-        # Registrar en bitácora
-        Bitacora.objects.create(
-            ip=request.META.get('REMOTE_ADDR'),
-            accion="Inicio de sesión exitoso",
-            usuario=user
-        )
-
-        # Generar tokens
-        refresh = RefreshToken.for_user(user)
-
-        # Obtener datos del usuario
-        usuario_data = UsuarioSerializer(user).data
-
-        # Obtener datos del rol
-        rol_data = None
-        if user.rol:
-            rol_data = {
-                "id": user.rol.id,
-                "nombre": user.rol.nombre_rol,
-            }
-
-        # Preparar respuesta
-        return Response({
-            "mensaje": "Login exitoso",
-            "refresh": str(refresh),
-            "access": str(refresh.access_token),
-            "usuario": usuario_data
-        }, status=status.HTTP_200_OK)

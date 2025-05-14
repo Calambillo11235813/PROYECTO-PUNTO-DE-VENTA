@@ -23,6 +23,7 @@ class Permisos(models.Model):
 
     def __str__(self):
         return f"{self.rol} - {self.privilegio}"
+    
 class UsuarioManager(BaseUserManager):
     """Manager personalizado para el modelo Usuario"""
 
@@ -47,8 +48,6 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     """Modelo de usuario personalizado"""
     nombre_empresa=models.CharField(max_length=100, blank=True, null=True)
     nit_empresa = models.CharField(max_length=20, blank=True, null=True,unique=True)
-    
-    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True)
     nombre = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
     direccion = models.TextField(blank=True, null=True)
@@ -76,3 +75,18 @@ class Bitacora(models.Model):
 
     def __str__(self):
         return f"{self.usuario.correo} - {self.accion}"
+    
+
+class Empleado(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='empleados')  # Dueño/administrador
+    nombre = models.CharField(max_length=100)
+    correo = models.EmailField(unique=True)
+    password = models.CharField(max_length=128)  
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    direccion = models.TextField(blank=True, null=True)
+    estado = models.BooleanField(default=True)
+    fecha_contratacion = models.DateField(null=True, blank=True)
+    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True)
+    
+    def __str__(self):
+        return self.nombre

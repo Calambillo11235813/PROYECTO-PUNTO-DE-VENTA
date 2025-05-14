@@ -1,7 +1,7 @@
 # ventas/serializers.py
 
 from rest_framework import serializers
-from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido, Cliente
+from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido, Cliente, TipoPago, Transaccion
 from accounts.models import Usuario
 from Productos.models import Producto
 
@@ -31,39 +31,56 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         fields = ['id', 'producto', 'producto_id', 'cantidad']
         read_only_fields = ['id']
 
+class TipoPagoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TipoPago
+        fields = '__all__'
+
+class TransaccionSerializer(serializers.ModelSerializer):
+    tipo_pago_id = serializers.PrimaryKeyRelatedField(source='tipo_pago', queryset=TipoPago.objects.all(), write_only=True)
+    tipo_pago = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Transaccion
+        fields = ['id', 'tipo_pago', 'tipo_pago_id', 'monto']
 
 class PedidoSerializer(serializers.ModelSerializer):
     detalles = DetallePedidoSerializer(many=True, read_only=True)  
     detalles_input = DetallePedidoSerializer(many=True, write_only=True, required=False)
 
+    transacciones = TransaccionSerializer(many=True, read_only=True)
+    transacciones_input = TransaccionSerializer(many=True, write_only=True, required=False)
+
     class Meta:
         model = Pedido
-        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta', 'detalles','detalles_input']
-        read_only_fields = ['id', 'total']
+        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta',
+                  'detalles', 'detalles_input', 'transacciones', 'transacciones_input']
+        read_only_fields = ['id']
 
     def create(self, validated_data):
-        detalles_data = validated_data.pop('detalles', [])
-
+        detalles_data = validated_data.pop('detalles_input', [])
+        transacciones_data = validated_data.pop('transacciones_input', [])
         # Crear el pedido sin el total aún
-        pedido = Pedido.objects.create(total=0, **validated_data)
-
-        total = 0
+        pedido = Pedido.objects.create(**validated_data)
         for detalle in detalles_data:
-            subtotal = detalle['producto'].precio_venta * detalle['cantidad']
             DetallePedido.objects.create(
                 pedido=pedido,
                 producto=detalle['producto'],
                 cantidad=detalle['cantidad']
+            )   
+        for transaccion in transacciones_data:
+            Transaccion.objects.create(
+                pedido=pedido,
+                tipo_pago=transaccion['tipo_pago'],
+                monto=transaccion['monto']
             )
-            total += subtotal
-
-        # Actualizar el total del pedido
-        pedido.total = total
         pedido.save()
 
         return pedido
 
+
     
+
 class FacturaSerializer(serializers.ModelSerializer):
     #venta = VentaSerializer()
     class Meta:
