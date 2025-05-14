@@ -5,32 +5,29 @@ const ShoppingCart = ({
   cartItems, 
   cliente, 
   setCliente, 
-  subtotal, 
-  impuestos, 
-  total, 
+  total, // Ya recibimos total como prop
   metodoPago, 
   setMetodoPago, 
   onFinalizarVenta, 
   onRemoveItem, 
   onUpdateQuantity,
-  processingOrder = false // Nuevo prop para controlar estado de procesamiento
+  processingOrder = false
 }) => {
+  const [paymentMethods, setPaymentMethods] = React.useState([
+    { amount: '', method: 'Efectivo' }
+  ]);
+
+  const validateTotalAmount = () => {
+    const sum = paymentMethods.reduce((acc, payment) => {
+      return acc + (Number(payment.amount) || 0);
+    }, 0);
+    return Math.abs(sum - total) > 0.01;
+  };
+
   return (
     <div className="w-full h-full bg-gray-50 border-l border-gray-200 flex flex-col">
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="text-lg font-medium">Carrito de Compras</h2>
-        <div className="flex items-center">
-          <span className="mr-2">Cliente:</span>
-          <select 
-            className="border rounded p-1"
-            value={cliente}
-            onChange={(e) => setCliente(e.target.value)}
-            disabled={processingOrder} // Deshabilitar durante procesamiento
-          >
-            <option>Consumidor Final</option>
-            <option>Cliente Registrado</option>
-          </select>
-        </div>
       </div>
       
       <div className="flex-1 overflow-y-auto p-4">
@@ -100,14 +97,6 @@ const ShoppingCart = ({
       
       <div className="p-4 border-t bg-white">
         <div className="space-y-2 mb-4">
-          <div className="flex justify-between">
-            <span>Subtotal:</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Impuestos (16%):</span>
-            <span>${impuestos.toFixed(2)}</span>
-          </div>
           <div className="flex justify-between font-bold text-lg">
             <span>Total:</span>
             <span>${total.toFixed(2)}</span>
@@ -115,18 +104,86 @@ const ShoppingCart = ({
         </div>
         
         <div className="mb-4">
-          <label className="block mb-1">Método de pago:</label>
-          <select 
-            className="w-full border rounded p-2"
-            value={metodoPago}
-            onChange={(e) => setMetodoPago(e.target.value)}
-            disabled={processingOrder} // Deshabilitar durante procesamiento
-          >
-            <option>Efectivo</option>
-            <option>Tarjeta de Crédito</option>
-            <option>Tarjeta de Débito</option>
-            <option>Transferencia</option>
-          </select>
+          <label className="block mb-1">Métodos de pago:</label>
+          <div className="space-y-2">
+            {paymentMethods.map((payment, index) => {
+              // Obtener métodos ya seleccionados en los índices anteriores
+              const selectedMethods = paymentMethods
+                .slice(0, index)
+                .map(p => p.method);
+
+              // Filtrar las opciones disponibles excluyendo las ya seleccionadas
+              const availableMethods = ['Efectivo', 'Tarjeta', 'Transferencia'].filter(
+                method => !selectedMethods.includes(method)
+              );
+
+              return (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder="Monto"
+                    className="w-1/2 border rounded p-2"
+                    value={payment.amount}
+                    onChange={(e) => {
+                      const newPaymentMethods = [...paymentMethods];
+                      newPaymentMethods[index].amount = e.target.value;
+                      setPaymentMethods(newPaymentMethods);
+                    }}
+                    disabled={processingOrder}
+                  />
+                  <select
+                    className="w-1/2 border rounded p-2"
+                    value={payment.method}
+                    onChange={(e) => {
+                      const newPaymentMethods = [...paymentMethods];
+                      newPaymentMethods[index].method = e.target.value;
+                      setPaymentMethods(newPaymentMethods);
+                    }}
+                    disabled={processingOrder}
+                  >
+                    {availableMethods.map(method => (
+                      <option key={method} value={method}>{method}</option>
+                    ))}
+                  </select>
+                  {index === paymentMethods.length - 1 && paymentMethods.length < 3 && (
+                    <button
+                      className="bg-green-500 text-white p-2 rounded"
+                      onClick={() => {
+                        const availableMethod = availableMethods.find(
+                          method => method !== payment.method
+                        );
+                        setPaymentMethods([
+                          ...paymentMethods,
+                          { amount: '', method: availableMethod || availableMethods[0] }
+                        ]);
+                      }}
+                      disabled={processingOrder}
+                    >
+                      <Plus size={14} />
+                    </button>
+                  )}
+                  {paymentMethods.length > 1 && (
+                    <button
+                      className="bg-red-500 text-white p-2 rounded"
+                      onClick={() => {
+                        const newPaymentMethods = [...paymentMethods];
+                        newPaymentMethods.splice(index, 1);
+                        setPaymentMethods(newPaymentMethods);
+                      }}
+                      disabled={processingOrder}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {validateTotalAmount() && (
+            <p className="text-red-500 text-sm mt-1">
+              La suma de los montos debe ser igual al total de la venta
+            </p>
+          )}
         </div>
         
         <button 
