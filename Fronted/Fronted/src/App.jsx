@@ -34,6 +34,22 @@ import Configuracion from './pages/Configuracion'; // Importar el nuevo componen
 import Empleados from './pages/Empleados/Empleados';
 import EmpleadoForm from './pages/Empleados/EmpleadoForm';
 
+// Componente para acceso denegado
+const AccesoDenegado = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+    <div className="p-8 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold text-red-600 mb-4">Acceso Denegado</h1>
+      <p className="text-gray-700 mb-4">No tienes permisos para acceder a esta sección.</p>
+      <button 
+        onClick={() => window.history.back()} 
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Volver
+      </button>
+    </div>
+  </div>
+);
+
 const Facturacion = () => <div>Página de Facturación en desarrollo</div>;
 const Reportes = () => <div>Página de Reportes en desarrollo</div>;
 
@@ -64,6 +80,9 @@ function App() {
 
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+
+          {/* Ruta de acceso denegado */}
+          <Route path="/acceso-denegado" element={<AccesoDenegado />} />
 
           {/* Rutas protegidas - solo para administradores */}
           <Route element={<ProtectedRoute />}>

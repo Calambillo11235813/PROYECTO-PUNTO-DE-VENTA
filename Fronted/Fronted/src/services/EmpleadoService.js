@@ -16,25 +16,22 @@ export const empleadoService = {
       throw error;
     }
   },
-
+  
   // Obtener un empleado específico por su ID
   getEmpleadoById: async (empleadoId) => {
     try {
-      const usuarioId = localStorage.getItem('id');
-      if (!usuarioId) {
-        throw new Error('No se encontró ID de usuario');
-      }
       
+      console.log('Empleado Id', empleadoId);
       // Obtener todos los empleados y filtrar
-      const response = await apiClient.get(`/accounts/empleados/${usuarioId}/`);
-      const empleados = response.data;
-      const empleado = empleados.find(emp => emp.id == empleadoId);
-      
+      const response = await apiClient.get(`/accounts/empleadosimple/${empleadoId}/`);
+      const empleado = response.data;
+      console.log('Empleados:', response.data);
+      console.log('Empleados 2 :', empleado);
       if (!empleado) {
         throw new Error(`No se encontró el empleado con ID ${empleadoId}`);
       }
       
-      return empleado;
+      return response.data;
     } catch (error) {
       console.error(`Error al obtener el empleado con ID ${empleadoId}:`, error);
       throw error;

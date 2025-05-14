@@ -1,4 +1,5 @@
 import axios from 'axios';
+import empleadoService from './EmpleadoService';
 
 // URL base de la API (ajústala según tu configuración)
 const API_URL = 'http://127.0.0.1:8000/accounts/';
@@ -99,16 +100,40 @@ const authService = {
       localStorage.setItem('refresh_token', response.data.refresh);
       
       // Determinar el tipo de usuario y guardar datos apropiados
+      console.log(response); 
+
+
       if (response.data.tipo === "empleado") {
         localStorage.setItem('user_data', JSON.stringify(response.data.empleado));
         localStorage.setItem('empleado_id', response.data.empleado.id);
+        console.log('Empleado ID:', response.data.empleado.id);
+        const a =  await empleadoService.getEmpleadoById(response.data.empleado.id)
+         console.log('Empleado:', a);
+        localStorage.setItem('id', a.usuario);
+
+        console.log('ID de usuario 222:', a.usuario);
         localStorage.setItem('usuario_id', response.data.empleado.usuario);
         localStorage.setItem('user_type', 'empleado');
+
+        localStorage.setItem('rol',response.data.empleado.rol);
+        console.log('Rol:', response.data.empleado.rol);
+    
       } else {
         localStorage.setItem('user_data', JSON.stringify(response.data.usuario));
         localStorage.setItem('id', response.data.usuario.id);
         localStorage.setItem('user_type', 'usuario');
+        
+        // No guardar "undefined" como string, simplemente no guardar nada si es undefined
+        if (response.data.usuario.rol) {
+          localStorage.setItem('rol', response.data.usuario.rol);
+        }
+        // O alternativamente, establecer un valor específico para superadmin
+        // localStorage.setItem('rol', response.data.usuario.rol || 'superadmin');
+        
+        console.log('desde el else', response.data.usuario.id);
       }
+      console.log('Datos del usuario guardados:', localStorage.getItem('id'));
+      console.log(localStorage);
       
       return response.data;
     } catch (error) {
@@ -125,6 +150,8 @@ const authService = {
   
   // Cerrar sesión
   logout: () => {
+    localStorage.clear();
+    localStorage.removeItem('id');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_data');

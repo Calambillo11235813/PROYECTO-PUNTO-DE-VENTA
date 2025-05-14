@@ -1,32 +1,33 @@
 import React, { useEffect } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../Contexts/AuthContext';
 
-// Añadir allowedRoles como parámetro aquí
-export const ProtectedRoute = ({ allowedRoles }) => {
-  const { user, loading } = useAuth();
-  console.log('user:', user, 'loading:', loading, 'allowedRoles:', allowedRoles);
-  
-  const hasAccess = () => {
-    // Si no hay roles específicos, permitir acceso
-    if (!allowedRoles || allowedRoles.length === 0) return true;
-    
-    // Si no hay usuario, no permitir acceso
-    if (!user) return false;
-    
-    // Verificar según el tipo de usuario
-    if (user.tipo === 'empleado') {
-      // Para empleados, el rol es un string como "Supervisor"
-      return allowedRoles.includes(user.rol);
-    } else {
-      // Para usuarios, el rol es un número u objeto con ID
-      const rolId = typeof user.rol === 'object' ? user.rol.id : user.rol;
-      return allowedRoles.includes(rolId);
-    }
-  };
+// Definimos las rutas permitidas por rol
+const rolePermissions = {
+  'undefined': ['*'], // Superusuario - acceso a todo como string
+  undefined: ['*'],   // También manejamos el caso de undefined real
+  Supervisor: [
+    '/admin',
+    '/admin/inventario',
+    '/admin/ventas',
+    '/admin/pedidos',
+    '/admin/facturacion',
+    '/admin/reportes'
+  ],
+  Cajero: [
+    '/admin/ventas',
+    '/admin/pedidos'
+  ],
+  'Gestion de inventario': [
+    '/admin/inventario'
+  ]
+};
 
+export const ProtectedRoute = () => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  
   if (loading) {
-    // Mostrar un indicador de carga mientras se verifica la autenticación
     return <div>Cargando...</div>;
   }
   
@@ -35,22 +36,21 @@ export const ProtectedRoute = ({ allowedRoles }) => {
     return <Navigate to="/login" />;
   }
   
-  // Comprobar si tiene los roles adecuados
-  if (hasAccess()) {
-    return <Outlet />;
-  } else {
-    return <Navigate to="/acceso-denegado" replace />;
-  }
+  return <Outlet />;
 };
 
 export const AdminRoute = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
+  const currentPath = location.pathname;
   
   useEffect(() => {
     if (user) {
-      console.log('Datos del usuario para verificación admin:', user);
+      console.log('Datos del usuario para verificación:', user);
+      console.log('Ruta actual:', currentPath);
+      console.log('Rol del usuario:', localStorage.getItem('rol'));
     }
-  }, [user]);
+  }, [user, currentPath]);
   
   if (loading) {
     return <div>Cargando...</div>;
@@ -61,42 +61,43 @@ export const AdminRoute = () => {
     return <Navigate to="/login" />;
   }
 
-  // TEMPORALMENTE: permitir acceso a todos los usuarios y empleados
-  // Independientemente de su rol o tipo
-  console.log('Permitiendo acceso temporal para:', user);
-  return <Outlet />;
+  // Obtener el rol desde localStorage
+  const userRole = localStorage.getItem('rol');
   
-  /* COMENTAMOS LA VERIFICACIÓN DE ROLES HASTA IMPLEMENTAR LOS PERMISOS EN BACKEND
-  // Verificación más robusta que maneja diferentes estructuras de datos
-  const isAdmin = user && (
-    // Verificar is_staff
-    user.is_staff === true ||
-    // O verificar el rol (múltiples opciones)
-    (user.rol && (
-      // Por nombre (con múltiples variantes posibles)
-      user.rol.nombre === 'admin' || 
-      user.rol.nombre === 'Admin' || 
-      user.rol.nombre === 'Administrador' ||
-      // O por nombre_rol 
-      user.rol.nombre_rol === 'Administrador' ||
-      // O por ID
-      user.rol.id === 1
-    ))
-  );
-  
-  console.log('Verificación de admin:', {
-    user: user ? {...user, contraseña: '[REDACTADO]'} : null,
-    isAdmin,
-    rol: user?.rol
-  });
-  
-  // Si no es admin, redirigir a la página principal
-  if (!isAdmin) {
-    return <Navigate to="/" />;
+  // Verificar si el usuario tiene acceso a la ruta actual
+  const hasAccess = () => {
+    // Si el rol es "undefined" (como string) o es null/undefined, considerarlo superadmin
+    if (!userRole || userRole === 'undefined') {
+      return true;
+    }
     
+    const allowedPaths = rolePermissions[userRole] || [];
+    
+    // Si tiene acceso a todas las rutas
+    if (allowedPaths.includes('*')) {
+      return true;
+    }
+    
+    // Verificar si la ruta actual está en las rutas permitidas o si es una subruta
+    return allowedPaths.some(path => currentPath === path || currentPath.startsWith(`${path}/`));
+  };
+  
+  if (hasAccess()) {
+    console.log(`Usuario con rol ${userRole} tiene acceso a ${currentPath}`);
+    return <Outlet />;
+  } else {
+    console.log(`Usuario con rol ${userRole} NO tiene acceso a ${currentPath}`);
+    
+    // Redirecciones basadas en el rol
+    switch (userRole) {
+      case 'Supervisor':
+        return <Navigate to="/admin" replace />;
+      case 'Cajero':
+        return <Navigate to="/admin/ventas" replace />;
+      case 'Gestion de inventario':
+        return <Navigate to="/admin/inventario" replace />;
+      default:
+        return <Navigate to="/acceso-denegado" replace />;
+    }
   }
-  console.log('es admin');
-  // Si es admin, mostrar el contenido
-  return <Outlet />;
-  */
 };
