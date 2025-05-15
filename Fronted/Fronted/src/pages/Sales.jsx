@@ -17,6 +17,23 @@ const VentasView = () => {
   const [paymentMethods, setPaymentMethods] = useState([{ amount: '', method: 'Efectivo' }]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [processingOrder, setProcessingOrder] = useState(false);
+  const [pedidoCreado, setPedidoCreado] = useState(null);
+  const [pedidos, setPedidos] = useState([]);
+  const [estados, setEstados] = useState([]);
+
+  // Cargar pedidos existentes
+  useEffect(() => {
+    const fetchPedidos = async () => {
+      try {
+        const data = await pedidoService.getAllPedidos();
+        setPedidos(data);
+      } catch (error) {
+        console.error('Error al cargar pedidos:', error);
+      }
+    };
+
+    fetchPedidos();
+  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -34,7 +51,7 @@ const VentasView = () => {
         setFilteredProducts(formattedData.slice(0, 10));
       } catch (error) {
         console.error('Error al cargar productos:', error);
-        toast?.error('Error al cargar productos');
+        toast.error('Error al cargar productos');
       } finally {
         setLoading(false);
       }
@@ -107,7 +124,7 @@ const VentasView = () => {
     }
 
     const sumPayments = paymentMethods.reduce((sum, payment) => 
-      sum + Number(payment.amount), 0
+      sum + Number(payment.amount || 0), 0
     );
     
     if (Math.abs(sumPayments - total) > 0.01) {
@@ -118,22 +135,30 @@ const VentasView = () => {
     try {
       setProcessingOrder(true);
       
+      // Preparar los datos del pedido
       const pedidoData = {
-        estado_id: 1,
-        tipo_venta_id: getMetodoPagoId(paymentMethods[0].method),
+        estado: 1, // 1 = pagado
         total: total,
         detalles_input: cartItems.map(item => ({
           producto_id: item.id,
           cantidad: item.cantidad
         })),
-        payment_methods: paymentMethods
+        transacciones_input: paymentMethods.map(payment => ({
+          tipo_pago_id: getTipoPagoId(payment.method),
+          monto: Number(payment.amount)
+        }))
       };
 
-      const resultado = await pedidoService.createPedido(pedidoData);
+      // Crear el pedido con todos los datos en una sola llamada
+      await pedidoService.createPedido(pedidoData);
       
       toast.success(`¡Venta finalizada con éxito!\nTotal: $${total.toFixed(2)}`);
       setCartItems([]);
       setPaymentMethods([{ amount: '', method: 'Efectivo' }]);
+
+      // Actualizar la lista de pedidos
+      const actualizarPedidos = await pedidoService.getAllPedidos();
+      setPedidos(actualizarPedidos);
       
     } catch (error) {
       console.error('Error al finalizar la venta:', error);
@@ -143,12 +168,11 @@ const VentasView = () => {
     }
   };
 
-  const getMetodoPagoId = (metodo) => {
+  const getTipoPagoId = (metodo) => {
     const metodosMap = {
       'Efectivo': 1,
-      'Tarjeta de Crédito': 2,
-      'Tarjeta de Débito': 3,
-      'Transferencia': 4
+      'Tarjeta': 2,
+      'Transferencia': 3
     };
     
     return metodosMap[metodo] || 1;
@@ -164,6 +188,20 @@ const VentasView = () => {
       handleAddToCart(product);
     } else {
       alert('Producto no encontrado');
+    }
+  };
+
+  const handleDeletePedido = async (pedidoId) => {
+    try {
+      await pedidoService.deletePedido(pedidoId);
+      toast.success('Pedido eliminado correctamente');
+      
+      // Actualizar la lista de pedidos
+      const actualizarPedidos = await pedidoService.getAllPedidos();
+      setPedidos(actualizarPedidos);
+    } catch (error) {
+      console.error('Error al eliminar pedido:', error);
+      toast.error('Error al eliminar el pedido');
     }
   };
 
@@ -231,6 +269,8 @@ const VentasView = () => {
             onRemoveItem={handleRemoveFromCart}
             onUpdateQuantity={handleUpdateQuantity}
             processingOrder={processingOrder}
+            pedidos={pedidos}
+            onDeletePedido={handleDeletePedido}
           />
         </div>
       </div>
