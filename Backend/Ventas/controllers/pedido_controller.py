@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from Productos.models import Inventario, Producto
-from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta
+from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta, Caja
 from Ventas.serializers import PedidoSerializer
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -20,6 +20,16 @@ class PedidoListCreateAPIView(APIView):
         data = request.data.copy()
         data['usuario'] = usuario_id
 
+        # Validar que exista caja abierta para este usuario
+        caja_abierta = Caja.objects.filter(usuario_id=usuario_id, estado='abierta').first()
+        if not caja_abierta:
+            return Response(
+                {"error": "No hay caja abierta para este usuario. No se puede registrar la venta."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        # Asociar la venta a la caja abierta
+        data['caja'] = caja_abierta.id
+
         detalles_data = data.get('detalles_input', [])
         if not detalles_data:
             return Response(
@@ -27,7 +37,7 @@ class PedidoListCreateAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verificar stock de todos los productos primero
+        # Validar stock para todos los productos
         for detalle in detalles_data:
             producto = get_object_or_404(Producto, pk=detalle['producto_id'])
             try:
@@ -44,7 +54,7 @@ class PedidoListCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Ahora que el stock está validado, crear pedido y detalles
+        # Crear pedido con serializer
         pedido_serializer = PedidoSerializer(data=data)
         if pedido_serializer.is_valid():
             pedido = pedido_serializer.save()
