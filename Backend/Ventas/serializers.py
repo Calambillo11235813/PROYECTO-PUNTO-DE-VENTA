@@ -1,7 +1,7 @@
 # ventas/serializers.py
 
 from rest_framework import serializers
-from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido, Cliente, TipoPago, Transaccion
+from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido, Cliente, TipoPago, Transaccion, Caja, MovimientoEfectivo
 from accounts.models import Usuario
 from Productos.models import Producto
 
@@ -44,6 +44,20 @@ class TransaccionSerializer(serializers.ModelSerializer):
         model = Transaccion
         fields = ['id', 'tipo_pago', 'tipo_pago_id', 'monto']
 
+class CajaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Caja
+        fields = '__all__'
+        read_only_fields = ['fecha_apertura', 'fecha_cierre', 'estado', 'total_efectivo', 'total_qr', 'total_tarjeta', 'monto_final'
+        , 'total_movimiento_efectivo'          ]
+
+class MovimientoEfectivoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MovimientoEfectivo
+        fields = '__all__'
+        read_only_fields = ['fecha']
+
+
 class PedidoSerializer(serializers.ModelSerializer):
     detalles = DetallePedidoSerializer(many=True, read_only=True)  
     detalles_input = DetallePedidoSerializer(many=True, write_only=True, required=False)
@@ -51,17 +65,26 @@ class PedidoSerializer(serializers.ModelSerializer):
     transacciones = TransaccionSerializer(many=True, read_only=True)
     transacciones_input = TransaccionSerializer(many=True, write_only=True, required=False)
 
+    # Ahora caja NO es read_only para poder recibirla en creación
     class Meta:
         model = Pedido
         fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta',
-                  'detalles', 'detalles_input', 'transacciones', 'transacciones_input']
-        read_only_fields = ['id']
+                  'detalles', 'detalles_input', 'transacciones', 'transacciones_input', 'caja']
+        read_only_fields = ['id']  # quitar 'caja' de aquí
 
     def create(self, validated_data):
         detalles_data = validated_data.pop('detalles_input', [])
         transacciones_data = validated_data.pop('transacciones_input', [])
-        # Crear el pedido sin el total aún
+
+        # Extraemos caja para asignarla luego
+        caja = validated_data.pop('caja', None)
+
         pedido = Pedido.objects.create(**validated_data)
+
+        if caja:
+            pedido.caja = caja
+            pedido.save()
+
         for detalle in detalles_data:
             DetallePedido.objects.create(
                 pedido=pedido,
@@ -74,9 +97,8 @@ class PedidoSerializer(serializers.ModelSerializer):
                 tipo_pago=transaccion['tipo_pago'],
                 monto=transaccion['monto']
             )
-        pedido.save()
-
         return pedido
+
 
 
     
