@@ -26,13 +26,15 @@ import Dashboard from "./components/Dashboard";
 
 // Páginas de la aplicación
 import Sales from "./pages/Sales";
-import Inventario from './pages/Inventario';
-import Pedidos from './pages/Pedidos'; 
+import Inventario from './pages/Inventario/Inventario'; 
 import Configuracion from './pages/Configuracion'; // Importar el nuevo componente de configuración
 
 // Importar los nuevos componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
 import EmpleadoForm from './pages/Empleados/EmpleadoForm';
+
+// Importar el nuevo componente de lista de ventas
+import Lista_ventas from './pages/Lista_ventas'; // O la ruta correcta
 
 // Componente para acceso denegado
 const AccesoDenegado = () => (
@@ -91,7 +93,8 @@ function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="inventario" element={<Inventario />} />
                 <Route path="ventas" element={<Sales />} />
-                <Route path="pedidos" element={<Pedidos />} />
+                <Route path="pedidos" element={<Lista_ventas/>} />
+                <Route path="Lista_ventas" element={<Lista_ventas/>} />
                 <Route path="empleados" element={<Empleados />} /> {/* Nueva ruta para empleados */}
                 <Route path="empleados/crear" element={<EmpleadoForm />} /> {/* Nueva ruta para crear empleados */}
                 <Route path="empleados/editar/:id" element={<EmpleadoForm />} /> {/* Nueva ruta para editar empleados */}

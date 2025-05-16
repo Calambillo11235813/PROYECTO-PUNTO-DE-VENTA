@@ -1,9 +1,11 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { pedidoService } from '../services/pedidoService';
 import { toast } from 'react-toastify';
 import { FaShoppingBag, FaSearch, FaEye, FaTrash, FaFileInvoice } from 'react-icons/fa';
 
-const Pedidos = () => {
+const Lista_ventas = () => {
   const [pedidos, setPedidos] = useState([]);
   const [filteredPedidos, setFilteredPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -398,4 +400,4 @@ const Pedidos = () => {
   );
 };
 
-export default Pedidos;
+export default Lista_ventas;

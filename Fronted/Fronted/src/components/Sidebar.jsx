@@ -58,7 +58,7 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       id: "Pedidos", 
       icon: <FaShoppingBag />, 
       text: "Lista de ventas", 
-      path: "/admin/pedidos",
+      path: "/admin/Lista_ventas",
       allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
