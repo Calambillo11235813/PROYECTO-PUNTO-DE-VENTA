@@ -11,7 +11,8 @@ import {
   FaMoon,
   FaSignOutAlt,
   FaShoppingBag,
-  FaUserTie, // Nuevo ícono para Empleados
+  FaUserTie,
+  FaCashRegister, // Nuevo icono para Caja
 } from "react-icons/fa";
 import authService from "../services/authService";
 
@@ -48,9 +49,16 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       allowedRoles: [undefined, 'Supervisor'] 
     },
     { 
+      id: "Caja", 
+      icon: <FaCashRegister />, 
+      text: "Administrar Caja", 
+      path: "/admin/caja",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    { 
       id: "Ventas", 
       icon: <FaShoppingCart />, 
-      text: "Ventas", 
+      text: "Punto de Venta", 
       path: "/admin/ventas",
       allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },

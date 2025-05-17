@@ -28,7 +28,8 @@ import Dashboard from "./components/Dashboard";
 import Sales from "./pages/Sales";
 import Inventario from './pages/Inventario';
 import Pedidos from './pages/Pedidos'; 
-import Configuracion from './pages/Configuracion'; // Importar el nuevo componente de configuración
+import Configuracion from './pages/Configuracion';
+import CajaManager from './pages/CajaManager'; // Importar el componente de gestión de caja
 
 // Importar los nuevos componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
@@ -90,14 +91,15 @@ function App() {
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="inventario" element={<Inventario />} />
+                <Route path="caja" element={<CajaManager />} /> {/* Nueva ruta para gestión de caja */}
                 <Route path="ventas" element={<Sales />} />
                 <Route path="pedidos" element={<Pedidos />} />
-                <Route path="empleados" element={<Empleados />} /> {/* Nueva ruta para empleados */}
-                <Route path="empleados/crear" element={<EmpleadoForm />} /> {/* Nueva ruta para crear empleados */}
-                <Route path="empleados/editar/:id" element={<EmpleadoForm />} /> {/* Nueva ruta para editar empleados */}
+                <Route path="empleados" element={<Empleados />} />
+                <Route path="empleados/crear" element={<EmpleadoForm />} />
+                <Route path="empleados/editar/:id" element={<EmpleadoForm />} />
                 <Route path="facturacion" element={<Facturacion />} />
                 <Route path="reportes" element={<Reportes />} />
-                <Route path="configuracion" element={<Configuracion />} /> {/* Usar el nuevo componente */}
+                <Route path="configuracion" element={<Configuracion />} />
               </Route>
             </Route>
           </Route>
