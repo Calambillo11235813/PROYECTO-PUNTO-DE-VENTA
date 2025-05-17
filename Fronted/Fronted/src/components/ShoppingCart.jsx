@@ -4,8 +4,6 @@ import { pedidoService } from '../services/pedidoService';
 
 const ShoppingCart = ({ 
   cartItems, 
-  cliente, 
-  setCliente, 
   total,
   paymentMethods,
   setPaymentMethods,
@@ -159,17 +157,6 @@ const ShoppingCart = ({
               <div className="flex justify-between font-bold text-lg">
                 <span>Total:</span>
                 <span>${total.toFixed(2)}</span>
-              </div>
-              
-              <div className="mb-2">
-                <label className="block mb-1">Cliente:</label>
-                <input
-                  type="text"
-                  className="w-full border rounded p-2"
-                  value={cliente}
-                  onChange={(e) => setCliente(e.target.value)}
-                  disabled={processingOrder}
-                />
               </div>
             </div>
             

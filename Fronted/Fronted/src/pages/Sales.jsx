@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Barcode } from 'lucide-react';
 import ProductCard from '../components/ProductCart';
 import { productoService } from '../services/productoService';
 import { pedidoService } from '../services/pedidoService';
@@ -11,7 +10,6 @@ const VentasView = () => {
   const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [cartItems, setCartItems] = useState([]);
-  const [cliente, setCliente] = useState('Consumidor Final');
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [paymentMethods, setPaymentMethods] = useState([{ amount: '', method: 'Efectivo' }]);
@@ -177,19 +175,6 @@ const VentasView = () => {
     
     return metodosMap[metodo] || 1;
   };
-  
-  const handleBarcodeSearch = () => {
-    const barcode = prompt('Escanea o ingresa el código de barras:');
-    if (!barcode) return;
-    
-    const product = products.find(p => p.codigo_barras === barcode || p.id.toString() === barcode);
-    
-    if (product) {
-      handleAddToCart(product);
-    } else {
-      alert('Producto no encontrado');
-    }
-  };
 
   const handleDeletePedido = async (pedidoId) => {
     try {
@@ -213,20 +198,11 @@ const VentasView = () => {
       
       <div className="flex flex-1 overflow-hidden">
         <div className="w-2/3 p-4 overflow-y-auto">
-          <div className="mb-4 flex">
-            <div className="flex-1">
-              <Barra_busqueda 
-                onSelectProduct={handleSelectProduct}
-                onSearchChange={handleSearchChange} 
-              />
-            </div>
-            <button 
-              className="ml-2 px-4 py-2 bg-gray-600 text-white rounded flex items-center"
-              onClick={handleBarcodeSearch}
-            >
-              <Barcode className="h-5 w-5 mr-1" />
-              <span>Código de Barras</span>
-            </button>
+          <div className="mb-4">
+            <Barra_busqueda 
+              onSelectProduct={handleSelectProduct}
+              onSearchChange={handleSearchChange} 
+            />
           </div>
           
           {loading ? (
@@ -260,8 +236,6 @@ const VentasView = () => {
         <div className="w-1/3">
           <ShoppingCart 
             cartItems={cartItems}
-            cliente={cliente}
-            setCliente={setCliente}
             total={total}
             paymentMethods={paymentMethods}
             setPaymentMethods={setPaymentMethods}
