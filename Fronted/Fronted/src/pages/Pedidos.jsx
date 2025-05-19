@@ -215,7 +215,7 @@ const Pedidos = () => {
                       #{pedido.id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(pedido.fecha_creacion)}
+                      {formatDate(pedido.fecha)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {pedido.cliente || 'Cliente general'}
