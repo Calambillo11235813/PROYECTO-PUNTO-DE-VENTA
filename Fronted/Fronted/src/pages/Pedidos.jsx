@@ -359,23 +359,49 @@ const Pedidos = () => {
                   </div>
                 </div>
 
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium text-gray-500 mb-3">MÉTODOS DE PAGO</h4>
+                  <div className="border rounded-md overflow-hidden">
+                    {selectedPedido.transacciones_formateadas && selectedPedido.transacciones_formateadas.length > 0 ? (
+                      <div>
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Método de pago
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Monto
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {selectedPedido.transacciones_formateadas.map((transaccion) => (
+                              <tr key={transaccion.id || Math.random()} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {transaccion.nombre_tipo_pago}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {transaccion.monto_formateado}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        No hay transacciones registradas para este pedido
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div className="mt-6 bg-gray-50 p-4 rounded-md">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-600">Subtotal:</span>
-                    <span className="text-sm text-gray-800">
-                      {formatCurrency(selectedPedido.subtotal || selectedPedido.total * 0.84 || 0)}
-                    </span>
-                  </div>
                   <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm font-medium text-gray-600">IVA (16%):</span>
-                    <span className="text-sm text-gray-800">
-                      {formatCurrency(selectedPedido.impuestos || selectedPedido.total * 0.16 || 0)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
-                    <span className="text-base font-bold text-gray-900">Total:</span>
+                    <span className="text-base font-bold text-gray-900">Total de la venta:</span>
                     <span className="text-base font-bold text-gray-900">
-                      {formatCurrency(selectedPedido.total_con_impuestos || selectedPedido.total || 0)}
+                      {formatCurrency(selectedPedido.total || 0)}
                     </span>
                   </div>
                 </div>

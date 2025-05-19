@@ -3,8 +3,8 @@ from Ventas.controllers.tipo_venta_controller import (TipoVentaListCreateAPIView
 from Ventas.controllers.estado_controller import (EstadoListCreateAPIView, EstadoRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.pedido_controller import PedidoListCreateAPIView
 from Ventas.controllers.pedido_controller import PedidoListCreateAPIView, PedidoDetailAPIView
-from Ventas.controllers.tipo_pago_controller import ( TipoPagoListCreateAPIView,TipoPagoRetrieveUpdateDestroyAPIView)
-from Ventas.controllers.caja_controller import AbrirCajaAPIView, CerrarCajaAPIView, CajaActualAPIView
+from Ventas.controllers.tipo_pago_controller import (TipoPagoListCreateAPIView, TipoPagoRetrieveUpdateDestroyAPIView)
+from Ventas.controllers.caja_controller import AbrirCajaAPIView, CerrarCajaAPIView, CajaActualAPIView, CajaTransaccionesEfectivoAPIView
 from Ventas.controllers.movimiento_controller import MovimientoEfectivoAPIView
 
 
@@ -30,8 +30,10 @@ urlpatterns = [
     path('caja/abrir/<int:usuario_id>/', AbrirCajaAPIView.as_view(), name='abrir-caja'),
     path('caja/cerrar/<int:usuario_id>/', CerrarCajaAPIView.as_view(), name='cerrar-caja'),
     path('caja/actual/<int:usuario_id>/', CajaActualAPIView.as_view(), name='caja-actual'),
-    # Movimientos de efectivo
-        # Movimientos de efectivo en caja
+    
+    # Transacciones en efectivo por caja
+    path('caja/<int:caja_id>/transacciones/efectivo/', CajaTransaccionesEfectivoAPIView.as_view(), name='transacciones-efectivo-caja'),
+    
+    # Movimientos de efectivo en caja
     path('caja/<int:caja_id>/movimientos/', MovimientoEfectivoAPIView.as_view(), name='movimientos-caja'),
-
 ]

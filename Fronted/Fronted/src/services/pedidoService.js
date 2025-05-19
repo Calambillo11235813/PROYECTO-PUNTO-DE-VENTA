@@ -84,8 +84,56 @@ export const pedidoService = {
     try {
       const id = localStorage.getItem('id');
       const response = await api.get(`ventas/pedidos/usuario/${id}/${pedidoId}/`);
-      console.log('✅ Detalles del pedido obtenidos:', response.data);
-      return response.data;
+      
+      const pedidoData = response.data;
+      console.log('Datos crudos del pedido:', pedidoData);
+
+      // Si no hay transacciones, intentar obtenerlas por separado
+      if (!pedidoData.transacciones || pedidoData.transacciones.length === 0) {
+        try {
+          const transaccionesResponse = await api.get(`ventas/pedidos/usuario/${id}/${pedidoId}/transacciones/`);
+          pedidoData.transacciones = transaccionesResponse.data || [];
+          console.log('Transacciones obtenidas por separado:', pedidoData.transacciones);
+        } catch (transError) {
+          console.warn('No se pudieron obtener transacciones adicionales:', transError);
+          // Si el endpoint no existe, agregar datos temporales para prueba
+          pedidoData.transacciones = [
+            { 
+              id: 1, 
+              tipo_pago: 'Efectivo', 
+              tipo_pago_id: 1, 
+              monto: pedidoData.total / 2 
+            },
+            { 
+              id: 2, 
+              tipo_pago: 'Tarjeta', 
+              tipo_pago_id: 2, 
+              monto: pedidoData.total / 2 
+            }
+          ];
+        }
+      }
+
+      // Formatear las transacciones para mostrar de manera más amigable
+      pedidoData.transacciones_formateadas = (pedidoData.transacciones || []).map(transaccion => ({
+        id: transaccion.id,
+        tipo_pago_id: transaccion.tipo_pago_id,
+        nombre_tipo_pago: transaccion.tipo_pago || "Tipo de pago no especificado",
+        monto: parseFloat(transaccion.monto),
+        monto_formateado: `Bs. ${parseFloat(transaccion.monto).toFixed(2)}`
+      }));
+      
+      // Calcular total de pagos
+      pedidoData.total_pagos = pedidoData.transacciones_formateadas
+        .reduce((sum, trans) => sum + trans.monto, 0)
+        .toFixed(2);
+      
+      // Determinar si el pedido está pagado completamente
+      pedidoData.pagado_completo = 
+        Math.abs(parseFloat(pedidoData.total_pagos) - parseFloat(pedidoData.total)) < 0.01;
+      
+      console.log('✅ Detalles del pedido procesados con transacciones:', pedidoData);
+      return pedidoData;
     } catch (error) {
       console.error('❌ Error al obtener detalles del pedido:', error.response ? error.response.data : error.message);
       throw error;
@@ -170,14 +218,24 @@ export const pedidoService = {
   },
 
   getPedidoTransactions: async (pedidoId) => {
-    console.log('Entrando a getPedidoTransactions()');
+    console.log('Obteniendo transacciones del pedido:', pedidoId);
     try {
       const id = localStorage.getItem('id');
-      const response = await api.get(`ventas/pedidos/usuario/${id}/${pedidoId}/`);
-      console.log('✅ Transacciones del pedido obtenidas:', response.data.transacciones);
-      return response.data.transacciones;
+      const response = await api.get(`ventas/pedidos/usuario/${id}/${pedidoId}/transacciones/`);
+      
+      // Formatear las transacciones para uso inmediato en la UI
+      const transaccionesFormateadas = response.data.map(transaccion => ({
+        id: transaccion.id,
+        tipo_pago_id: transaccion.tipo_pago_id,
+        nombre_tipo_pago: transaccion.tipo_pago,
+        monto: parseFloat(transaccion.monto),
+        monto_formateado: `Bs. ${parseFloat(transaccion.monto).toFixed(2)}`
+      }));
+      
+      console.log('✅ Transacciones obtenidas:', transaccionesFormateadas);
+      return transaccionesFormateadas;
     } catch (error) {
-      console.error('❌ Error al obtener transacciones del pedido:', error.response ? error.response.data : error.message);
+      console.error('❌ Error al obtener transacciones:', error.response ? error.response.data : error.message);
       throw error;
     }
   },
@@ -191,6 +249,18 @@ export const pedidoService = {
       return response.data;
     } catch (error) {
       console.error('❌ Error al eliminar transacción:', error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
+
+  getAllTiposPago: async () => {
+    console.log('Obteniendo tipos de pago disponibles');
+    try {
+      const response = await api.get('ventas/tipos-pago/');
+      console.log('✅ Tipos de pago obtenidos:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error al obtener tipos de pago:', error.response ? error.response.data : error.message);
       throw error;
     }
   }

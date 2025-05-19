@@ -1,12 +1,13 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from Ventas.models import Caja,Pedido,MovimientoEfectivo
+from Ventas.models import Caja, Pedido, MovimientoEfectivo, Transaccion, TipoPago
 from accounts.models import Usuario
-from Ventas.serializers import CajaSerializer, MovimientoEfectivoSerializer
+from Ventas.serializers import CajaSerializer, MovimientoEfectivoSerializer, TransaccionSerializer
 from rest_framework.permissions import AllowAny
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.db.models import Sum, Count
 
 class AbrirCajaAPIView(APIView):
     """
@@ -83,8 +84,6 @@ class CerrarCajaAPIView(APIView):
 
         return Response(CajaSerializer(caja).data, status=status.HTTP_200_OK)
 
-
-
 class CajaActualAPIView(APIView):
     """
     GET: Devuelve el estado de la caja abierta del usuario, con totales calculados al momento,
@@ -130,3 +129,55 @@ class CajaActualAPIView(APIView):
 
         except Caja.DoesNotExist:
             return Response({"error": "No hay caja abierta actualmente para este usuario."}, status=404)
+
+class CajaTransaccionesEfectivoAPIView(APIView):
+    """
+    GET: Obtiene la sumatoria de transacciones en efectivo de ventas realizadas mientras una caja está abierta
+    """
+    def get(self, request, caja_id):
+        try:
+            # Verificar que la caja exista
+            caja = get_object_or_404(Caja, id=caja_id)
+            
+            # Buscar el tipo de pago 'efectivo'
+            tipo_pago_efectivo = TipoPago.objects.filter(nombre__icontains='efectivo').first()
+            
+            if not tipo_pago_efectivo:
+                return Response(
+                    {"error": "No se encontró el tipo de pago 'Efectivo' en el sistema."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Obtener pedidos asociados a esta caja
+            pedidos = Pedido.objects.filter(caja=caja)
+            
+            # Obtener transacciones en efectivo de estos pedidos
+            transacciones = Transaccion.objects.filter(
+                pedido__in=pedidos,
+                tipo_pago=tipo_pago_efectivo
+            )
+            
+            # Serializar las transacciones
+            transacciones_data = []
+            for transaccion in transacciones:
+                transacciones_data.append({
+                    'id': transaccion.id,
+                    'pedido_id': transaccion.pedido.id,
+                    'fecha': transaccion.pedido.fecha.strftime('%Y-%m-%d %H:%M'),
+                    'tipo_pago': tipo_pago_efectivo.nombre,
+                    'monto': float(transaccion.monto)
+                })
+            
+            # Calcular el total
+            total = transacciones.aggregate(total=Sum('monto'))['total'] or 0
+            
+            return Response({
+                'total': float(total),
+                'transacciones': transacciones_data
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {"error": f"Error al obtener transacciones en efectivo: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

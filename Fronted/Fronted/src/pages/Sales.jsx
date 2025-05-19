@@ -21,21 +21,48 @@ const VentasView = () => {
   const [pedidos, setPedidos] = useState([]);
   const [estados, setEstados] = useState([]);
   const [cajaActual, setCajaActual] = useState(null);
+  const [loadingCaja, setLoadingCaja] = useState(true);
   const navigate = useNavigate();
 
-  // Cargar pedidos existentes
+  // Verificar si hay una caja abierta al cargar la página
+  useEffect(() => {
+    const verificarCaja = async () => {
+      setLoadingCaja(true);
+      try {
+        const data = await cajaService.getCajaActual();
+        setCajaActual(data);
+        console.log("Caja actual cargada:", data);
+      } catch (error) {
+        console.error("Error al verificar estado de caja:", error);
+        if (error.response && error.response.status === 404) {
+          toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+          navigate('/admin/caja');
+        }
+      } finally {
+        setLoadingCaja(false);
+      }
+    };
+    
+    verificarCaja();
+  }, [navigate]);
+
+  // Cargar pedidos existentes cuando se carga la página o cambia la caja
   useEffect(() => {
     const fetchPedidos = async () => {
       try {
-        const data = await pedidoService.getAllPedidos();
-        setPedidos(data);
+        if (cajaActual) {
+          const data = await pedidoService.getAllPedidos();
+          console.log("Pedidos cargados:", data);
+          setPedidos(data);
+        }
       } catch (error) {
         console.error('Error al cargar pedidos:', error);
+        toast.error('Error al cargar el historial de pedidos');
       }
     };
 
     fetchPedidos();
-  }, []);
+  }, [cajaActual]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -70,6 +97,13 @@ const VentasView = () => {
   }, [cartItems]);
 
   const handleAddToCart = (product) => {
+    // Verificar si hay una caja abierta antes de agregar productos
+    if (!cajaActual) {
+      toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+      navigate('/admin/caja');
+      return;
+    }
+
     const existingItem = cartItems.find(item => item.id === product.id);
     
     if (existingItem) {
@@ -118,24 +152,6 @@ const VentasView = () => {
     
     setFilteredProducts(filtered);
   };
-
-  // Verificar si hay una caja abierta al cargar la página
-  useEffect(() => {
-    const verificarCaja = async () => {
-      try {
-        const data = await cajaService.getCajaActual();
-        setCajaActual(data);
-      } catch (error) {
-        console.error("Error al verificar estado de caja:", error);
-        if (error.response && error.response.status === 404) {
-          toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
-          navigate('/admin/caja');
-        }
-      }
-    };
-    
-    verificarCaja();
-  }, [navigate]);
 
   const handleFinalizarVenta = async () => {
     if (cartItems.length === 0) {
@@ -224,6 +240,11 @@ const VentasView = () => {
     <div className="w-full h-full flex flex-col">
       <div className="py-4 px-6 bg-white border-b">
         <h1 className="text-xl font-medium text-green-600">Punto de Venta</h1>
+        {cajaActual && (
+          <p className="text-sm text-gray-600">
+            Caja # abierta desde {new Date(cajaActual.fecha_apertura).toLocaleString()}
+          </p>
+        )}
       </div>
       
       <div className="flex flex-1 overflow-hidden">
@@ -275,6 +296,7 @@ const VentasView = () => {
             processingOrder={processingOrder}
             pedidos={pedidos}
             onDeletePedido={handleDeletePedido}
+            cajaActual={cajaActual} // Pasar información de la caja actual
           />
         </div>
       </div>

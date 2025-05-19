@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ShoppingCart as CartIcon, Trash2, Plus, Minus, Loader, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart as CartIcon, Trash2, Plus, Minus, Loader, FileText, Search } from 'lucide-react';
 import { pedidoService } from '../services/pedidoService';
 
 const ShoppingCart = ({ 
@@ -12,12 +12,31 @@ const ShoppingCart = ({
   onUpdateQuantity,
   processingOrder = false,
   pedidos = [],
-  onDeletePedido
+  onDeletePedido,
+  cajaActual = null // Nuevo prop para recibir la caja actual
 }) => {
   const [activeTab, setActiveTab] = useState('cart'); // 'cart' o 'history'
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [pedidoTransactions, setPedidoTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [pedidosCaja, setPedidosCaja] = useState([]); // Estado para los pedidos filtrados por caja
+  const [isLoadingPedidos, setIsLoadingPedidos] = useState(false);
+  
+  // Efecto para filtrar los pedidos de la caja actual cuando cambia la pestaña o los pedidos
+  useEffect(() => {
+    if (activeTab === 'history' && cajaActual) {
+      setIsLoadingPedidos(true);
+      
+      // Filtrar los pedidos que pertenecen a la caja actual
+      const pedidosFiltrados = pedidos.filter(pedido => 
+        pedido.caja && pedido.caja.toString() === cajaActual.id.toString()
+      );
+      
+      console.log(`Pedidos filtrados para caja #${cajaActual.id}:`, pedidosFiltrados);
+      setPedidosCaja(pedidosFiltrados);
+      setIsLoadingPedidos(false);
+    }
+  }, [activeTab, pedidos, cajaActual]);
   
   const validateTotalAmount = () => {
     const sum = paymentMethods.reduce((acc, payment) => {
@@ -32,24 +51,23 @@ const ShoppingCart = ({
       const pedidoDetails = await pedidoService.getPedidoById(pedidoId);
       setSelectedPedido(pedidoDetails);
       
-      // Ahora las transacciones vienen incluidas en los detalles del pedido
+      // Si el pedido no tiene transacciones formateadas, intentar obtenerlas por separado
+      if (!pedidoDetails.transacciones_formateadas || pedidoDetails.transacciones_formateadas.length === 0) {
+        try {
+          const transacciones = await pedidoService.getPedidoTransactions(pedidoId);
+          pedidoDetails.transacciones_formateadas = transacciones;
+          setSelectedPedido({...pedidoDetails}); // Actualizar el estado con las nuevas transacciones
+        } catch (transError) {
+          console.error("Error al cargar transacciones:", transError);
+        }
+      }
+      
+      // Establecer las transacciones para uso en el componente
       setPedidoTransactions(pedidoDetails.transacciones || []);
     } catch (error) {
       console.error("Error al cargar detalles del pedido:", error);
     } finally {
       setLoadingTransactions(false);
-    }
-  };
-
-  const handleDeleteTransaction = async (pedidoId, transactionId) => {
-    try {
-      await pedidoService.deleteTransaction(pedidoId, transactionId);
-      // Actualizar las transacciones tras eliminar
-      const pedidoDetails = await pedidoService.getPedidoById(pedidoId);
-      setPedidoTransactions(pedidoDetails.transacciones || []);
-      setSelectedPedido(pedidoDetails);
-    } catch (error) {
-      console.error("Error al eliminar transacción:", error);
     }
   };
 
@@ -67,7 +85,7 @@ const ShoppingCart = ({
     <div className="w-full h-full bg-gray-50 border-l border-gray-200 flex flex-col">
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="text-lg font-medium">
-          {activeTab === 'cart' ? 'Carrito de Compras' : 'Historial de Pedidos'}
+          {activeTab === 'cart' ? 'Carrito de Compras' : 'Ventas de la Caja Actual'}
         </h2>
         <div className="flex">
           <button 
@@ -265,28 +283,45 @@ const ShoppingCart = ({
           {selectedPedido ? (
             <div className="bg-white p-4 rounded-lg shadow">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Detalles del Pedido #{selectedPedido.id}</h3>
+                <h3 className="text-lg font-medium">Detalles de Venta #{selectedPedido.id}</h3>
                 <button
-                  className="text-blue-500 hover:underline"
+                  className="text-blue-500 hover:underline flex items-center"
                   onClick={() => setSelectedPedido(null)}
                 >
-                  Volver al historial
+                  <span className="mr-1">←</span> Volver al historial
                 </button>
               </div>
               
-              <div className="mb-4">
-                <p><strong>Fecha:</strong> {new Date(selectedPedido.fecha).toLocaleDateString()}</p>
-                <p><strong>Total:</strong> ${Number(selectedPedido.total).toFixed(2)}</p>
-                <p><strong>Estado:</strong> {selectedPedido.estado ? getEstadoLabel(selectedPedido.estado) : "Sin estado"}</p>
+              <div className="mb-4 grid grid-cols-3 gap-4">
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-sm text-gray-500">Fecha</p>
+                  <p className="font-medium">{new Date(selectedPedido.fecha).toLocaleString()}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-sm text-gray-500">Total</p>
+                  <p className="font-medium">${Number(selectedPedido.total).toFixed(2)}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-sm text-gray-500">Estado</p>
+                  <p className={`font-medium ${
+                    selectedPedido.estado === 1 ? 'text-green-600' : 
+                    selectedPedido.estado === 2 ? 'text-yellow-600' : 
+                    'text-red-600'
+                  }`}>
+                    {selectedPedido.estado ? getEstadoLabel(selectedPedido.estado) : "Sin estado"}
+                  </p>
+                </div>
               </div>
               
-              <h4 className="font-medium mb-2">Productos:</h4>
+              <h4 className="font-medium mb-2 mt-4">Productos:</h4>
               <div className="mb-4 border rounded-lg">
                 {selectedPedido.detalles && selectedPedido.detalles.map(detalle => (
-                  <div key={detalle.id} className="p-2 border-b last:border-b-0">
-                    <div className="flex justify-between">
-                      <span>{detalle.producto} x {detalle.cantidad}</span>
+                  <div key={detalle.id} className="p-2 border-b last:border-b-0 flex justify-between">
+                    <div>
+                      <span className="font-medium">{detalle.producto}</span>
+                      <span className="text-gray-500 ml-2">x {detalle.cantidad}</span>
                     </div>
+                    <span>${Number(detalle.precio_unitario || 0).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -298,21 +333,19 @@ const ShoppingCart = ({
                 </div>
               ) : (
                 <div className="border rounded-lg">
-                  {pedidoTransactions && pedidoTransactions.length > 0 ? (
-                    pedidoTransactions.map(transaction => (
-                      <div key={transaction.id} className="p-2 border-b last:border-b-0 flex justify-between items-center">
-                        <span>{transaction.tipo_pago}: ${Number(transaction.monto).toFixed(2)}</span>
-                        <button 
-                          className="text-red-500 hover:bg-red-50 p-1 rounded"
-                          onClick={() => handleDeleteTransaction(selectedPedido.id, transaction.id)}
-                          title="Eliminar transacción"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))
+                  {selectedPedido.transacciones_formateadas && selectedPedido.transacciones_formateadas.length > 0 ? (
+                    <>
+                      {selectedPedido.transacciones_formateadas.map(transaction => (
+                        <div key={transaction.id || Math.random()} className="p-2 border-b last:border-b-0 flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{transaction.nombre_tipo_pago}</span>
+                            <span className="text-sm text-gray-600">{transaction.monto_formateado || `$${Number(transaction.monto).toFixed(2)}`}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </>
                   ) : (
-                    <p className="p-2 text-gray-500">No hay transacciones registradas</p>
+                    <p className="p-2 text-gray-500">No hay transacciones registradas para esta venta</p>
                   )}
                 </div>
               )}
@@ -333,18 +366,31 @@ const ShoppingCart = ({
             </div>
           ) : (
             <>
-              {pedidos.length === 0 ? (
+              {isLoadingPedidos ? (
+                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                  <Loader className="h-16 w-16 mb-3 animate-spin" />
+                  <p>Cargando ventas...</p>
+                </div>
+              ) : pedidosCaja.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-400">
                   <FileText className="h-16 w-16 mb-3" />
-                  <p>No hay pedidos registrados</p>
+                  <p>No hay ventas registradas en esta caja</p>
+                  {cajaActual ? (
+                    <p className="text-sm mt-2">{`Caja #${cajaActual.id} - ${new Date(cajaActual.fecha_apertura).toLocaleDateString()}`}</p>
+                  ) : (
+                    <p className="text-sm mt-2">No hay una caja abierta actualmente</p>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {pedidos.map(pedido => (
-                    <div key={pedido.id} className="bg-white p-3 rounded-lg shadow-sm hover:shadow transition-shadow cursor-pointer"
-                      onClick={() => handleViewPedidoDetails(pedido.id)}>
+                  {pedidosCaja.map(pedido => (
+                    <div 
+                      key={pedido.id} 
+                      className="bg-white p-3 rounded-lg shadow-sm hover:shadow transition-shadow cursor-pointer"
+                      onClick={() => handleViewPedidoDetails(pedido.id)}
+                    >
                       <div className="flex justify-between items-center">
-                        <h3 className="font-medium">Pedido #{pedido.id}</h3>
+                        <h3 className="font-medium">Venta</h3>
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           pedido.estado === 1 ? 'bg-green-100 text-green-800' : 
                           pedido.estado === 2 ? 'bg-yellow-100 text-yellow-800' : 

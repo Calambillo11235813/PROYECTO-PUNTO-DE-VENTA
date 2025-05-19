@@ -70,56 +70,6 @@ export const cajaService = {
   },
   
   /**
-   * Registra un movimiento de efectivo (ingreso o retiro) en la caja
-   * @param {number} cajaId - ID de la caja
-   * @param {Object} movimientoData - Datos del movimiento
-   * @param {string} movimientoData.tipo - Tipo de movimiento ('ingreso' o 'retiro')
-   * @param {number} movimientoData.monto - Monto del movimiento
-   * @param {string} movimientoData.descripcion - Descripción del motivo del movimiento
-   * @returns {Promise<Object>} - Datos del movimiento registrado
-   */
-  registrarMovimiento: async (cajaId, movimientoData) => {
-    console.log('Entrando a registrarMovimiento()');
-    try {
-      console.log(`Registrando movimiento para caja ID: ${cajaId}`);
-      console.log('Datos del movimiento:', movimientoData);
-      
-      const formattedData = {
-        tipo: movimientoData.tipo,
-        monto: movimientoData.monto,
-        descripcion: movimientoData.descripcion
-      };
-      
-      console.log('Datos formateados para movimiento:', formattedData);
-      const response = await api.post(`ventas/caja/${cajaId}/movimientos/`, formattedData);
-      console.log('✅ Movimiento registrado correctamente:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Error al registrar movimiento:', error.response ? error.response.data : error.message);
-      throw error;
-    }
-  },
-  
-  /**
-   * Obtiene todos los movimientos de efectivo de una caja específica
-   * @param {number} cajaId - ID de la caja
-   * @returns {Promise<Array>} - Lista de movimientos
-   */
-  getMovimientosCaja: async (cajaId) => {
-    console.log('Entrando a getMovimientosCaja()');
-    try {
-      console.log(`Consultando movimientos para caja ID: ${cajaId}`);
-      
-      const response = await api.get(`ventas/caja/${cajaId}/movimientos/`);
-      console.log('✅ Movimientos obtenidos correctamente:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ Error al obtener movimientos:', error.response ? error.response.data : error.message);
-      throw error;
-    }
-  },
-  
-  /**
    * Obtiene el historial de cajas cerradas para el usuario
    * @returns {Promise<Array>} - Lista de cajas cerradas
    */
@@ -153,6 +103,43 @@ export const cajaService = {
       return response.data;
     } catch (error) {
       console.error('❌ Error al obtener detalles de caja:', error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtiene la sumatoria de transacciones en efectivo de ventas realizadas mientras una caja está abierta
+   * @param {number} [cajaId] - ID opcional de la caja. Si no se proporciona, se usa la caja actual.
+   * @returns {Promise<Object>} - Datos de las transacciones en efectivo
+   */
+  getTransaccionesEfectivo: async (cajaId) => {
+    console.log('Entrando a getTransaccionesEfectivo()');
+    try {
+      const id = localStorage.getItem('id');
+      
+      if (!cajaId) {
+        console.log('No se proporcionó ID de caja, obteniendo caja actual...');
+        try {
+          const cajaActual = await cajaService.getCajaActual();
+          cajaId = cajaActual.id;
+        } catch (error) {
+          console.error('❌ Error al obtener caja actual:', error);
+          throw new Error('No hay una caja abierta para obtener las transacciones');
+        }
+      }
+      
+      console.log(`Consultando transacciones en efectivo para caja ID: ${cajaId}`);
+      
+      const response = await api.get(`ventas/caja/${cajaId}/transacciones/efectivo/`);
+      console.log('✅ Transacciones en efectivo obtenidas:', response.data);
+      
+      return {
+        total: response.data.total || 0,
+        transacciones: response.data.transacciones || [],
+        cantidad_transacciones: response.data.transacciones?.length || 0
+      };
+    } catch (error) {
+      console.error('❌ Error al obtener transacciones en efectivo:', error.response ? error.response.data : error.message);
       throw error;
     }
   }

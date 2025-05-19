@@ -83,6 +83,10 @@ class PedidoDetailAPIView(APIView):
             # Obtener los detalles asociados al pedido
             detalles_pedido = DetallePedido.objects.filter(pedido=pedido)
             
+            # Obtener las transacciones asociadas al pedido
+            from Ventas.models import Transaccion
+            transacciones = Transaccion.objects.filter(pedido=pedido)
+            
             # Obtener la información básica del pedido
             pedido_data = {
                 'id': pedido.id,
@@ -93,40 +97,39 @@ class PedidoDetailAPIView(APIView):
                 'total': float(pedido.total),
                 'tipo_venta': pedido.tipo_venta.id if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else None,
                 'tipo_venta_nombre': pedido.tipo_venta.descripcion if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else "Venta directa",
-                'cliente': "Cliente general",  # Puedes personalizar esto si tienes clientes asociados
-                'detalles': []
+                'cliente': "Cliente general",
+                'detalles': [],
+                'transacciones': []
             }
             
             # Agregar los detalles de productos
             for detalle in detalles_pedido:
-                producto = detalle.producto
-                precio = float(producto.precio_venta) if producto else 0
-                subtotal = precio * detalle.cantidad
-                
-                detalle_data = {
+                pedido_data['detalles'].append({
                     'id': detalle.id,
-                    'producto': producto.id if producto else None,
-                    'producto_nombre': producto.nombre if producto else "Producto no disponible",
+                    'producto': detalle.producto.nombre,
                     'cantidad': detalle.cantidad,
-                    'precio_unitario': precio,
-                    'subtotal': subtotal
-                }
-                pedido_data['detalles'].append(detalle_data)
+                    'precio_unitario': float(detalle.producto.precio_venta),
+                    'subtotal': float(detalle.producto.precio_venta * detalle.cantidad)
+                })
             
-            # Calcular subtotal e impuestos
-            subtotal = sum(detalle['subtotal'] for detalle in pedido_data['detalles'])
-            impuestos = subtotal * 0.16  # Asumiendo IVA del 16%
+            # Agregar las transacciones
+            for transaccion in transacciones:
+                pedido_data['transacciones'].append({
+                    'id': transaccion.id,
+                    'tipo_pago': transaccion.tipo_pago.nombre,
+                    'tipo_pago_id': transaccion.tipo_pago.id,
+                    'monto': float(transaccion.monto)
+                })
             
-            # Agregar información adicional
+            # Calcular subtotal (sin impuestos)
+            subtotal = sum(item['subtotal'] for item in pedido_data['detalles'])
             pedido_data['subtotal'] = subtotal
-            pedido_data['impuestos'] = impuestos
-            pedido_data['total_con_impuestos'] = subtotal + impuestos
             
             return Response(pedido_data, status=status.HTTP_200_OK)
             
         except Exception as e:
             return Response(
-                {"error": f"Error al obtener detalles del pedido: {str(e)}"},
+                {'error': f'Error al obtener detalles del pedido: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
