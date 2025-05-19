@@ -25,16 +25,35 @@ export const pedidoService = {
     console.log('Entrando a createPedido()');
     const id = localStorage.getItem('id');
     try {
+      // Verificar primero si hay una caja abierta
+      let cajaId = pedidoData.caja_id;
+      
+      if (!cajaId) {
+        try {
+          // Si no se proporcionó ID de caja, intentar obtenerlo
+          const cajaActual = await api.get(`ventas/caja/actual/${id}/`);
+          cajaId = cajaActual.data.id;
+        } catch (cajaError) {
+          console.error('Error al obtener caja actual:', cajaError);
+          throw new Error('Debe abrir una caja antes de realizar ventas');
+        }
+      }
+      
       // Estructura correcta según el formato requerido por el backend
       const formattedData = {
         estado: pedidoData.estado || 1, // Por defecto "pagado" si no se especifica
-        total: pedidoData.total,
+        total: Number(pedidoData.total).toFixed(2), // Asegurar formato numérico correcto
+        //caja: cajaId, // Añadir el ID de la caja
         detalles_input: pedidoData.detalles_input.map(item => ({
-          producto_id: item.producto_id,
-          cantidad: item.cantidad
+          producto_id: Number(item.producto_id),
+          cantidad: Number(item.cantidad)
         })),
-        // Añadir transacciones_input directamente en la creación del pedido
-        transacciones_input: pedidoData.transacciones_input || []
+        transacciones_input: Array.isArray(pedidoData.transacciones_input) 
+          ? pedidoData.transacciones_input.map(trans => ({
+              tipo_pago_id: Number(trans.tipo_pago_id),
+              monto: Number(trans.monto).toFixed(2)
+            }))
+          : []
       };
       
       console.log('Datos formateados para crear pedido:', formattedData);

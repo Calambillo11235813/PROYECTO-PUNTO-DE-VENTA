@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProductCard from '../components/ProductCart';
 import { productoService } from '../services/productoService';
 import { pedidoService } from '../services/pedidoService';
+import { cajaService } from '../services/cajaService';
 import Barra_busqueda from '../components/barra_busqueda';
 import ShoppingCart from '../components/ShoppingCart';
 import { toast } from 'react-toastify';
@@ -18,6 +20,8 @@ const VentasView = () => {
   const [pedidoCreado, setPedidoCreado] = useState(null);
   const [pedidos, setPedidos] = useState([]);
   const [estados, setEstados] = useState([]);
+  const [cajaActual, setCajaActual] = useState(null);
+  const navigate = useNavigate();
 
   // Cargar pedidos existentes
   useEffect(() => {
@@ -115,9 +119,34 @@ const VentasView = () => {
     setFilteredProducts(filtered);
   };
 
+  // Verificar si hay una caja abierta al cargar la página
+  useEffect(() => {
+    const verificarCaja = async () => {
+      try {
+        const data = await cajaService.getCajaActual();
+        setCajaActual(data);
+      } catch (error) {
+        console.error("Error al verificar estado de caja:", error);
+        if (error.response && error.response.status === 404) {
+          toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+          navigate('/admin/caja');
+        }
+      }
+    };
+    
+    verificarCaja();
+  }, [navigate]);
+
   const handleFinalizarVenta = async () => {
     if (cartItems.length === 0) {
       toast.error('No hay productos en el carrito');
+      return;
+    }
+
+    // Verificar si hay una caja abierta
+    if (!cajaActual) {
+      toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+      navigate('/admin/caja');
       return;
     }
 
@@ -137,6 +166,7 @@ const VentasView = () => {
       const pedidoData = {
         estado: 1, // 1 = pagado
         total: total,
+        caja_id: cajaActual.id, // Usar el ID de la caja abierta
         detalles_input: cartItems.map(item => ({
           producto_id: item.id,
           cantidad: item.cantidad
@@ -160,7 +190,7 @@ const VentasView = () => {
       
     } catch (error) {
       console.error('Error al finalizar la venta:', error);
-      toast.error(`Error al finalizar la venta: ${error.message}`);
+      toast.error(error.message || "Error al finalizar la venta");
     } finally {
       setProcessingOrder(false);
     }
