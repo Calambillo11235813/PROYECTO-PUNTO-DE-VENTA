@@ -1,68 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { Barcode } from 'lucide-react';
-import ProductCard from '../components/ProductCart';
-import { productoService } from '../services/productoService';
-import { pedidoService } from '../services/pedidoService'; // Importar el servicio de pedidos
-import Barra_busqueda from '../components/barra_busqueda';
-import ShoppingCart from '../components/ShoppingCart';
-import { toast } from 'react-toastify'; // Opcional: para mostrar notificaciones
+import React, { useState, useEffect } from "react";
+import { useOutletContext } from "react-router-dom";
+import { Search, Barcode, PlusCircle, MinusCircle, ShoppingCart } from "lucide-react";
 
-const VentasView = () => {
-  const [products, setProducts] = useState([]);
+
+const Sales = () => {
+  // Utilizamos el contexto de AdminLayout
+  const [darkMode, toggleDarkMode, activePage, setActivePage] = useOutletContext();
+
+  // Configuramos el título de la página
+  useEffect(() => {
+    setActivePage("Punto de Venta");
+  }, [setActivePage]);
+
+  // Estados específicos de ventas
+  const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [cartItems, setCartItems] = useState([]);
-  const [cliente, setCliente] = useState('Consumidor Final');
-  const [loading, setLoading] = useState(true);
-  const [subtotal, setSubtotal] = useState(0);
-  const [impuestos, setImpuestos] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [metodoPago, setMetodoPago] = useState('Efectivo');
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [processingOrder, setProcessingOrder] = useState(false); // Estado para controlar el procesamiento de pedidos
+  const [products, setProducts] = useState([
+    { id: 1, name: 'Laptop Dell XPS', price: 1299.99, barcode: '123456789', inStock: 15 },
+    { id: 2, name: 'Monitor LG 27"', price: 249.99, barcode: '987654321', inStock: 8 },
+    { id: 3, name: 'Teclado Mecánico', price: 89.99, barcode: '456789123', inStock: 22 },
+    { id: 4, name: 'Mouse Inalámbrico', price: 39.99, barcode: '789123456', inStock: 30 },
+    { id: 5, name: 'Auriculares Sony', price: 129.99, barcode: '321654987', inStock: 12 },
+  ]);
+  const [showBarcodeInput, setShowBarcodeInput] = useState(false);
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState('Consumidor Final');
+  const [paymentMethod, setPaymentMethod] = useState('efectivo');
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const data = await productoService.getAllProducts();
-        const formattedData = Array.isArray(data) ? data.map(product => ({
-          ...product,
-          precio_venta: Number(product.precio_venta),
-          precio_compra: Number(product.precio_compra),
-          stock_inicial: Number(product.stock_inicial)
-        })) : [];
-        
-        setProducts(formattedData);
-        // Inicialmente, solo mostramos las primeras 10 tarjetas
-        setFilteredProducts(formattedData.slice(0, 10));
-      } catch (error) {
-        console.error('Error al cargar productos:', error);
-        toast?.error('Error al cargar productos');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, []);
-
-  useEffect(() => {
-    // Calcular subtotal
-    const newSubtotal = cartItems.reduce((sum, item) => sum + (Number(item.precio_venta) * item.cantidad), 0);
-    setSubtotal(newSubtotal);
-    
-    // Calcular impuestos (16%)
-    const newImpuestos = newSubtotal * 0.16;
-    setImpuestos(newImpuestos);
-    
-    // Calcular total
-    setTotal(newSubtotal + newImpuestos);
-  }, [cartItems]);
-
-  // Esta función se mantiene para manejar clics en ProductCard
-  const handleAddToCart = (product) => {
-    const existingItem = cartItems.find(item => item.id === product.id);
-    
+  const addToCart = (product) => {
+    const existingItem = cart.find((item) => item.id === product.id);
     if (existingItem) {
       setCartItems(cartItems.map(item => 
         item.id === product.id 
@@ -73,215 +39,208 @@ const VentasView = () => {
       setCartItems([...cartItems, { ...product, cantidad: 1 }]);
     }
   };
-  
-  // Esta función manejará la selección desde la barra de búsqueda
-  const handleSelectProduct = (product) => {
-    handleAddToCart(product);
-  };
-  
-  // Nueva función para eliminar un item del carrito
-  const handleRemoveFromCart = (productId) => {
-    setCartItems(cartItems.filter(item => item.id !== productId));
+
+  const removeFromCart = (productId) => {
+    setCart(cart.filter((item) => item.id !== productId));
   };
 
-  // Nueva función para actualizar la cantidad de un producto en el carrito
-  const handleUpdateQuantity = (productId, newQuantity) => {
-    if (newQuantity <= 0) {
-      handleRemoveFromCart(productId);
-      return;
-    }
-    
-    setCartItems(cartItems.map(item => 
-      item.id === productId 
-        ? { ...item, cantidad: newQuantity } 
-        : item
-    ));
-  };
-  
-  // Función para filtrar productos desde la barra de búsqueda
-  const handleSearchChange = (query) => {
-    setSearchTerm(query);
-    
-    if (query.trim() === '') {
-      // Si no hay búsqueda, volvemos a mostrar solo 10 productos
-      setFilteredProducts(products.slice(0, 10));
-      return;
-    }
-    
-    // Filtrar todos los productos que coincidan con la búsqueda
-    const filtered = products.filter(product => 
-      product.nombre?.toLowerCase().includes(query.toLowerCase())
+  const updateQuantity = (productId, newQuantity) => {
+    if (newQuantity <= 0) return;
+    setCart(
+      cart.map((item) =>
+        item.id === productId ? { ...item, quantity: newQuantity } : item
+      )
     );
-    
-    setFilteredProducts(filtered);
   };
 
-  // Función actualizada para finalizar venta y crear pedido
-  const handleFinalizarVenta = async () => {
-    if (cartItems.length === 0) {
-      alert('No hay productos en el carrito');
-      return;
-    }
-
-    try {
-      setProcessingOrder(true);
-      
-      // Mapear la información del carrito al formato requerido por el backend
-      const pedidoData = {
-        estado_id: 1, // Estado inicial (por ejemplo: 1 = pendiente)
-        tipo_venta_id: getMetodoPagoId(metodoPago), // Convertir método de pago a ID
-        total: total, 
-        detalles_input: cartItems.map(item => ({
-          producto_id: item.id,
-          cantidad: item.cantidad
-        }))
-      };
-
-      console.log('Enviando pedido:', pedidoData);
-      
-      // Llamar al servicio para crear el pedido
-      const resultado = await pedidoService.createPedido(pedidoData);
-      
-      console.log('Pedido creado exitosamente:', resultado);
-      
-      // Mostrar mensaje de éxito
-      alert(`¡Venta finalizada con éxito!\nTotal: $${total.toFixed(2)}`);
-      
-      // Resetear el carrito después de crear el pedido
-      setCartItems([]);
-      
-      // Opcional: Generar recibo o redireccionar a página de recibo
-      // window.open(`/recibos/${resultado.id}`, '_blank');
-      
-    } catch (error) {
-      console.error('Error al finalizar la venta:', error);
-      
-      // Mensaje de error más detallado
-      let errorMessage = 'Intente nuevamente';
-      
-      if (error.response && error.response.data) {
-        // Intentar extraer mensaje de error de la respuesta
-        const errorData = error.response.data;
-        if (typeof errorData === 'string') {
-          errorMessage = errorData;
-        } else if (errorData.detail) {
-          errorMessage = errorData.detail;
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        } else {
-          // Si hay múltiples errores en diferentes campos
-          errorMessage = JSON.stringify(errorData);
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      alert(`Error al finalizar la venta: ${errorMessage}`);
-    } finally {
-      setProcessingOrder(false);
-    }
-  };
-  
-  // Función para convertir el método de pago seleccionado a su ID correspondiente
-  // Esto debe adaptarse según la estructura de tu base de datos
-  const getMetodoPagoId = (metodo) => {
-    const metodosMap = {
-      'Efectivo': 1,
-      'Tarjeta de Crédito': 2,
-      'Tarjeta de Débito': 3,
-      'Transferencia': 4
-    };
-    
-    return metodosMap[metodo] || 1; // Valor por defecto: 1 (efectivo)
-  };
-  
-  // Función para manejar el escaneo de códigos de barras
   const handleBarcodeSearch = () => {
-    const barcode = prompt('Escanea o ingresa el código de barras:');
-    if (!barcode) return;
-    
-    // Buscar producto por código de barras (esto debería adaptarse a tus datos)
-    const product = products.find(p => p.codigo_barras === barcode || p.id.toString() === barcode);
-    
+    const product = products.find((p) => p.barcode === barcodeInput);
     if (product) {
-      handleAddToCart(product);
+      addToCart(product);
+      setBarcodeInput('');
+      setShowBarcodeInput(false);
     } else {
       alert('Producto no encontrado');
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleBarcodeSearch();
+    }
+  };
+
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const calculateSubtotal = () => {
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  };
+
+  const subtotal = calculateSubtotal();
+  const tax = subtotal * 0.16; // 16% de impuestos
+  const total = subtotal + tax;
+
+  const handleCheckout = () => {
+    alert(`Venta completada: $${total.toFixed(2)}`);
+    setCart([]);
+  };
+
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="py-4 px-6 bg-white border-b">
-        <h1 className="text-xl font-medium text-green-600">Punto de Venta</h1>
-      </div>
-      
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sección de productos */}
-        <div className="w-2/3 p-4 overflow-y-auto">
-          <div className="mb-4 flex">
-            {/* Integración de la barra de búsqueda */}
-            <div className="flex-1">
-              <Barra_busqueda 
-                onSelectProduct={handleSelectProduct}
-                onSearchChange={handleSearchChange} 
-              />
-            </div>
-            <button 
-              className="ml-2 px-4 py-2 bg-gray-600 text-white rounded flex items-center"
-              onClick={handleBarcodeSearch}
-            >
-              <Barcode className="h-5 w-5 mr-1" />
-              <span>Código de Barras</span>
-            </button>
+    <div className="sales-container">
+      <div className="sales-left-panel">
+        <div className="sales-controls">
+          <div className="search-container">
+            <Search size={18} />
+            <input
+              type="text"
+              placeholder="Buscar productos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <p>Cargando productos...</p>
+          <button
+            className="barcode-btn"
+            onClick={() => setShowBarcodeInput(!showBarcodeInput)}
+          >
+            <Barcode size={18} />
+            Escanear Código
+          </button>
+        </div>
+
+        {showBarcodeInput && (
+          <div className="barcode-input-container">
+            <input
+              type="text"
+              placeholder="Escanee o ingrese el código..."
+              value={barcodeInput}
+              onChange={(e) => setBarcodeInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              autoFocus
+            />
+            <button onClick={handleBarcodeSearch}>Buscar</button>
+          </div>
+        )}
+
+        <div className="products-grid">
+          {filteredProducts.map((product) => (
+            <div
+              key={product.id}
+              className="product-card"
+              onClick={() => addToCart(product)}
+            >
+              <div className="product-img-placeholder"></div>
+              <h3>{product.name}</h3>
+              <div className="product-price">${product.price.toFixed(2)}</div>
+              <div className="product-stock">
+                Stock: {product.inStock} unidades
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="sales-right-panel">
+        <div className="cart-header">
+          <h2>Carrito de Compra</h2>
+          <div className="customer-selector">
+            <label>Cliente:</label>
+            <select
+              value={selectedCustomer}
+              onChange={(e) => setSelectedCustomer(e.target.value)}
+            >
+              <option value="Consumidor Final">Consumidor Final</option>
+              <option value="Juan Pérez">Juan Pérez</option>
+              <option value="María López">María López</option>
+              <option value="Carlos Gómez">Carlos Gómez</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="cart-items">
+          {cart.length === 0 ? (
+            <div className="empty-cart">
+              <ShoppingCart size={48} />
+              <p>El carrito está vacío</p>
+              <p>Agrega productos haciendo clic en ellos</p>
             </div>
           ) : (
-            <>
-              {/* Mostrar resultado de búsqueda si hay término de búsqueda */}
-              {searchTerm && (
-                <div className="mb-3 text-gray-600">
-                  {filteredProducts.length === 0 
-                    ? 'No se encontraron productos que coincidan con tu búsqueda.' 
-                    : `Se encontraron ${filteredProducts.length} producto(s) para "${searchTerm}"`
-                  }
-                </div>
-              )}
-              
-              {/* Cuadrícula de productos */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {filteredProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onAddToCart={handleAddToCart} 
-                  />
+            <table className="cart-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Precio</th>
+                  <th>Cantidad</th>
+                  <th>Subtotal</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {cart.map((item) => (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td>${item.price.toFixed(2)}</td>
+                    <td>
+                      <div className="quantity-control">
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>
+                          <MinusCircle size={16} />
+                        </button>
+                        <span>{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>
+                          <PlusCircle size={16} />
+                        </button>
+                      </div>
+                    </td>
+                    <td>${(item.price * item.quantity).toFixed(2)}</td>
+                    <td>
+                      <button
+                        className="remove-btn"
+                        onClick={() => removeFromCart(item.id)}
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
                 ))}
               </div>
             </>
           )}
         </div>
-        
-        {/* Sección de carrito - Reemplazada por el componente ShoppingCart */}
-        <div className="w-1/3">
-          <ShoppingCart 
-            cartItems={cartItems}
-            cliente={cliente}
-            setCliente={setCliente}
-            subtotal={subtotal}
-            impuestos={impuestos}
-            total={total}
-            metodoPago={metodoPago}
-            setMetodoPago={setMetodoPago}
-            onFinalizarVenta={handleFinalizarVenta}
-            onRemoveItem={handleRemoveFromCart}
-            onUpdateQuantity={handleUpdateQuantity}
-            processingOrder={processingOrder}
-          />
+
+        <div className="cart-summary">
+          <div className="summary-row">
+            <span>Subtotal:</span>
+            <span>${subtotal.toFixed(2)}</span>
+          </div>
+          <div className="summary-row">
+            <span>IVA (16%):</span>
+            <span>${tax.toFixed(2)}</span>
+          </div>
+          <div className="summary-row total">
+            <span>Total:</span>
+            <span>${total.toFixed(2)}</span>
+          </div>
+
+          <div className="payment-method">
+            <label>Método de Pago:</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
+              <option value="efectivo">Efectivo</option>
+              <option value="tarjeta">Tarjeta de Crédito/Débito</option>
+              <option value="transferencia">Transferencia Bancaria</option>
+            </select>
+          </div>
+
+          <button
+            className="checkout-btn"
+            onClick={handleCheckout}
+            disabled={cart.length === 0}
+          >
+            Completar Venta
+          </button>
         </div>
       </div>
     </div>

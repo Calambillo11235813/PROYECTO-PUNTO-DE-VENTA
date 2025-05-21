@@ -5,6 +5,8 @@ from accounts.models import Rol, Privilegio, Permisos
 from accounts.serializers import PrivilegioSerializer
 from django.shortcuts import get_object_or_404
 
+
+
 class RolPrivilegiosView(APIView):
     def get(self, request, rol_id):
         rol = get_object_or_404(Rol, id=rol_id)

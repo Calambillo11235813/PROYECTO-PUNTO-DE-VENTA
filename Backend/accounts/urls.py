@@ -33,4 +33,10 @@ urlpatterns = [
     path('roles/<int:rol_id>/privilegios/', RolPrivilegiosView.as_view(), name='rol-privilegios'),
     # Nueva ruta que permite DELETE directo con privilegio_id en la URL
     path('roles/<int:rol_id>/privilegios/<int:privilegio_id>/', RolPrivilegiosView.as_view(), name='rol-privilegio-detail'),
+    path('empleados/<int:usuario_id>/', EmpleadoListCreate.as_view(), name='empleados-list-create'),
+    path('roles/', RolListCreate.as_view(), name='roles-list-create'),
+    path('empleado/<int:usuario_id>/<int:pk>/', EmpleadoDetail.as_view(), name='empleado-detail'),
+    path('privilegios/', PrivilegioListCreate.as_view(), name='privilegios'),
+    path('roles/<int:rol_id>/privilegios/', RolPrivilegiosView.as_view(), name='rol-privilegios'),
+
 ]

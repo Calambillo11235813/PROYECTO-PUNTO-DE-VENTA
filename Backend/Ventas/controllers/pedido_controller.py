@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from Productos.models import Inventario, Producto
 from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta
+from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta, Caja
 from Ventas.serializers import PedidoSerializer
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -20,6 +21,16 @@ class PedidoListCreateAPIView(APIView):
         data = request.data.copy()
         data['usuario'] = usuario_id
 
+        # Validar que exista caja abierta para este usuario
+        caja_abierta = Caja.objects.filter(usuario_id=usuario_id, estado='abierta').first()
+        if not caja_abierta:
+            return Response(
+                {"error": "No hay caja abierta para este usuario. No se puede registrar la venta."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        # Asociar la venta a la caja abierta
+        data['caja'] = caja_abierta.id
+
         detalles_data = data.get('detalles_input', [])
         if not detalles_data:
             return Response(
@@ -27,7 +38,7 @@ class PedidoListCreateAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Verificar stock de todos los productos primero
+        # Validar stock para todos los productos
         for detalle in detalles_data:
             producto = get_object_or_404(Producto, pk=detalle['producto_id'])
             try:
@@ -44,7 +55,7 @@ class PedidoListCreateAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-        # Ahora que el stock está validado, crear pedido y detalles
+        # Crear pedido con serializer
         pedido_serializer = PedidoSerializer(data=data)
         if pedido_serializer.is_valid():
             pedido = pedido_serializer.save()
@@ -73,6 +84,10 @@ class PedidoDetailAPIView(APIView):
             # Obtener los detalles asociados al pedido
             detalles_pedido = DetallePedido.objects.filter(pedido=pedido)
             
+            # Obtener las transacciones asociadas al pedido
+            from Ventas.models import Transaccion
+            transacciones = Transaccion.objects.filter(pedido=pedido)
+            
             # Obtener la información básica del pedido
             pedido_data = {
                 'id': pedido.id,
@@ -85,6 +100,9 @@ class PedidoDetailAPIView(APIView):
                 'tipo_venta_nombre': pedido.tipo_venta.descripcion if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else "Venta directa",
                 'cliente': "Cliente general",  # Puedes personalizar esto si tienes clientes asociados
                 'detalles': []
+                'cliente': "Cliente general",
+                'detalles': [],
+                'transacciones': []
             }
             
             # Agregar los detalles de productos
@@ -111,12 +129,33 @@ class PedidoDetailAPIView(APIView):
             pedido_data['subtotal'] = subtotal
             pedido_data['impuestos'] = impuestos
             pedido_data['total_con_impuestos'] = subtotal + impuestos
+                pedido_data['detalles'].append({
+                    'id': detalle.id,
+                    'producto': detalle.producto.nombre,
+                    'cantidad': detalle.cantidad,
+                    'precio_unitario': float(detalle.producto.precio_venta),
+                    'subtotal': float(detalle.producto.precio_venta * detalle.cantidad)
+                })
+            
+            # Agregar las transacciones
+            for transaccion in transacciones:
+                pedido_data['transacciones'].append({
+                    'id': transaccion.id,
+                    'tipo_pago': transaccion.tipo_pago.nombre,
+                    'tipo_pago_id': transaccion.tipo_pago.id,
+                    'monto': float(transaccion.monto)
+                })
+            
+            # Calcular subtotal (sin impuestos)
+            subtotal = sum(item['subtotal'] for item in pedido_data['detalles'])
+            pedido_data['subtotal'] = subtotal
             
             return Response(pedido_data, status=status.HTTP_200_OK)
             
         except Exception as e:
             return Response(
                 {"error": f"Error al obtener detalles del pedido: {str(e)}"},
+                {'error': f'Error al obtener detalles del pedido: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     

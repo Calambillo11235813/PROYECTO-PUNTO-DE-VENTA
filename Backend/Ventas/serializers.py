@@ -1,7 +1,7 @@
 # ventas/serializers.py
 
 from rest_framework import serializers
-from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido, Cliente
+from .models import Estado, TipoVenta, Factura, Pedido, DetallePedido, Cliente, TipoPago, Transaccion, Caja, MovimientoEfectivo
 from accounts.models import Usuario
 from Productos.models import Producto
 
@@ -32,11 +32,41 @@ class DetallePedidoSerializer(serializers.ModelSerializer):
         fields = ['id', 'producto', 'producto_id', 'cantidad']
         read_only_fields = ['id']
 
+class TipoPagoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TipoPago
+        fields = '__all__'
+
+class TransaccionSerializer(serializers.ModelSerializer):
+    tipo_pago_id = serializers.PrimaryKeyRelatedField(source='tipo_pago', queryset=TipoPago.objects.all(), write_only=True)
+    tipo_pago = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Transaccion
+        fields = ['id', 'tipo_pago', 'tipo_pago_id', 'monto']
+
+class CajaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Caja
+        fields = '__all__'
+        read_only_fields = ['fecha_apertura', 'fecha_cierre', 'estado', 'total_efectivo', 'total_qr', 'total_tarjeta', 'monto_final'
+        , 'total_movimiento_efectivo'          ]
+
+class MovimientoEfectivoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MovimientoEfectivo
+        fields = '__all__'
+        read_only_fields = ['fecha']
+
 
 class PedidoSerializer(serializers.ModelSerializer):
     detalles = DetallePedidoSerializer(many=True, read_only=True)  
     detalles_input = DetallePedidoSerializer(many=True, write_only=True, required=False)
 
+    transacciones = TransaccionSerializer(many=True, read_only=True)
+    transacciones_input = TransaccionSerializer(many=True, write_only=True, required=False)
+
+    # Ahora caja NO es read_only para poder recibirla en creación
     class Meta:
         model = Pedido
         fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta', 'detalles','detalles_input']
@@ -46,6 +76,23 @@ class PedidoSerializer(serializers.ModelSerializer):
         detalles_data = validated_data.pop('detalles_input', [])
         # Crear el pedido sin el total aún
         pedido = Pedido.objects.create(**validated_data)
+        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta',
+                  'detalles', 'detalles_input', 'transacciones', 'transacciones_input', 'caja']
+        read_only_fields = ['id']  # quitar 'caja' de aquí
+
+    def create(self, validated_data):
+        detalles_data = validated_data.pop('detalles_input', [])
+        transacciones_data = validated_data.pop('transacciones_input', [])
+
+        # Extraemos caja para asignarla luego
+        caja = validated_data.pop('caja', None)
+
+        pedido = Pedido.objects.create(**validated_data)
+
+        if caja:
+            pedido.caja = caja
+            pedido.save()
+
         for detalle in detalles_data:
             DetallePedido.objects.create(
                 pedido=pedido,
@@ -54,9 +101,18 @@ class PedidoSerializer(serializers.ModelSerializer):
             )   
         pedido.save()
 
+        for transaccion in transacciones_data:
+            Transaccion.objects.create(
+                pedido=pedido,
+                tipo_pago=transaccion['tipo_pago'],
+                monto=transaccion['monto']
+            )
         return pedido
 
+
+
     
+
 class FacturaSerializer(serializers.ModelSerializer):
     #venta = VentaSerializer()
     class Meta:

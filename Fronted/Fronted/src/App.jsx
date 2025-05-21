@@ -38,6 +38,14 @@ import Lista_ventas from './pages/Lista_ventas'; // O la ruta correcta
 
 // Importar el nuevo componente de clientes
 import Clientes from './pages/Clientes/Clientes';
+import Inventario from './pages/Inventario';
+import Pedidos from './pages/Pedidos'; 
+import Configuracion from './pages/Configuracion';
+import CajaManager from './pages/CajaManager'; // Importar el componente de gestión de caja
+
+// Importar los nuevos componentes de empleados
+import Empleados from './pages/Empleados/Empleados';
+import EmpleadoForm from './pages/Empleados/EmpleadoForm';
 
 // Componente para acceso denegado
 const AccesoDenegado = () => (
@@ -105,6 +113,15 @@ function App() {
                 <Route path="reportes" element={<Reportes />} />
                 <Route path="configuracion" element={<Configuracion />} /> {/* Usar el nuevo componente */}
                 <Route path="clientes" element={<Clientes />} /> {/* Nueva ruta para clientes */}
+                <Route path="caja" element={<CajaManager />} /> {/* Nueva ruta para gestión de caja */}
+                <Route path="ventas" element={<Sales />} />
+                <Route path="pedidos" element={<Pedidos />} />
+                <Route path="empleados" element={<Empleados />} />
+                <Route path="empleados/crear" element={<EmpleadoForm />} />
+                <Route path="empleados/editar/:id" element={<EmpleadoForm />} />
+                <Route path="facturacion" element={<Facturacion />} />
+                <Route path="reportes" element={<Reportes />} />
+                <Route path="configuracion" element={<Configuracion />} />
               </Route>
             </Route>
           </Route>

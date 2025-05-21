@@ -11,12 +11,14 @@ const rolePermissions = {
     '/admin/inventario',
     '/admin/ventas',
     '/admin/Lista_ventas',
+    '/admin/pedidos',
     '/admin/facturacion',
     '/admin/reportes'
   ],
   Cajero: [
     '/admin/ventas',
     '/admin/Lista_ventas'
+    '/admin/pedidos'
   ],
   'Gestion de inventario': [
     '/admin/inventario'

@@ -43,8 +43,6 @@ class EmpleadoListCreate(APIView):
             return Response(EmpleadoSerializer(empleado).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
 class EmpleadoDetail(APIView):
     def get_object(self, usuario_id, pk):
         return get_object_or_404(Empleado, pk=pk, usuario_id=usuario_id)
