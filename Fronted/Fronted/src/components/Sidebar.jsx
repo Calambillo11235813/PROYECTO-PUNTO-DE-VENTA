@@ -11,7 +11,7 @@ import {
   FaMoon,
   FaSignOutAlt,
   FaShoppingBag,
-  FaUserTie, // Nuevo ícono para Empleados
+  FaUserTie,
 } from "react-icons/fa";
 import authService from "../services/authService";
 
@@ -67,6 +67,14 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       text: "Inventario", 
       path: "/admin/inventario",
       allowedRoles: [undefined, 'Supervisor', 'Gestion de inventario']
+    },
+    // Añadir opción de Clientes al menú
+    { 
+      id: "Clientes", 
+      icon: <FaUsers />, 
+      text: "Clientes", 
+      path: "/admin/clientes",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Empleados", 

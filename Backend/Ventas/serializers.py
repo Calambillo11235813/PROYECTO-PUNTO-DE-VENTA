@@ -13,7 +13,8 @@ class EstadoSerializer(serializers.ModelSerializer):
 class ClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cliente
-        fields = ['id', 'nombre']
+        fields = ['id', 'nombre', 'cedula_identidad', 'telefono', 'direccion', 'email', 'usuario']
+        read_only_fields = ['id']
 
 class TipoVentaSerializer(serializers.ModelSerializer):
  

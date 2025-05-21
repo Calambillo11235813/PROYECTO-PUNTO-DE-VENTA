@@ -36,6 +36,9 @@ import EmpleadoForm from './pages/Empleados/EmpleadoForm';
 // Importar el nuevo componente de lista de ventas
 import Lista_ventas from './pages/Lista_ventas'; // O la ruta correcta
 
+// Importar el nuevo componente de clientes
+import Clientes from './pages/Clientes/Clientes';
+
 // Componente para acceso denegado
 const AccesoDenegado = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -101,6 +104,7 @@ function App() {
                 <Route path="facturacion" element={<Facturacion />} />
                 <Route path="reportes" element={<Reportes />} />
                 <Route path="configuracion" element={<Configuracion />} /> {/* Usar el nuevo componente */}
+                <Route path="clientes" element={<Clientes />} /> {/* Nueva ruta para clientes */}
               </Route>
             </Route>
           </Route>
