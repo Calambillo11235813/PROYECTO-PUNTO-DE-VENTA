@@ -178,11 +178,12 @@ const VentasView = () => {
     try {
       setProcessingOrder(true);
       
-      // Preparar los datos del pedido
+      // Preparar los datos del pedido con la fecha actual en formato ISO
       const pedidoData = {
-        estado: 2, // 1 = pagado
+        estado: 2, 
+        fecha: new Date().toISOString(), // ¡IMPORTANTE! Asegura que la fecha esté en formato ISO
         total: total,
-        caja_id: cajaActual.id, // Usar el ID de la caja abierta
+        caja_id: cajaActual.id,
         detalles_input: cartItems.map(item => ({
           producto_id: item.id,
           cantidad: item.cantidad

@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { pedidoService } from '../services/pedidoService';
 import { toast } from 'react-toastify';
@@ -98,15 +96,36 @@ const Lista_ventas = () => {
     }
   };
 
+  // Mejora la función formatDate para manejar diversos formatos de fecha
   const formatDate = (dateString) => {
     if (!dateString) return "Fecha no disponible";
     
     try {
-      const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
-      return new Date(dateString).toLocaleDateString('es-ES', options);
+      // Si la fecha viene en formato YYYY-MM-DD sin hora
+      if (dateString.length === 10 && dateString.includes('-')) {
+        const [year, month, day] = dateString.split('-');
+        return `${day}/${month}/${year}`;
+      }
+      
+      // Para fechas con formato completo
+      const date = new Date(dateString);
+      
+      if (isNaN(date.getTime())) {
+        console.error("Formato de fecha inválido:", dateString);
+        return "Fecha inválida";
+      }
+      
+      // Formatea la fecha para mostrar en formato local
+      return date.toLocaleString('es-ES', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
     } catch (e) {
-      console.error("Error al formatear fecha:", e);
-      return dateString; // Devolver el string original si hay error
+      console.error("Error al formatear fecha:", e, dateString);
+      return "Error de formato";
     }
   };
 
@@ -217,7 +236,7 @@ const Lista_ventas = () => {
                       #{pedido.id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(pedido.fecha_creacion)}
+                      {formatDate(pedido.fecha || pedido.fecha_creacion || pedido.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {pedido.cliente || 'Cliente general'}
@@ -304,7 +323,9 @@ const Lista_ventas = () => {
                     <h4 className="text-sm font-medium text-gray-500">INFORMACIÓN GENERAL</h4>
                     <p className="mt-2 flex items-center">
                       <span className="font-medium text-gray-600">Fecha:</span>
-                      <span className="ml-2 text-gray-800">{formatDate(selectedPedido.fecha_creacion)}</span>
+                      <span className="ml-2 text-gray-800">
+                        {formatDate(selectedPedido.fecha || selectedPedido.fecha_creacion || selectedPedido.created_at)}
+                      </span>
                     </p>
                     <p className="mt-1 flex items-center">
                       <span className="font-medium text-gray-600">Cliente:</span>

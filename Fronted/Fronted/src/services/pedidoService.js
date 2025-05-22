@@ -41,8 +41,9 @@ export const pedidoService = {
       
       // Estructura correcta según el formato requerido por el backend
       const formattedData = {
-        estado: pedidoData.estado || 1, // Por defecto "pagado" si no se especifica
-        total: Number(pedidoData.total).toFixed(2), // Asegurar formato numérico correcto
+        estado: pedidoData.estado || 1,
+        fecha: pedidoData.fecha || new Date().toISOString(), // Asegurar que siempre haya una fecha
+        total: Number(pedidoData.total).toFixed(2),
         detalles_input: pedidoData.detalles_input.map(item => ({
           producto_id: Number(item.producto_id),
           cantidad: Number(item.cantidad)
@@ -164,6 +165,7 @@ export const pedidoService = {
       // Formatear los datos según la estructura esperada por el backend
       const formattedData = {
         estado: pedidoData.estado || 1,
+        fecha: pedidoData.fecha || new Date().toISOString(), // Asegurar que siempre haya una fecha
         total: pedidoData.total,
         detalles_input: pedidoData.detalles_input.map(item => ({
           producto_id: item.producto_id,
