@@ -203,8 +203,8 @@ const Sales = () => {
                     </td>
                   </tr>
                 ))}
-              </div>
-            </>
+              </tbody> 
+            </table>
           )}
         </div>
 
@@ -247,4 +247,4 @@ const Sales = () => {
   );
 };
 
-export default VentasView;
+export default Sales;

@@ -25,16 +25,6 @@ export const pedidoService = {
     console.log('Entrando a createPedido()');
     const id = localStorage.getItem('id');
     try {
-<<<<<<< HEAD
-      // Estructura correcta según el formato requerido por el backend
-      const formattedData = {
-    
-        total: pedidoData.total, // Agregar el campo total
-        detalles_input: pedidoData.detalles_input.map(item => ({
-          producto_id: item.producto_id,
-          cantidad: item.cantidad
-        }))
-=======
       // Verificar primero si hay una caja abierta
       let cajaId = pedidoData.caja_id;
       
@@ -53,7 +43,6 @@ export const pedidoService = {
       const formattedData = {
         estado: pedidoData.estado || 1, // Por defecto "pagado" si no se especifica
         total: Number(pedidoData.total).toFixed(2), // Asegurar formato numérico correcto
-        //caja: cajaId, // Añadir el ID de la caja
         detalles_input: pedidoData.detalles_input.map(item => ({
           producto_id: Number(item.producto_id),
           cantidad: Number(item.cantidad)
@@ -64,7 +53,6 @@ export const pedidoService = {
               monto: Number(trans.monto).toFixed(2)
             }))
           : []
->>>>>>> origin/cortez
       };
       
       console.log('Datos formateados para crear pedido:', formattedData);
@@ -72,10 +60,7 @@ export const pedidoService = {
       return response.data;
     } catch (error) {
       console.error('Error al crear pedido:', error);
-<<<<<<< HEAD
       // Agregar detalles del error para ayudar en la depuración
-=======
->>>>>>> origin/cortez
       if (error.response) {
         console.error('Detalles del error:', error.response.data);
       }
@@ -99,10 +84,6 @@ export const pedidoService = {
     try {
       const id = localStorage.getItem('id');
       const response = await api.get(`ventas/pedidos/usuario/${id}/${pedidoId}/`);
-<<<<<<< HEAD
-      console.log('✅ Detalles del pedido obtenidos:', response.data);
-      return response.data;
-=======
       
       const pedidoData = response.data;
       console.log('Datos crudos del pedido:', pedidoData);
@@ -153,7 +134,6 @@ export const pedidoService = {
       
       console.log('✅ Detalles del pedido procesados con transacciones:', pedidoData);
       return pedidoData;
->>>>>>> origin/cortez
     } catch (error) {
       console.error('❌ Error al obtener detalles del pedido:', error.response ? error.response.data : error.message);
       throw error;
@@ -173,8 +153,6 @@ export const pedidoService = {
       console.error('❌ Error al actualizar estado del pedido:', error.response ? error.response.data : error.message);
       throw error;
     }
-<<<<<<< HEAD
-=======
   },
 
   // Función modificada para usar la estructura correcta de transacciones_input
@@ -285,6 +263,5 @@ export const pedidoService = {
       console.error('❌ Error al obtener tipos de pago:', error.response ? error.response.data : error.message);
       throw error;
     }
->>>>>>> origin/cortez
   }
 };

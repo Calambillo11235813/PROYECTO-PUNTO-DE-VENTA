@@ -49,9 +49,6 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       allowedRoles: [undefined, 'Supervisor'] 
     },
     { 
-      id: "Ventas", 
-      icon: <FaShoppingCart />, 
-      text: "Ventas", 
       id: "Caja", 
       icon: <FaCashRegister />, 
       text: "Administrar Caja", 
@@ -70,7 +67,6 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       icon: <FaShoppingBag />, 
       text: "Lista de ventas", 
       path: "/admin/Lista_ventas",
-      path: "/admin/pedidos",
       allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
@@ -80,7 +76,6 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       path: "/admin/inventario",
       allowedRoles: [undefined, 'Supervisor', 'Gestion de inventario']
     },
-    // Añadir opción de Clientes al menú
     { 
       id: "Clientes", 
       icon: <FaUsers />, 
@@ -93,7 +88,7 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       icon: <FaUserTie />, 
       text: "Empleados", 
       path: "/admin/empleados",
-      allowedRoles: [undefined]
+      allowedRoles: [undefined, 'Supervisor'] // Permitir que Supervisor vea esta opción
     },
     { 
       id: "Facturacion", 
@@ -114,7 +109,7 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       icon: <FaCog />, 
       text: "Configuración", 
       path: "/admin/configuracion",
-      allowedRoles: [undefined]
+      allowedRoles: [undefined, 'Supervisor']
     },
   ];
 

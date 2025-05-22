@@ -99,8 +99,6 @@ class PedidoDetailAPIView(APIView):
                 'tipo_venta': pedido.tipo_venta.id if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else None,
                 'tipo_venta_nombre': pedido.tipo_venta.descripcion if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else "Venta directa",
                 'cliente': "Cliente general",  # Puedes personalizar esto si tienes clientes asociados
-                'detalles': []
-                'cliente': "Cliente general",
                 'detalles': [],
                 'transacciones': []
             }
@@ -129,14 +127,7 @@ class PedidoDetailAPIView(APIView):
             pedido_data['subtotal'] = subtotal
             pedido_data['impuestos'] = impuestos
             pedido_data['total_con_impuestos'] = subtotal + impuestos
-                pedido_data['detalles'].append({
-                    'id': detalle.id,
-                    'producto': detalle.producto.nombre,
-                    'cantidad': detalle.cantidad,
-                    'precio_unitario': float(detalle.producto.precio_venta),
-                    'subtotal': float(detalle.producto.precio_venta * detalle.cantidad)
-                })
-            
+
             # Agregar las transacciones
             for transaccion in transacciones:
                 pedido_data['transacciones'].append({
@@ -155,7 +146,6 @@ class PedidoDetailAPIView(APIView):
         except Exception as e:
             return Response(
                 {"error": f"Error al obtener detalles del pedido: {str(e)}"},
-                {'error': f'Error al obtener detalles del pedido: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     

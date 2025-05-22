@@ -17,7 +17,7 @@ const rolePermissions = {
   ],
   Cajero: [
     '/admin/ventas',
-    '/admin/Lista_ventas'
+    '/admin/Lista_ventas',
     '/admin/pedidos'
   ],
   'Gestion de inventario': [
