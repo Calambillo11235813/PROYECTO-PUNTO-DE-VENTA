@@ -69,16 +69,12 @@ class PedidoSerializer(serializers.ModelSerializer):
     # Ahora caja NO es read_only para poder recibirla en creación
     class Meta:
         model = Pedido
-        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta', 'detalles','detalles_input']
+        fields = [
+            'id', 'fecha', 'estado', 'total', 'usuario', 
+            'tipo_venta', 'caja', 'detalles', 'detalles_input', 
+            'transacciones', 'transacciones_input'
+        ]
         read_only_fields = ['id']
-
-    def create(self, validated_data):
-        detalles_data = validated_data.pop('detalles_input', [])
-        # Crear el pedido sin el total aún
-        pedido = Pedido.objects.create(**validated_data)
-        fields = ['id', 'usuario', 'fecha', 'estado', 'total', 'tipo_venta',
-                  'detalles', 'detalles_input', 'transacciones', 'transacciones_input', 'caja']
-        read_only_fields = ['id']  # quitar 'caja' de aquí
 
     def create(self, validated_data):
         detalles_data = validated_data.pop('detalles_input', [])

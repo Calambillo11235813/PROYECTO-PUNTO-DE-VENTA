@@ -1,34 +1,111 @@
-import React, { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
-import { Search, Barcode, PlusCircle, MinusCircle, ShoppingCart } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ProductCard from '../components/ProductCart';
+import { productoService } from '../services/productoService';
+import { pedidoService } from '../services/pedidoService';
+import { cajaService } from '../services/cajaService';
+import Barra_busqueda from '../components/barra_busqueda';
+import ShoppingCart from '../components/ShoppingCart';
+import { toast } from 'react-toastify';
 
-
-const Sales = () => {
-  // Utilizamos el contexto de AdminLayout
-  const [darkMode, toggleDarkMode, activePage, setActivePage] = useOutletContext();
-
-  // Configuramos el título de la página
-  useEffect(() => {
-    setActivePage("Punto de Venta");
-  }, [setActivePage]);
-
-  // Estados específicos de ventas
-  const [cart, setCart] = useState([]);
+const VentasView = () => {
+  const [products, setProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [products, setProducts] = useState([
-    { id: 1, name: 'Laptop Dell XPS', price: 1299.99, barcode: '123456789', inStock: 15 },
-    { id: 2, name: 'Monitor LG 27"', price: 249.99, barcode: '987654321', inStock: 8 },
-    { id: 3, name: 'Teclado Mecánico', price: 89.99, barcode: '456789123', inStock: 22 },
-    { id: 4, name: 'Mouse Inalámbrico', price: 39.99, barcode: '789123456', inStock: 30 },
-    { id: 5, name: 'Auriculares Sony', price: 129.99, barcode: '321654987', inStock: 12 },
-  ]);
-  const [showBarcodeInput, setShowBarcodeInput] = useState(false);
-  const [barcodeInput, setBarcodeInput] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState('Consumidor Final');
-  const [paymentMethod, setPaymentMethod] = useState('efectivo');
+  const [cartItems, setCartItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [paymentMethods, setPaymentMethods] = useState([{ amount: '', method: 'Efectivo' }]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [processingOrder, setProcessingOrder] = useState(false);
+  const [pedidoCreado, setPedidoCreado] = useState(null);
+  const [pedidos, setPedidos] = useState([]);
+  const [estados, setEstados] = useState([]);
+  const [cajaActual, setCajaActual] = useState(null);
+  const [loadingCaja, setLoadingCaja] = useState(true);
+  const navigate = useNavigate();
 
-  const addToCart = (product) => {
-    const existingItem = cart.find((item) => item.id === product.id);
+  // Verificar si hay una caja abierta al cargar la página
+  useEffect(() => {
+    const verificarCaja = async () => {
+      setLoadingCaja(true);
+      try {
+        const data = await cajaService.getCajaActual();
+        setCajaActual(data);
+        console.log("Caja actual cargada:", data);
+      } catch (error) {
+        console.error("Error al verificar estado de caja:", error);
+        if (error.response && error.response.status === 404) {
+          toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+          navigate('/admin/caja');
+        }
+      } finally {
+        setLoadingCaja(false);
+      }
+    };
+    
+    verificarCaja();
+  }, [navigate]);
+
+  // Cargar pedidos existentes cuando se carga la página o cambia la caja
+  useEffect(() => {
+    const fetchPedidos = async () => {
+      try {
+        if (cajaActual) {
+          const data = await pedidoService.getAllPedidos();
+          console.log("Pedidos cargados:", data);
+          setPedidos(data);
+        }
+      } catch (error) {
+        console.error('Error al cargar pedidos:', error);
+        toast.error('Error al cargar el historial de pedidos');
+      }
+    };
+
+    fetchPedidos();
+  }, [cajaActual]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const data = await productoService.getAllProducts();
+        const formattedData = Array.isArray(data) ? data.map(product => ({
+          ...product,
+          precio_venta: Number(product.precio_venta),
+          precio_compra: Number(product.precio_compra),
+          stock_inicial: Number(product.stock_inicial)
+        })) : [];
+        
+        setProducts(formattedData);
+        setFilteredProducts(formattedData.slice(0, 10));
+      } catch (error) {
+        console.error('Error al cargar productos:', error);
+        toast.error('Error al cargar productos');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  useEffect(() => {
+    const newTotal = cartItems.reduce((sum, item) => 
+      sum + (Number(item.precio_venta) * item.cantidad), 0
+    );
+    setTotal(newTotal);
+  }, [cartItems]);
+
+  const handleAddToCart = (product) => {
+    // Verificar si hay una caja abierta antes de agregar productos
+    if (!cajaActual) {
+      toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+      navigate('/admin/caja');
+      return;
+    }
+
+    const existingItem = cartItems.find(item => item.id === product.id);
+    
     if (existingItem) {
       setCartItems(cartItems.map(item => 
         item.id === product.id 
@@ -39,212 +116,192 @@ const Sales = () => {
       setCartItems([...cartItems, { ...product, cantidad: 1 }]);
     }
   };
-
-  const removeFromCart = (productId) => {
-    setCart(cart.filter((item) => item.id !== productId));
+  
+  const handleSelectProduct = (product) => {
+    handleAddToCart(product);
+  };
+  
+  const handleRemoveFromCart = (productId) => {
+    setCartItems(cartItems.filter(item => item.id !== productId));
   };
 
-  const updateQuantity = (productId, newQuantity) => {
-    if (newQuantity <= 0) return;
-    setCart(
-      cart.map((item) =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      )
+  const handleUpdateQuantity = (productId, newQuantity) => {
+    if (newQuantity <= 0) {
+      handleRemoveFromCart(productId);
+      return;
+    }
+    
+    setCartItems(cartItems.map(item => 
+      item.id === productId 
+        ? { ...item, cantidad: newQuantity } 
+        : item
+    ));
+  };
+  
+  const handleSearchChange = (query) => {
+    setSearchTerm(query);
+    
+    if (query.trim() === '') {
+      setFilteredProducts(products.slice(0, 10));
+      return;
+    }
+    
+    const filtered = products.filter(product => 
+      product.nombre?.toLowerCase().includes(query.toLowerCase())
     );
+    
+    setFilteredProducts(filtered);
   };
 
-  const handleBarcodeSearch = () => {
-    const product = products.find((p) => p.barcode === barcodeInput);
-    if (product) {
-      addToCart(product);
-      setBarcodeInput('');
-      setShowBarcodeInput(false);
-    } else {
-      alert('Producto no encontrado');
+  const handleFinalizarVenta = async () => {
+    if (cartItems.length === 0) {
+      toast.error('No hay productos en el carrito');
+      return;
+    }
+
+    // Verificar si hay una caja abierta
+    if (!cajaActual) {
+      toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+      navigate('/admin/caja');
+      return;
+    }
+
+    const sumPayments = paymentMethods.reduce((sum, payment) => 
+      sum + Number(payment.amount || 0), 0
+    );
+    
+    if (Math.abs(sumPayments - total) > 0.01) {
+      toast.error('La suma de los pagos debe ser igual al total de la venta');
+      return;
+    }
+
+    try {
+      setProcessingOrder(true);
+      
+      // Preparar los datos del pedido
+      const pedidoData = {
+        estado: 2, // 1 = pagado
+        total: total,
+        caja_id: cajaActual.id, // Usar el ID de la caja abierta
+        detalles_input: cartItems.map(item => ({
+          producto_id: item.id,
+          cantidad: item.cantidad
+        })),
+        transacciones_input: paymentMethods.map(payment => ({
+          tipo_pago_id: getTipoPagoId(payment.method),
+          monto: Number(payment.amount)
+        }))
+      };
+
+      // Crear el pedido con todos los datos en una sola llamada
+      await pedidoService.createPedido(pedidoData);
+      
+      toast.success(`¡Venta finalizada con éxito!\nTotal: $${total.toFixed(2)}`);
+      setCartItems([]);
+      setPaymentMethods([{ amount: '', method: 'Efectivo' }]);
+
+      // Actualizar la lista de pedidos
+      const actualizarPedidos = await pedidoService.getAllPedidos();
+      setPedidos(actualizarPedidos);
+      
+    } catch (error) {
+      console.error('Error al finalizar la venta:', error);
+      toast.error(error.message || "Error al finalizar la venta");
+    } finally {
+      setProcessingOrder(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleBarcodeSearch();
+  const getTipoPagoId = (metodo) => {
+    const metodosMap = {
+      'Efectivo': 1,
+      'Tarjeta': 2,
+      'Transferencia': 3
+    };
+    
+    return metodosMap[metodo] || 1;
+  };
+
+  const handleDeletePedido = async (pedidoId) => {
+    try {
+      await pedidoService.deletePedido(pedidoId);
+      toast.success('Pedido eliminado correctamente');
+      
+      // Actualizar la lista de pedidos
+      const actualizarPedidos = await pedidoService.getAllPedidos();
+      setPedidos(actualizarPedidos);
+    } catch (error) {
+      console.error('Error al eliminar pedido:', error);
+      toast.error('Error al eliminar el pedido');
     }
-  };
-
-  const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const calculateSubtotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  };
-
-  const subtotal = calculateSubtotal();
-  const tax = subtotal * 0.16; // 16% de impuestos
-  const total = subtotal + tax;
-
-  const handleCheckout = () => {
-    alert(`Venta completada: $${total.toFixed(2)}`);
-    setCart([]);
   };
 
   return (
-    <div className="sales-container">
-      <div className="sales-left-panel">
-        <div className="sales-controls">
-          <div className="search-container">
-            <Search size={18} />
-            <input
-              type="text"
-              placeholder="Buscar productos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <button
-            className="barcode-btn"
-            onClick={() => setShowBarcodeInput(!showBarcodeInput)}
-          >
-            <Barcode size={18} />
-            Escanear Código
-          </button>
-        </div>
-
-        {showBarcodeInput && (
-          <div className="barcode-input-container">
-            <input
-              type="text"
-              placeholder="Escanee o ingrese el código..."
-              value={barcodeInput}
-              onChange={(e) => setBarcodeInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              autoFocus
-            />
-            <button onClick={handleBarcodeSearch}>Buscar</button>
-          </div>
+    <div className="w-full h-full flex flex-col">
+      <div className="py-4 px-6 bg-white border-b">
+        <h1 className="text-xl font-medium text-green-600">Punto de Venta</h1>
+        {cajaActual && (
+          <p className="text-sm text-gray-600">
+            Caja # abierta desde {new Date(cajaActual.fecha_apertura).toLocaleString()}
+          </p>
         )}
-
-        <div className="products-grid">
-          {filteredProducts.map((product) => (
-            <div
-              key={product.id}
-              className="product-card"
-              onClick={() => addToCart(product)}
-            >
-              <div className="product-img-placeholder"></div>
-              <h3>{product.name}</h3>
-              <div className="product-price">${product.price.toFixed(2)}</div>
-              <div className="product-stock">
-                Stock: {product.inStock} unidades
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
-
-      <div className="sales-right-panel">
-        <div className="cart-header">
-          <h2>Carrito de Compra</h2>
-          <div className="customer-selector">
-            <label>Cliente:</label>
-            <select
-              value={selectedCustomer}
-              onChange={(e) => setSelectedCustomer(e.target.value)}
-            >
-              <option value="Consumidor Final">Consumidor Final</option>
-              <option value="Juan Pérez">Juan Pérez</option>
-              <option value="María López">María López</option>
-              <option value="Carlos Gómez">Carlos Gómez</option>
-            </select>
+      
+      <div className="flex flex-1 overflow-hidden">
+        <div className="w-2/3 p-4 overflow-y-auto">
+          <div className="mb-4">
+            <Barra_busqueda 
+              onSelectProduct={handleSelectProduct}
+              onSearchChange={handleSearchChange} 
+            />
           </div>
-        </div>
-
-        <div className="cart-items">
-          {cart.length === 0 ? (
-            <div className="empty-cart">
-              <ShoppingCart size={48} />
-              <p>El carrito está vacío</p>
-              <p>Agrega productos haciendo clic en ellos</p>
+          
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <p>Cargando productos...</p>
             </div>
           ) : (
-            <table className="cart-table">
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Precio</th>
-                  <th>Cantidad</th>
-                  <th>Subtotal</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cart.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>${item.price.toFixed(2)}</td>
-                    <td>
-                      <div className="quantity-control">
-                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)}>
-                          <MinusCircle size={16} />
-                        </button>
-                        <span>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)}>
-                          <PlusCircle size={16} />
-                        </button>
-                      </div>
-                    </td>
-                    <td>${(item.price * item.quantity).toFixed(2)}</td>
-                    <td>
-                      <button
-                        className="remove-btn"
-                        onClick={() => removeFromCart(item.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
+            <>
+              {searchTerm && (
+                <div className="mb-3 text-gray-600">
+                  {filteredProducts.length === 0 
+                    ? 'No se encontraron productos que coincidan con tu búsqueda.' 
+                    : `Se encontraron ${filteredProducts.length} producto(s) para "${searchTerm}"`
+                  }
+                </div>
+              )}
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {filteredProducts.map(product => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    onAddToCart={handleAddToCart} 
+                  />
                 ))}
-              </tbody> 
-            </table>
+              </div>
+            </>
           )}
         </div>
-
-        <div className="cart-summary">
-          <div className="summary-row">
-            <span>Subtotal:</span>
-            <span>${subtotal.toFixed(2)}</span>
-          </div>
-          <div className="summary-row">
-            <span>IVA (16%):</span>
-            <span>${tax.toFixed(2)}</span>
-          </div>
-          <div className="summary-row total">
-            <span>Total:</span>
-            <span>${total.toFixed(2)}</span>
-          </div>
-
-          <div className="payment-method">
-            <label>Método de Pago:</label>
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            >
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta de Crédito/Débito</option>
-              <option value="transferencia">Transferencia Bancaria</option>
-            </select>
-          </div>
-
-          <button
-            className="checkout-btn"
-            onClick={handleCheckout}
-            disabled={cart.length === 0}
-          >
-            Completar Venta
-          </button>
+        
+        <div className="w-1/3">
+          <ShoppingCart 
+            cartItems={cartItems}
+            total={total}
+            paymentMethods={paymentMethods}
+            setPaymentMethods={setPaymentMethods}
+            onFinalizarVenta={handleFinalizarVenta}
+            onRemoveItem={handleRemoveFromCart}
+            onUpdateQuantity={handleUpdateQuantity}
+            processingOrder={processingOrder}
+            pedidos={pedidos}
+            onDeletePedido={handleDeletePedido}
+            cajaActual={cajaActual} // Pasar información de la caja actual
+          />
         </div>
       </div>
     </div>
   );
 };
 
-export default Sales;
+export default VentasView;
