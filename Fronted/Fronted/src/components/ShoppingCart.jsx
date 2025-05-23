@@ -75,7 +75,7 @@ const ShoppingCart = ({
   const getEstadoLabel = (estadoId) => {
     const estados = {
       1: "Completado",
-      2: "Pendiente",
+      2:   "Completado",
       3: "Cancelado"
     };
     return estados[estadoId] || "Desconocido";

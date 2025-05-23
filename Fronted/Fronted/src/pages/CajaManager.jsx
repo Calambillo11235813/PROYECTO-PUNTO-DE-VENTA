@@ -37,12 +37,13 @@ const CajaManager = () => {
     try {
       setLoadingEmpleados(true);
       const data = await empleadoService.getAllEmpleados();
-      // Filtrar empleados activos si es necesario
-      const empleadosActivos = Array.isArray(data) 
-        ? data.filter(emp => emp.estado !== false) 
+      // Filtrar empleados activos Y con rol "Cajero"
+      const empleadosCajeros = Array.isArray(data) 
+        ? data.filter(emp => emp.estado !== false && emp.rol === 2) 
         : [];
       
-      setEmpleados(empleadosActivos);
+      console.log("Empleados cajeros filtrados:", empleadosCajeros);
+      setEmpleados(empleadosCajeros);
     } catch (error) {
       console.error("Error al cargar empleados:", error);
       toast.error("No se pudieron cargar los empleados");
@@ -262,6 +263,11 @@ const CajaManager = () => {
                 </select>
               )}
             </div>
+            {empleados.length === 0 && !loadingEmpleados && (
+              <p className="mt-1 text-sm text-red-500">
+                No hay empleados con rol Cajero disponibles.
+              </p>
+            )}
           </div>
           
           <div className="flex justify-end">
@@ -418,15 +424,16 @@ const CajaManager = () => {
     };
     
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Cierre de Caja</h2>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pt-1 z-10">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">Cierre de Caja</h2>
             <button 
               onClick={() => setShowCierreModal(false)}
-              className="text-gray-500 hover:text-gray-700"
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Cerrar"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
           </div>
           
