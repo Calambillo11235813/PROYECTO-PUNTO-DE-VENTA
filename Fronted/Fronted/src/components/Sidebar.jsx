@@ -88,7 +88,7 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       icon: <FaUserTie />, 
       text: "Empleados", 
       path: "/admin/empleados",
-      allowedRoles: [undefined, 'Supervisor'] // Permitir que Supervisor vea esta opción
+      allowedRoles: [undefined, 'Supervisor'] 
     },
     { 
       id: "Facturacion", 

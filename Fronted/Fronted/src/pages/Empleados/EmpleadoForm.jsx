@@ -218,7 +218,6 @@ const EmpleadoForm = () => {
               required
             >
               <option value="">Seleccionar rol</option>
-              <option value="Supervisor">Supervisor</option>
               <option value="Cajero">Cajero</option>
               <option value="Gestion de inventario">Gestor de Inventario</option>
             </select>
