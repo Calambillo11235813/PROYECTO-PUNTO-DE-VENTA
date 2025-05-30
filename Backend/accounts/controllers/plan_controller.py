@@ -143,7 +143,7 @@ class VerificarLimitesView(APIView):
     """
     Verificar límites del plan actual del usuario
     """
-    
+    permission_classes = [IsAuthenticated]
     
     def get(self, request, usuario_id):
         try:

@@ -46,6 +46,7 @@ urlpatterns = [
     path('privilegios/', PrivilegioListCreate.as_view(), name='privilegios'),
     path('roles/<int:rol_id>/privilegios/', RolPrivilegiosView.as_view(), name='rol-privilegios'),
 
+
     # Rutas de planes
     path('planes/', PlanListView.as_view(), name='plan-list'),
     path('planes/<int:plan_id>/', PlanDetailView.as_view(), name='plan-detail'),
