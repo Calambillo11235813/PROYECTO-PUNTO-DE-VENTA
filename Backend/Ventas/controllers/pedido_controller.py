@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from Productos.models import Inventario, Producto
+from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta
 from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta, Caja
 from Ventas.serializers import PedidoSerializer
 from django.db import transaction
@@ -83,6 +84,10 @@ class PedidoDetailAPIView(APIView):
             # Obtener los detalles asociados al pedido
             detalles_pedido = DetallePedido.objects.filter(pedido=pedido)
             
+            # Obtener las transacciones asociadas al pedido
+            from Ventas.models import Transaccion
+            transacciones = Transaccion.objects.filter(pedido=pedido)
+            
             # Obtener la información básica del pedido
             pedido_data = {
                 'id': pedido.id,
@@ -94,7 +99,8 @@ class PedidoDetailAPIView(APIView):
                 'tipo_venta': pedido.tipo_venta.id if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else None,
                 'tipo_venta_nombre': pedido.tipo_venta.descripcion if hasattr(pedido, 'tipo_venta') and pedido.tipo_venta else "Venta directa",
                 'cliente': "Cliente general",  # Puedes personalizar esto si tienes clientes asociados
-                'detalles': []
+                'detalles': [],
+                'transacciones': []
             }
             
             # Agregar los detalles de productos
@@ -121,6 +127,19 @@ class PedidoDetailAPIView(APIView):
             pedido_data['subtotal'] = subtotal
             pedido_data['impuestos'] = impuestos
             pedido_data['total_con_impuestos'] = subtotal + impuestos
+
+            # Agregar las transacciones
+            for transaccion in transacciones:
+                pedido_data['transacciones'].append({
+                    'id': transaccion.id,
+                    'tipo_pago': transaccion.tipo_pago.nombre,
+                    'tipo_pago_id': transaccion.tipo_pago.id,
+                    'monto': float(transaccion.monto)
+                })
+            
+            # Calcular subtotal (sin impuestos)
+            subtotal = sum(item['subtotal'] for item in pedido_data['detalles'])
+            pedido_data['subtotal'] = subtotal
             
             return Response(pedido_data, status=status.HTTP_200_OK)
             

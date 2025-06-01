@@ -78,10 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 10),
                 const Text(
                   'Accede a tu cuenta para continuar.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
@@ -136,14 +133,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 isLoading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
-                        onPressed: _login,
-                        child: const Text('Iniciar Sesión'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          textStyle: const TextStyle(fontSize: 16),
-                          minimumSize: const Size(double.infinity, 50),
-                        ),
+                      onPressed: _login,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        textStyle: const TextStyle(fontSize: 16),
+                        minimumSize: const Size(double.infinity, 50),
                       ),
+                      child: const Text('Iniciar Sesión'),
+                    ),
               ],
             ),
           ),

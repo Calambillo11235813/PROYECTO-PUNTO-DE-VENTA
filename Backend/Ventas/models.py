@@ -9,9 +9,16 @@ class Estado(models.Model):
     
 class Cliente(models.Model):
     nombre = models.CharField(max_length=100)
-
+    cedula_identidad = models.CharField(max_length=20, blank=True, null=True)
+    telefono = models.CharField(max_length=15, blank=True, null=True)
+    direccion = models.TextField(blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='clientes')
+    
     def __str__(self):
-        return "self.nombre ({self.cedula_identidad})"
+        if self.cedula_identidad:
+            return f"{self.nombre} ({self.cedula_identidad})"
+        return self.nombre
 
 # TipoVenta
 class TipoVenta(models.Model):

@@ -11,11 +11,15 @@ import {
   FaMoon,
   FaSignOutAlt,
   FaShoppingBag,
+  FaUserTie,
+  FaCashRegister, // Nuevo icono para Caja
 } from "react-icons/fa";
+import authService from "../services/authService";
 
 const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
+  const userRole = localStorage.getItem('rol');
 
   useEffect(() => {
     console.log("Modo oscuro: ", darkMode);
@@ -27,21 +31,99 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
 
   const handleLogout = (e) => {
     e.preventDefault();
+
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    authService.logout();
     navigate("/login");
   };
 
+  // Definir los elementos del menú con sus rutas y roles permitidos
   const menuItems = [
-    { id: "Dashboard", icon: <FaChartBar />, text: "Dashboard", path: "/admin", exact: true },
-    { id: "Ventas", icon: <FaShoppingCart />, text: "Ventas", path: "/admin/ventas" },
-    { id: "Pedidos", icon: <FaShoppingBag />, text: "Pedidos", path: "/admin/pedidos" },
-    { id: "Inventario", icon: <FaBoxOpen />, text: "Inventario", path: "/admin/inventario" },
-    { id: "Clientes", icon: <FaUsers />, text: "Clientes", path: "/admin/clientes" },
-    { id: "Facturacion", icon: <FaFileInvoiceDollar />, text: "Facturación", path: "/admin/facturacion" },
-    { id: "Reportes", icon: <FaChartBar />, text: "Reportes", path: "/admin/reportes" },
-    { id: "Configuracion", icon: <FaCog />, text: "Configuración", path: "/admin/configuracion" },
+    { 
+      id: "Dashboard", 
+      icon: <FaChartBar />, 
+      text: "Dashboard", 
+      path: "/admin", 
+      exact: true,
+      allowedRoles: [undefined, 'Supervisor'] 
+    },
+    { 
+      id: "Caja", 
+      icon: <FaCashRegister />, 
+      text: "Administrar Caja", 
+      path: "/admin/caja",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    { 
+      id: "Ventas", 
+      icon: <FaShoppingCart />, 
+      text: "Punto de Venta", 
+      path: "/admin/ventas",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    { 
+      id: "Pedidos", 
+      icon: <FaShoppingBag />, 
+      text: "Lista de ventas", 
+      path: "/admin/Lista_ventas",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    { 
+      id: "Inventario", 
+      icon: <FaBoxOpen />, 
+      text: "Inventario", 
+      path: "/admin/inventario",
+      allowedRoles: [undefined, 'Supervisor', 'Gestion de inventario']
+    },
+    { 
+      id: "Clientes", 
+      icon: <FaUsers />, 
+      text: "Clientes", 
+      path: "/admin/clientes",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    { 
+      id: "Empleados", 
+      icon: <FaUserTie />, 
+      text: "Empleados", 
+      path: "/admin/empleados",
+      allowedRoles: [undefined, 'Supervisor'] 
+    },
+    { 
+      id: "Facturacion", 
+      icon: <FaFileInvoiceDollar />, 
+      text: "Facturación", 
+      path: "/admin/facturacion",
+      allowedRoles: [undefined, 'Supervisor']
+    },
+    { 
+      id: "Reportes", 
+      icon: <FaChartBar />, 
+      text: "Reportes", 
+      path: "/admin/reportes",
+      allowedRoles: [undefined, 'Supervisor'] 
+    },
+    { 
+      id: "Configuracion", 
+      icon: <FaCog />, 
+      text: "Configuración", 
+      path: "/admin/configuracion",
+      allowedRoles: [undefined, 'Supervisor']
+    },
   ];
+
+  // Filtrar los elementos del menú según el rol del usuario
+  const filteredMenuItems = menuItems.filter(item => {
+    // Si no se especifican roles permitidos o el ítem permite cualquier rol
+    if (!item.allowedRoles) return true;
+    
+    // Si el rol es undefined (superusuario), mostrar todo
+    if (!userRole) return true;
+    
+    // Verificar si el rol del usuario está en los roles permitidos del ítem
+    return item.allowedRoles.includes(userRole);
+  });
 
   return (
     <div
@@ -57,9 +139,9 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
         </button>
       </div>
 
-      {/* Menu */}
+      {/* Menu - MODIFICADO para usar filteredMenuItems */}
       <nav className="flex-1 overflow-y-auto mt-2">
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <NavLink
             key={item.id}
             to={item.path}

@@ -5,6 +5,7 @@ from Productos.models import Categoria
 from Productos.serializers import CategoriaSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
+
 class CategoriaListaCrearVista(APIView):
     def get(self, request, usuario_id):
         """

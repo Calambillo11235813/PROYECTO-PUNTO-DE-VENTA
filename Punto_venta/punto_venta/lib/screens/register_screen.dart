@@ -14,10 +14,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final TextEditingController _direccionController = TextEditingController();
-  final TextEditingController _fechaNacimientoController = TextEditingController();
-  
+  final TextEditingController _fechaNacimientoController =
+      TextEditingController();
+
   final FocusNode _nameFocusNode = FocusNode();
   final FocusNode _emailFocusNode = FocusNode();
   final FocusNode _passwordFocusNode = FocusNode();
@@ -36,8 +38,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   ];
 
   Future<void> _seleccionarFecha(BuildContext context) async {
-    FocusScope.of(context).unfocus(); // Cerrar el teclado antes de mostrar el selector de fecha
-    
+    FocusScope.of(
+      context,
+    ).unfocus(); // Cerrar el teclado antes de mostrar el selector de fecha
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _fechaNacimientoSeleccionada ?? DateTime.now(),
@@ -47,7 +51,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (picked != null && picked != _fechaNacimientoSeleccionada) {
       setState(() {
         _fechaNacimientoSeleccionada = picked;
-        _fechaNacimientoController.text = DateFormat('dd/MM/yyyy').format(picked);
+        _fechaNacimientoController.text = DateFormat(
+          'dd/MM/yyyy',
+        ).format(picked);
       });
     }
   }
@@ -56,11 +62,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       if (_fechaNacimientoSeleccionada == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Por favor selecciona una fecha de nacimiento')),
+          const SnackBar(
+            content: Text('Por favor selecciona una fecha de nacimiento'),
+          ),
         );
         return;
       }
-      
+
       if (_generoSeleccionado == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Por favor selecciona un género')),
@@ -95,9 +103,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (success) {
         Navigator.pushReplacementNamed(context, '/menu');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error en el registro')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Error en el registro')));
       }
     }
   }
@@ -137,10 +145,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 10),
                 const Text(
                   'Crea una cuenta para gestionar tu punto de venta y facturación electrónica.',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black87,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),
@@ -228,12 +233,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     filled: true,
                     fillColor: Colors.white,
                   ),
-                  items: _opcionesGenero.map((Map<String, String> opcion) {
-                    return DropdownMenuItem<String>(
-                      value: opcion['valor'],
-                      child: Text(opcion['texto']!),
-                    );
-                  }).toList(),
+                  items:
+                      _opcionesGenero.map((Map<String, String> opcion) {
+                        return DropdownMenuItem<String>(
+                          value: opcion['valor'],
+                          child: Text(opcion['texto']!),
+                        );
+                      }).toList(),
                   onChanged: (String? newValue) {
                     setState(() {
                       _generoSeleccionado = newValue;
@@ -285,7 +291,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   obscureText: true,
                   textInputAction: TextInputAction.next,
                   onFieldSubmitted: (_) {
-                    FocusScope.of(context).requestFocus(_confirmPasswordFocusNode);
+                    FocusScope.of(
+                      context,
+                    ).requestFocus(_confirmPasswordFocusNode);
                   },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -318,14 +326,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 isLoading
                     ? const CircularProgressIndicator()
                     : ElevatedButton(
-                        onPressed: _register,
-                        child: const Text('Registrarse'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          textStyle: const TextStyle(fontSize: 16),
-                          minimumSize: const Size(double.infinity, 50),
-                        ),
+                      onPressed: _register,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        textStyle: const TextStyle(fontSize: 16),
+                        minimumSize: const Size(double.infinity, 50),
                       ),
+                      child: const Text('Registrarse'),
+                    ),
               ],
             ),
           ),
