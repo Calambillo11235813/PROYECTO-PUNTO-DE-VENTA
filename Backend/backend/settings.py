@@ -198,3 +198,33 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Asegúrate de que exista la carpeta 'logs'
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'bitacora_format': {
+            'format': '[{asctime}] {levelname} - {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'bitacora_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOGS_DIR, 'bitacora.log'),
+            'formatter': 'bitacora_format',
+        },
+    },
+    'loggers': {
+        'bitacora': {
+            'handlers': ['bitacora_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
