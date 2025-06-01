@@ -18,6 +18,7 @@ class ProveedorSerializer(serializers.ModelSerializer):
 class ProductoSerializer(serializers.ModelSerializer):
     stock = serializers.IntegerField(source='inventario.stock', read_only=True)
     categoria = CategoriaSerializer(read_only=True)
+    
     proveedor = ProveedorSerializer(read_only=True)
     usuario = UsuarioSerializer(read_only=True)
     categoria_id = serializers.PrimaryKeyRelatedField(queryset=Categoria.objects.all(), source='categoria', write_only=True,required=False,allow_null=True)
@@ -32,16 +33,19 @@ class ProductoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Producto
-
         fields = [
-           'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen_url',
+            'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen', 'imagen_url',
             'categoria', 'proveedor', 'categoria_id', 'proveedor_id','usuario_id','usuario', 'stock',
             'stock_inicial', 'cantidad_minima', 'cantidad_maxima'
-     ]
+        ]
 
     def get_imagen_url(self, obj):
         if obj.imagen:
-            return obj.imagen.url
+            try:
+                return obj.imagen.url
+            except Exception as e:
+                print(f"Error al obtener URL de imagen: {e}")
+                return None
         return None
 
     def validate_precio_venta(self, valor):

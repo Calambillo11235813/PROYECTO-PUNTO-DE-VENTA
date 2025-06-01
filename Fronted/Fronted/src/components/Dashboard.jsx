@@ -97,7 +97,9 @@ const Dashboard = () => {
             <button className="bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition-colors">Nueva Venta</button>
             <button className="bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition-colors">Nuevo Producto</button>
             <button className="bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition-colors">Nueva Factura</button>
-            <button className="bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition-colors">Reportes</button>
+            <button className="bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition-colors">Reportes</button>´
+            <button className="bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition-colors">Añadir empleado</button>
+            <button className="bg-green-500 text-white p-3 rounded-lg hover:bg-green-600 transition-colors">Añadir rol</button>
           </div>
         </div>
       </div>

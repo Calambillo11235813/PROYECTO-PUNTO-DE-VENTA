@@ -1,4 +1,26 @@
-import apiClient from './apiClient';  // Usa el cliente API unificado
+import axios from 'axios';
+
+const API_URL = 'http://127.0.0.1:8000/accounts/';
+
+// Crear una instancia de axios con configuración base
+const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Interceptor para añadir el token de autenticación a las solicitudes
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 const userService = {
   // Obtener todos los usuarios
@@ -7,8 +29,7 @@ const userService = {
       console.log('Intentando obtener usuarios...');
       console.log('Token actual:', localStorage.getItem('access_token'));
       
-      // Usa la ruta correcta con el prefijo 'accounts'
-      const response = await apiClient.get('accounts/usuarios/');
+      const response = await apiClient.get('usuarios/');
       console.log('Usuarios obtenidos:', response.data);
       return response.data;
     } catch (error) {
@@ -17,12 +38,10 @@ const userService = {
       if (error.response?.status === 401) {
         console.log('Error de autenticación. Intentando renovar token...');
         try {
-          // Intenta renovar el token
           const authService = await import('./authService').then(module => module.default);
           await authService.refreshToken();
           
-          // Reintenta la solicitud original
-          const newResponse = await apiClient.get('accounts/usuarios/');
+          const newResponse = await apiClient.get('usuarios/');
           return newResponse.data;
         } catch (refreshError) {
           console.error('No se pudo renovar el token:', refreshError);
@@ -34,17 +53,43 @@ const userService = {
     }
   },
 
-  // Los otros métodos se mantienen igual, pero asegúrate de usar 'accounts/usuarios/'
-  getUser: async (id) => {
+  /**
+   * Obtener información de un usuario específico
+   * @param {number} userId - ID del usuario
+   * @returns {Promise} - Promesa con los datos del usuario
+   */
+  getUserById: async (userId) => {
     try {
-      const response = await apiClient.get(`accounts/usuarios/${id}/`);
+      const response = await apiClient.get(`usuarios/${userId}/`);
       return response.data;
     } catch (error) {
-      console.error(`Error al obtener usuario ${id}:`, error);
+      console.error('Error al obtener usuario:', error);
+      const errorMessage = 
+        error.response?.data?.detail || 
+        'Error al obtener información del usuario';
+      throw new Error(errorMessage);
+    }
+  },
+
+  /**
+   * Obtener información del usuario actual
+   * @returns {Promise} - Promesa con los datos del usuario actual
+   */
+  getCurrentUserDetails: async () => {
+    const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+    if (!userData.id) {
+      throw new Error('No hay usuario autenticado');
+    }
+    
+    try {
+      return await userService.getUserById(userData.id);
+    } catch (error) {
+      console.error('Error al obtener usuario actual:', error);
       throw error;
     }
   },
 
+  // Crear un nuevo usuario
   createUser: async (userData) => {
     try {
       const formattedData = {
@@ -58,7 +103,7 @@ const userService = {
         contraseña: userData.password || '12345678'
       };
 
-      const response = await apiClient.post('accounts/usuarios/', formattedData);
+      const response = await apiClient.post('usuarios/', formattedData);
       return response.data;
     } catch (error) {
       console.error('Error al crear usuario:', error);
@@ -66,26 +111,58 @@ const userService = {
     }
   },
 
-  updateUser: async (id, userData) => {
+  /**
+   * Editar información de usuario 
+   * @param {number} userId - ID del usuario a editar
+   * @param {Object} userData - Datos actualizados del usuario
+   * @returns {Promise} - Promesa con los datos del usuario actualizado
+   */
+  editUser: async (userId, userData) => {
     try {
-      const formattedData = {
-        nombre: userData.name,
-        correo: userData.email,
-        direccion: userData.phone,
-        estado: userData.status === 'Activo'
-      };
+      console.log('Intentando actualizar usuario:', userId);
+      console.log('Datos para actualización:', userData);
 
-      const response = await apiClient.put(`accounts/usuarios/${id}/`, formattedData);
+      const dataToSend = { ...userData };
+      
+      if (dataToSend.password && dataToSend.password.trim() === '') {
+        delete dataToSend.password;
+      }
+
+      const response = await apiClient.put(`usuarios/${userId}/`, dataToSend);
+      
+      const currentUser = JSON.parse(localStorage.getItem('user_data') || '{}');
+      if (currentUser.id === userId) {
+        const updatedUserData = {
+          ...currentUser,
+          nombre: response.data.nombre,
+          correo: response.data.correo,
+        };
+        localStorage.setItem('user_data', JSON.stringify(updatedUserData));
+      }
+      
+      console.log('Usuario actualizado exitosamente:', response.data);
       return response.data;
     } catch (error) {
-      console.error(`Error al actualizar usuario ${id}:`, error);
-      throw error;
+      console.error('Error al actualizar usuario:', error);
+      
+      if (error.response) {
+        console.error('Datos del error:', error.response.data);
+        console.error('Estado de la respuesta:', error.response.status);
+      }
+      
+      const errorMessage = 
+        error.response?.data?.detail || 
+        error.response?.data?.error ||
+        'Error al conectar con el servidor';
+      
+      throw new Error(errorMessage);
     }
   },
 
+  // Eliminar un usuario
   deleteUser: async (id) => {
     try {
-      await apiClient.delete(`accounts/usuarios/${id}/`);
+      await apiClient.delete(`usuarios/${id}/`);
       return true;
     } catch (error) {
       console.error(`Error al eliminar usuario ${id}:`, error);
