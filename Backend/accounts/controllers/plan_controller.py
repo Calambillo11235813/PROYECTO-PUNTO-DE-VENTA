@@ -10,6 +10,9 @@ from accounts.serializers import (
     HistorialSuscripcionSerializer
 )
 from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
+from datetime import datetime
 
 
 class PlanListView(APIView):
@@ -52,8 +55,28 @@ class PlanDetailView(APIView):
 class SuscripcionUsuarioView(APIView):
     """
     Gestionar suscripción de un usuario específico
+    
+    Ejemplo de JSON a enviar:
+    {
+        "plan": 1,
+        "fecha_inicio": "2024-01-01T00:00:00Z",
+        "fecha_expiracion": "2024-12-31T23:59:59Z",
+        "metodo_pago": "tarjeta",
+        "monto_pagado": 299.00,
+        "referencia_pago": "TXN123456789"
+    }
+    
+    Campos obligatorios:
+    - plan: ID del plan (1=básico, 2=intermedio, 3=avanzado)
+    - fecha_inicio: Fecha y hora de inicio de la suscripción
+    - fecha_expiracion: Fecha y hora de expiración
+    
+    Campos opcionales:
+    - metodo_pago: "tarjeta", "transferencia", "efectivo", "otro"
+    - monto_pagado: Monto pagado por la suscripción
+    - referencia_pago: Referencia o ID de la transacción
     """
-    permission_classes = [IsAuthenticated]
+    # REMOVIDO: permission_classes = [IsAuthenticated]
     
     def get(self, request, usuario_id):
         """Obtener suscripción actual del usuario"""
@@ -98,30 +121,108 @@ class SuscripcionUsuarioView(APIView):
             )
     
     def put(self, request, usuario_id):
-        """Cambiar plan de suscripción"""
+        """
+        Actualizar suscripción del usuario
+        
+        Ejemplo de JSON para renovar (cambiar fecha):
+        {
+            "fecha_expiracion": "2025-12-31T23:59:59Z"
+        }
+        """
         try:
             suscripcion = Suscripcion.objects.get(usuario_id=usuario_id)
             plan_anterior = suscripcion.plan
             
-            # Actualizar plan
+            # Variables para tracking de cambios
+            cambio_plan = False
+            cambio_fecha = False
+            
+            # Actualizar plan si se proporciona
             nuevo_plan_id = request.data.get('plan')
-            if nuevo_plan_id:
+            if nuevo_plan_id and nuevo_plan_id != suscripcion.plan.id:
                 nuevo_plan = Plan.objects.get(id=nuevo_plan_id, activo=True)
-                
-                # Crear registro en historial
+                suscripcion.plan = nuevo_plan
+                cambio_plan = True
+            
+            # CORREGIR: Actualizar fecha de expiración si se proporciona
+            nueva_fecha_expiracion = request.data.get('fecha_expiracion')
+            if nueva_fecha_expiracion:
+                # Convertir string a datetime si es necesario
+                if isinstance(nueva_fecha_expiracion, str):
+                    fecha_convertida = parse_datetime(nueva_fecha_expiracion)
+                    if fecha_convertida is None:
+                        return Response(
+                            {'error': 'Formato de fecha inválido. Use formato ISO: YYYY-MM-DDTHH:MM:SSZ'}, 
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    suscripcion.fecha_expiracion = fecha_convertida
+                else:
+                    suscripcion.fecha_expiracion = nueva_fecha_expiracion
+                cambio_fecha = True
+            
+            # CORREGIR: Actualizar fecha de inicio si se proporciona
+            nueva_fecha_inicio = request.data.get('fecha_inicio')
+            if nueva_fecha_inicio:
+                if isinstance(nueva_fecha_inicio, str):
+                    fecha_convertida = parse_datetime(nueva_fecha_inicio)
+                    if fecha_convertida is None:
+                        return Response(
+                            {'error': 'Formato de fecha de inicio inválido. Use formato ISO: YYYY-MM-DDTHH:MM:SSZ'}, 
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    suscripcion.fecha_inicio = fecha_convertida
+                else:
+                    suscripcion.fecha_inicio = nueva_fecha_inicio
+            
+            # Actualizar otros campos opcionales
+            if 'metodo_pago' in request.data:
+                suscripcion.metodo_pago = request.data.get('metodo_pago')
+            
+            if 'monto_pagado' in request.data:
+                suscripcion.monto_pagado = request.data.get('monto_pagado')
+            
+            if 'referencia_pago' in request.data:
+                suscripcion.referencia_pago = request.data.get('referencia_pago')
+            
+            # Determinar motivo del cambio
+            motivo = request.data.get('motivo', '')
+            if not motivo:
+                if cambio_plan and cambio_fecha:
+                    motivo = 'Cambio de plan y renovación'
+                elif cambio_plan:
+                    motivo = 'Cambio de plan'
+                elif cambio_fecha:
+                    motivo = 'Renovación de suscripción'
+                else:
+                    motivo = 'Actualización de suscripción'
+            
+            # Guardar cambios
+            suscripcion.save()
+            
+            # Crear registro en historial solo si cambió el plan
+            if cambio_plan:
                 HistorialSuscripcion.objects.create(
                     suscripcion=suscripcion,
                     plan_anterior=plan_anterior,
-                    plan_nuevo=nuevo_plan,
-                    motivo=request.data.get('motivo', 'Cambio de plan'),
-                    realizado_por=request.user.nombre if hasattr(request.user, 'nombre') else 'Sistema'
+                    plan_nuevo=suscripcion.plan,
+                    motivo=motivo,
+                    realizado_por='Sistema'
                 )
-                
-                suscripcion.plan = nuevo_plan
-                suscripcion.save()
             
+            # Preparar respuesta
             serializer = SuscripcionSerializer(suscripcion)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            response_data = {
+                'mensaje': 'Suscripción actualizada exitosamente',
+                'cambios': {
+                    'plan_actualizado': cambio_plan,
+                    'fecha_actualizada': cambio_fecha,
+                    'motivo': motivo
+                },
+                'suscripcion': serializer.data
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
         except Suscripcion.DoesNotExist:
             return Response(
                 {'error': 'Suscripción no encontrada'}, 
@@ -131,6 +232,11 @@ class SuscripcionUsuarioView(APIView):
             return Response(
                 {'error': 'Plan no encontrado'}, 
                 status=status.HTTP_404_NOT_FOUND
+            )
+        except ValueError as e:
+            return Response(
+                {'error': f'Error en formato de datos: {str(e)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
             return Response(
@@ -143,7 +249,7 @@ class VerificarLimitesView(APIView):
     """
     Verificar límites del plan actual del usuario
     """
-    permission_classes = [IsAuthenticated]
+    # REMOVIDO: permission_classes = [IsAuthenticated]
     
     def get(self, request, usuario_id):
         try:
@@ -218,7 +324,7 @@ class HistorialSuscripcionView(APIView):
     """
     Obtener historial de cambios de suscripción
     """
-    permission_classes = [IsAuthenticated]
+    # REMOVIDO: permission_classes = [IsAuthenticated]
     
     def get(self, request, usuario_id):
         try:
