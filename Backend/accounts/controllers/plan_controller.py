@@ -9,7 +9,7 @@ from accounts.serializers import (
     SuscripcionCreateSerializer,
     HistorialSuscripcionSerializer
 )
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from datetime import datetime
@@ -98,23 +98,117 @@ class SuscripcionUsuarioView(APIView):
     def post(self, request, usuario_id):
         """Crear nueva suscripción para el usuario"""
         try:
+            print(f"🔍 Datos recibidos para crear suscripción:")
+            print(f"   - usuario_id: {usuario_id}")
+            print(f"   - request.data: {request.data}")
+            
             # Verificar si ya tiene una suscripción
             if Suscripcion.objects.filter(usuario_id=usuario_id).exists():
+                print(f"❌ Usuario {usuario_id} ya tiene una suscripción")
                 return Response(
                     {'error': 'El usuario ya tiene una suscripción'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
+            # Verificar que el usuario existe
+            try:
+                from accounts.models import Usuario
+                usuario = Usuario.objects.get(id=usuario_id)
+                print(f"✅ Usuario encontrado: {usuario.correo}")
+                print(f"📋 Usuario antes de actualizar - Plan actual: {usuario.plan}")
+            except Usuario.DoesNotExist:
+                print(f"❌ Usuario {usuario_id} no existe")
+                return Response(
+                    {'error': 'Usuario no encontrado'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Verificar que el plan existe
+            plan_id = request.data.get('plan')
+            if not plan_id:
+                return Response(
+                    {'error': 'ID del plan es requerido'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            try:
+                plan = Plan.objects.get(id=plan_id, activo=True)
+                print(f"✅ Plan encontrado: {plan.nombre} - ${plan.precio}")
+            except Plan.DoesNotExist:
+                print(f"❌ Plan {plan_id} no existe o no está activo")
+                return Response(
+                    {'error': 'Plan no encontrado o no está activo'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Preparar datos para el serializer
             data = request.data.copy()
             data['usuario'] = usuario_id
             
+            print(f"📋 Datos preparados para serializer: {data}")
+            
+            # Validar con serializer
             serializer = SuscripcionCreateSerializer(data=data)
-            if serializer.is_valid():
-                suscripcion = serializer.save()
-                response_serializer = SuscripcionSerializer(suscripcion)
-                return Response(response_serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            if not serializer.is_valid():
+                print(f"❌ Errores de validación: {serializer.errors}")
+                return Response(
+                    {
+                        'error': 'Datos inválidos',
+                        'details': serializer.errors
+                    }, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Crear suscripción
+            suscripcion = serializer.save()
+            print(f"✅ Suscripción creada exitosamente: ID {suscripcion.id}")
+            
+            # ✅ NUEVA LÓGICA: Actualizar el modelo Usuario con datos del plan
+            try:
+                print(f"🔄 Actualizando datos del usuario con plan y fecha de expiración...")
+                
+                # Actualizar el campo plan (como string) y fecha_expiracion en el modelo Usuario
+                usuario.plan = plan.nombre  # ✅ Guardar el NOMBRE del plan como string
+                usuario.fecha_expiracion = suscripcion.fecha_expiracion  # ✅ Asignar fecha de expiración
+                usuario.save()
+                
+                print(f"✅ Usuario actualizado exitosamente:")
+                print(f"   - Plan (string): '{usuario.plan}'")
+                print(f"   - Fecha expiración: {usuario.fecha_expiracion}")
+                print(f"   - Plan ID en suscripción: {suscripcion.plan.id}")
+                
+            except Exception as update_error:
+                print(f"❌ Error actualizando usuario: {update_error}")
+                import traceback
+                traceback.print_exc()
+                
+                # Opcional: rollback de la suscripción si falla la actualización del usuario
+                # suscripcion.delete()
+                return Response(
+                    {'error': f'Error actualizando usuario: {str(update_error)}'}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            # Retornar respuesta con datos actualizados
+            response_serializer = SuscripcionSerializer(suscripcion)
+            response_data = response_serializer.data
+            
+            # Agregar datos del usuario actualizado a la respuesta
+            response_data['usuario_actualizado'] = {
+                'id': usuario.id,
+                'plan_nombre': usuario.plan,  # Campo string en Usuario
+                'fecha_expiracion': usuario.fecha_expiracion,
+                'plan_id_suscripcion': suscripcion.plan.id,  # ID en la suscripción
+                'sincronizado': True
+            }
+            
+            print(f"✅ Respuesta final preparada con usuario actualizado")
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        
         except Exception as e:
+            print(f"❌ Error inesperado: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return Response(
                 {'error': f'Error al crear suscripción: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -340,5 +434,201 @@ class HistorialSuscripcionView(APIView):
         except Exception as e:
             return Response(
                 {'error': f'Error al obtener historial: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class UsuarioConPlanView(APIView):
+    """
+    Obtener datos completos del usuario incluyendo plan y suscripción
+    """
+    permission_classes = [AllowAny]  # Cambiar según tus necesidades
+    
+    def get(self, request, usuario_id):
+        try:
+            from accounts.models import Usuario
+            
+            # Obtener usuario
+            usuario = Usuario.objects.get(id=usuario_id)
+            
+            # Obtener suscripción activa
+            suscripcion = None
+            try:
+                suscripcion = Suscripcion.objects.select_related('plan').get(usuario_id=usuario_id)
+            except Suscripcion.DoesNotExist:
+                pass
+            
+            # Preparar respuesta
+            usuario_data = {
+                'id': usuario.id,
+                'nombre': usuario.nombre,
+                'correo': usuario.correo,
+                'direccion': usuario.direccion,
+                'nombre_empresa': usuario.nombre_empresa,
+                'nit_empresa': usuario.nit_empresa,
+                'estado': usuario.estado,
+                'is_staff': usuario.is_staff,
+                'fecha_expiracion': usuario.fecha_expiracion,
+                'plan': usuario.plan,  # ✅ Campo string del usuario
+                'plan_data': {
+                    'id': suscripcion.plan.id,
+                    'nombre': suscripcion.plan.nombre,
+                    'precio': suscripcion.plan.precio,
+                    'descripcion': suscripcion.plan.descripcion
+                } if suscripcion else None,
+                'suscripcion': {
+                    'id': suscripcion.id,
+                    'fecha_inicio': suscripcion.fecha_inicio,
+                    'fecha_expiracion': suscripcion.fecha_expiracion,
+                    'metodo_pago': suscripcion.metodo_pago,
+                    'monto_pagado': suscripcion.monto_pagado,
+                    'referencia_pago': suscripcion.referencia_pago,
+                    'esta_activa': suscripcion.esta_activa
+                } if suscripcion else None,
+                # ✅ Información de sincronización
+                'sincronizacion': {
+                    'plan_usuario': usuario.plan,
+                    'plan_suscripcion': suscripcion.plan.nombre if suscripcion else None,
+                    'esta_sincronizado': usuario.plan == (suscripcion.plan.nombre if suscripcion else None)
+                }
+            }
+            
+            return Response(usuario_data, status=status.HTTP_200_OK)
+            
+        except Usuario.DoesNotExist:
+            return Response(
+                {'error': 'Usuario no encontrado'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            print(f"❌ Error obteniendo usuario: {str(e)}")
+            return Response(
+                {'error': f'Error al obtener usuario: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class SincronizarUsuarioPlanView(APIView):
+    """
+    Sincronizar el campo plan del usuario con su suscripción activa
+    Útil para casos donde ya existen suscripciones pero el usuario no tiene el plan actualizado
+    """
+   # permission_classes = [AllowAny]  # Cambiar según tus necesidades
+    
+    def post(self, request, usuario_id):
+        """
+        Sincronizar plan del usuario basado en su suscripción activa
+        """
+        try:
+            from accounts.models import Usuario
+            
+            # Obtener usuario
+            try:
+                usuario = Usuario.objects.get(id=usuario_id)
+                print(f"✅ Usuario encontrado: {usuario.correo}")
+                print(f"📋 Plan actual en usuario: '{usuario.plan}'")
+            except Usuario.DoesNotExist:
+                return Response(
+                    {'error': 'Usuario no encontrado'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Obtener suscripción activa
+            try:
+                suscripcion = Suscripcion.objects.select_related('plan').get(usuario_id=usuario_id)
+                print(f"✅ Suscripción encontrada: ID {suscripcion.id}")
+                print(f"📋 Plan en suscripción: {suscripcion.plan.nombre} (ID: {suscripcion.plan.id})")
+            except Suscripcion.DoesNotExist:
+                return Response(
+                    {'error': 'Usuario no tiene suscripción activa'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Verificar si necesita sincronización
+            plan_usuario_actual = usuario.plan
+            plan_suscripcion = suscripcion.plan.nombre
+            
+            if plan_usuario_actual == plan_suscripcion:
+                return Response({
+                    'mensaje': 'Usuario ya está sincronizado',
+                    'plan_actual': plan_usuario_actual,
+                    'sincronizado': True
+                }, status=status.HTTP_200_OK)
+            
+            # Realizar sincronización
+            print(f"🔄 Sincronizando usuario...")
+            print(f"   - Plan anterior: '{plan_usuario_actual}' -> Plan nuevo: '{plan_suscripcion}'")
+            
+            usuario.plan = plan_suscripcion
+            usuario.fecha_expiracion = suscripcion.fecha_expiracion
+            usuario.save()
+            
+            print(f"✅ Sincronización completada:")
+            print(f"   - Plan: '{usuario.plan}'")
+            print(f"   - Fecha expiración: {usuario.fecha_expiracion}")
+            
+            return Response({
+                'mensaje': 'Usuario sincronizado exitosamente',
+                'cambios': {
+                    'plan_anterior': plan_usuario_actual,
+                    'plan_nuevo': usuario.plan,
+                    'fecha_expiracion': usuario.fecha_expiracion
+                },
+                'sincronizado': True
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            print(f"❌ Error sincronizando usuario: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': f'Error al sincronizar usuario: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def get(self, request, usuario_id):
+        """
+        Verificar estado de sincronización del usuario
+        """
+        try:
+            from accounts.models import Usuario
+            
+            # Obtener usuario
+            usuario = Usuario.objects.get(id=usuario_id)
+            
+            # Obtener suscripción
+            try:
+                suscripcion = Suscripcion.objects.select_related('plan').get(usuario_id=usuario_id)
+            except Suscripcion.DoesNotExist:
+                return Response({
+                    'sincronizado': False,
+                    'razon': 'No tiene suscripción activa',
+                    'plan_usuario': usuario.plan,
+                    'tiene_suscripcion': False
+                }, status=status.HTTP_200_OK)
+            
+            # Verificar sincronización
+            plan_usuario = usuario.plan
+            plan_suscripcion = suscripcion.plan.nombre
+            esta_sincronizado = plan_usuario == plan_suscripcion
+            
+            return Response({
+                'sincronizado': esta_sincronizado,
+                'plan_usuario': plan_usuario,
+                'plan_suscripcion': plan_suscripcion,
+                'fecha_expiracion_usuario': usuario.fecha_expiracion,
+                'fecha_expiracion_suscripcion': suscripcion.fecha_expiracion,
+                'tiene_suscripcion': True,
+                'suscripcion_activa': suscripcion.esta_activa
+            }, status=status.HTTP_200_OK)
+            
+        except Usuario.DoesNotExist:
+            return Response(
+                {'error': 'Usuario no encontrado'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error verificando sincronización: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

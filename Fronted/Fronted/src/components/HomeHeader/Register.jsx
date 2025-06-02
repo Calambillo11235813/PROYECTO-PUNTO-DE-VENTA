@@ -33,6 +33,18 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
 
+  // Debug del plan recibido
+  useEffect(() => {
+    if (plan) {
+      console.log('📋 Plan recibido en RegisterWithPlan:', plan);
+      console.log('   - ID:', plan.id);
+      console.log('   - Nombre:', plan.nombre);
+      console.log('   - Precio:', plan.precio);
+    } else {
+      console.warn('⚠️ No se recibió plan en RegisterWithPlan');
+    }
+  }, [plan]);
+
   // Función de retry con exponential backoff
   const getClientSecretWithRetry = async () => {
     if (step !== 3 || !plan?.precio) return;
@@ -143,8 +155,12 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
   const handlePaymentSuccess = async (paymentIntent, confirmResult) => {
     try {
       setLoading(true);
+      console.log('🎉 Pago exitoso, iniciando proceso de registro completo...');
+      console.log('PaymentIntent:', paymentIntent);
+      console.log('Plan seleccionado:', plan);
 
-      // 2. Registrar usuario
+      // 1. Registrar usuario primero
+      console.log('📝 Paso 1: Registrando usuario...');
       const registerResponse = await authService.register({
         nombre: userData.nombre,
         correo: userData.correo,
@@ -153,44 +169,83 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
         direccion: userData.direccion,
         nit_empresa: userData.nit_empresa,
       });
+      console.log('✅ Usuario registrado:', registerResponse);
 
-      // 3. Login automático
+      // 2. Login automático para obtener tokens
+      console.log('🔑 Paso 2: Realizando login automático...');
       const loginResponse = await authService.login(userData.correo, userData.contrasena);
+      console.log('✅ Login exitoso:', loginResponse);
       
-      // 4. Guardar tokens
+      // 3. Guardar tokens en localStorage
       localStorage.setItem('access_token', loginResponse.access);
       localStorage.setItem('refresh_token', loginResponse.refresh);
       localStorage.setItem('id', loginResponse.usuario.id);
 
-      // 5. Crear suscripción con referencia al pago real
-      await planService.createSubscription({
-        plan: plan.id,
-        fecha_inicio: new Date().toISOString(),
-        fecha_expiracion: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-        metodo_pago: 'tarjeta',
-        monto_pagado: plan.precio,
-        referencia_pago: paymentIntent.id // ID real de Stripe
-      });
+      // 4. Crear suscripción con el plan seleccionado
+      console.log('📋 Paso 3: Creando suscripción...');
+      
+      // Calcular fechas
+      const fechaInicio = new Date();
+      const fechaExpiracion = new Date();
+      fechaExpiracion.setFullYear(fechaExpiracion.getFullYear() + 1); // 1 año de duración
 
-      // 6. Actualizar contexto de autenticación
+      const suscripcionData = {
+        plan: plan.id, // ✅ ID del plan seleccionado
+        fecha_inicio: fechaInicio.toISOString(),
+        fecha_expiracion: fechaExpiracion.toISOString(),
+        metodo_pago: 'tarjeta',
+        monto_pagado: parseFloat(plan.precio),
+        referencia_pago: paymentIntent.id // ID real de Stripe
+      };
+
+      console.log('📋 Datos de suscripción a crear:', suscripcionData);
+
+      const suscripcionResponse = await planService.createSubscription(suscripcionData);
+      console.log('✅ Suscripción creada exitosamente:', suscripcionResponse);
+
+      // 5. Actualizar contexto de autenticación
       const userDataForContext = {
         id: loginResponse.usuario.id,
         nombre: loginResponse.usuario.nombre,
         correo: loginResponse.usuario.correo,
         rol: loginResponse.usuario.rol || { id: 1, nombre: "admin" },
-        is_staff: loginResponse.usuario.is_staff
+        is_staff: loginResponse.usuario.is_staff,
+        plan: plan.nombre, // ✅ Agregar plan al contexto
+        suscripcion: suscripcionResponse // ✅ Agregar datos de suscripción
       };
       
       login(userDataForContext);
 
-      // 7. Mostrar éxito y redirigir
-      toast.success('¡Registro y suscripción completados exitosamente!');
-      onClose();
-      navigate('/admin');
+      // 6. Mostrar éxito y redirigir
+      toast.success(`¡Registro completado! Bienvenido al plan ${plan.nombre.toUpperCase()}`);
+      
+      // Pequeña pausa para que el usuario vea el mensaje
+      setTimeout(() => {
+        onClose();
+        navigate('/admin');
+      }, 2000);
 
     } catch (error) {
-      console.error('Error en registro completo:', error);
-      toast.error(error.message || 'Error en el proceso de registro');
+      console.error('❌ Error en registro completo:', error);
+      
+      // Manejo específico de errores
+      if (error.response?.status === 400) {
+        const errorMessage = error.response.data?.error || 'Datos inválidos para crear la suscripción';
+        toast.error(`Error al crear suscripción: ${errorMessage}`);
+      } else if (error.response?.status === 409) {
+        toast.error('El usuario ya tiene una suscripción activa');
+      } else {
+        toast.error(error.message || 'Error en el proceso de registro');
+      }
+      
+      // En caso de error, al menos el usuario fue creado, redirigir con mensaje
+      if (localStorage.getItem('access_token')) {
+        toast.info('Usuario creado correctamente. Por favor, contacta soporte para activar tu plan.');
+        setTimeout(() => {
+          onClose();
+          navigate('/admin');
+        }, 3000);
+      }
     } finally {
       setLoading(false);
     }
@@ -223,6 +278,36 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
 
   // Navegación entre pasos
   const nextStep = () => {
+    // Validación específica para cada paso
+    if (step === 1) {
+      // Validar datos personales
+      if (!userData.nombre || !userData.correo || !userData.contrasena || !userData.confirmContrasena) {
+        toast.error('Por favor, completa todos los campos obligatorios');
+        return;
+      }
+      
+      if (userData.contrasena !== userData.confirmContrasena) {
+        toast.error('Las contraseñas no coinciden');
+        return;
+      }
+      
+      if (userData.contrasena.length < 6) {
+        toast.error('La contraseña debe tener al menos 6 caracteres');
+        return;
+      }
+    }
+    
+    if (step === 2) {
+      // Validar datos de empresa
+      if (!userData.nombre_empresa || !userData.direccion || !userData.nit_empresa) {
+        toast.error('Por favor, completa todos los campos de la empresa');
+        return;
+      }
+    }
+    
+    console.log(`✅ Paso ${step} validado correctamente, avanzando al paso ${step + 1}`);
+    console.log('📋 Plan seleccionado:', plan);
+    
     setStep(step + 1);
   };
 

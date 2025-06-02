@@ -13,7 +13,9 @@ from accounts.controllers.plan_controller import (
     PlanDetailView, 
     SuscripcionUsuarioView,
     VerificarLimitesView,
-    HistorialSuscripcionView
+    HistorialSuscripcionView,
+    UsuarioConPlanView,
+    SincronizarUsuarioPlanView  # ✅ Agregar nueva importación
 )
 
 
@@ -55,4 +57,6 @@ urlpatterns = [
     path('usuarios/<int:usuario_id>/suscripcion/', SuscripcionUsuarioView.as_view(), name='suscripcion-usuario'),
     path('usuarios/<int:usuario_id>/limites/', VerificarLimitesView.as_view(), name='verificar-limites'),
     path('usuarios/<int:usuario_id>/historial-suscripcion/', HistorialSuscripcionView.as_view(), name='historial-suscripcion'),
+    path('usuarios/<int:usuario_id>/completo/', UsuarioConPlanView.as_view(), name='usuario-completo'),
+    path('usuarios/<int:usuario_id>/sincronizar-plan/', SincronizarUsuarioPlanView.as_view(), name='sincronizar-plan'),  # ✅ Nueva URL
 ]

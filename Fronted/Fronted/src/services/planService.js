@@ -245,16 +245,54 @@ const planService = {
     try {
       const userId = localStorage.getItem('id');
       if (!userId) {
-        throw new Error('No se encontró ID de usuario');
+        throw new Error('No se encontró ID de usuario. Asegúrate de estar logueado.');
       }
 
-      console.log('🔄 Creando nueva suscripción...', suscripcionData);
+      console.log('🔄 Creando nueva suscripción...');
+      console.log('📋 Datos enviados:', suscripcionData);
+      console.log('👤 Usuario ID:', userId);
+
+      // Validar datos requeridos
+      const requiredFields = ['plan', 'fecha_inicio', 'fecha_expiracion'];
+      const missingFields = requiredFields.filter(field => !suscripcionData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Campos requeridos faltantes: ${missingFields.join(', ')}`);
+      }
+
+      // Realizar la petición
       const response = await apiClient.post(`/accounts/usuarios/${userId}/suscripcion/`, suscripcionData);
       console.log('✅ Suscripción creada exitosamente:', response.data);
+      
       return response.data;
     } catch (error) {
-      console.error('❌ Error al crear suscripción:', error.response?.data || error.message);
-      throw error;
+      console.error('❌ Error detallado al crear suscripción:');
+      console.error('   - Error message:', error.message);
+      console.error('   - Response data:', error.response?.data);
+      console.error('   - Status:', error.response?.status);
+      
+      // Manejo específico de errores del backend
+      if (error.response?.status === 400) {
+        const backendError = error.response.data;
+        if (typeof backendError === 'object' && backendError.error) {
+          throw new Error(backendError.error);
+        } else if (typeof backendError === 'object') {
+          // Si son errores de validación de campos
+          const fieldErrors = Object.entries(backendError)
+            .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+            .join('; ');
+          throw new Error(`Errores de validación: ${fieldErrors}`);
+        }
+      } else if (error.response?.status === 409) {
+        throw new Error('El usuario ya tiene una suscripción activa');
+      } else if (error.response?.status === 404) {
+        throw new Error('Plan no encontrado o usuario no existe');
+      } else if (error.response?.status === 401) {
+        throw new Error('No autorizado. Por favor, inicia sesión nuevamente.');
+      }
+      
+      // Error genérico
+      throw new Error(error.response?.data?.error || error.message || 'Error al crear suscripción');
     }
   },
 
