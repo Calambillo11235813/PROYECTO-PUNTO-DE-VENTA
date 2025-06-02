@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv # type: ignore
 import os
+import stripe
+from decouple import config
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -51,6 +53,7 @@ INSTALLED_APPS = [
     'Ventas',
     'corsheaders',
     'drf_spectacular',
+    'payments',  # Nueva app para pagos
 ]
 
 
@@ -112,6 +115,8 @@ CORS_ALLOW_ALL_ORIGINS = False  # En producción, esto debería ser False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Para Vite (ajusta según tu puerto)
     "http://localhost:3000",  # Para create-react-app
+    "https://js.stripe.com",
+    "http://127.0.0.1:3000",
 ]
 
 # Permitir credenciales en las solicitudes CORS
@@ -198,3 +203,33 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Configuración de Stripe - VERSIÓN SIMPLIFICADA
+print("=== CARGANDO CLAVES DE STRIPE ===")
+
+# Intentar cargar desde .env primero
+stripe_secret_from_env = os.getenv('STRIPE_SECRET_KEY')
+stripe_public_from_env = os.getenv('STRIPE_PUBLISHABLE_KEY')
+
+print(f"Desde os.getenv - Secret: {stripe_secret_from_env[:30] if stripe_secret_from_env else 'NOT_FOUND'}...")
+print(f"Desde os.getenv - Public: {stripe_public_from_env[:30] if stripe_public_from_env else 'NOT_FOUND'}...")
+
+# Si no se cargan desde .env, usar valores hardcodeados
+if stripe_secret_from_env and len(stripe_secret_from_env) > 50:
+    STRIPE_SECRET_KEY = stripe_secret_from_env
+    STRIPE_PUBLISHABLE_KEY = stripe_public_from_env
+    print("✅ Claves cargadas desde .env")
+else:
+    print("⚠️ Usando claves hardcodeadas como fallback")
+    STRIPE_SECRET_KEY = 'sk_test_51RVLxu9Vl4VCYzSt344eQFOVJNNwQ7dooAHswV3mPUqE4Vin9gKbi7gtXyVk135AhmdePoawxlsaZMMFTX96fGlm00whgpMpgQ'
+    STRIPE_PUBLISHABLE_KEY = 'pk_test_51RVLxu9Vl4VCYzStTUJvlBdoOTxJaOodMZMEldYaWArfBNVXDU4eQHFs14myRp4b3rN61bhHds6pR5NwwMJ9rUac00cAmQ4cVR'
+
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+
+print(f"✅ STRIPE_SECRET_KEY final: {STRIPE_SECRET_KEY[:30]}... (Longitud: {len(STRIPE_SECRET_KEY)})")
+print(f"✅ STRIPE_PUBLISHABLE_KEY final: {STRIPE_PUBLISHABLE_KEY[:30]}... (Longitud: {len(STRIPE_PUBLISHABLE_KEY)})")
+print("================================")
+
+# Configurar Stripe
+stripe.api_key = STRIPE_SECRET_KEY
