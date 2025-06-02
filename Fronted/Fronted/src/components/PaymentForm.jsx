@@ -44,7 +44,11 @@ const PaymentForm = ({ amount, currency = 'usd', description = '', onSuccess, on
 
   return (
     <form id="payment-form" onSubmit={handleSubmit}>
-      <PaymentElement />
+      <PaymentElement 
+        options={{
+          linkPaymentMethodsEnabled: false  // Deshabilita Stripe Link
+        }} 
+      />
       
       {error && (
         <div className="text-red-500 text-sm mt-2">
