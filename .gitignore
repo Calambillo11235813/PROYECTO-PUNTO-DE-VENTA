@@ -1,6 +1,44 @@
-# Ejemplo de .gitignore
-node_modules/
-venv/
+# Variables de entorno - NUNCA SUBIR ESTAS
 .env
+*.env
+.env.local
+.env.production
+.env.development
+
+# Archivos de Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entorno virtual
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Base de datos
+*.db
+*.sqlite3
+
+# Logs
 *.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Django
+local_settings.py
+db.sqlite3
+media/
+
+# Cloudinary (si usas credenciales locales)
+cloudinary_python.txt

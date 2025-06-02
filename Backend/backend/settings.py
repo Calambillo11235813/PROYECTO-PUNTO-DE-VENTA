@@ -205,30 +205,23 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# Configuración de Stripe - VERSIÓN SIMPLIFICADA
+# Configuración de Stripe - VERSIÓN SEGURA (SIN CLAVES HARDCODEADAS)
 print("=== CARGANDO CLAVES DE STRIPE ===")
 
-# Intentar cargar desde .env primero
-stripe_secret_from_env = os.getenv('STRIPE_SECRET_KEY')
-stripe_public_from_env = os.getenv('STRIPE_PUBLISHABLE_KEY')
-
-print(f"Desde os.getenv - Secret: {stripe_secret_from_env[:30] if stripe_secret_from_env else 'NOT_FOUND'}...")
-print(f"Desde os.getenv - Public: {stripe_public_from_env[:30] if stripe_public_from_env else 'NOT_FOUND'}...")
-
-# Si no se cargan desde .env, usar valores hardcodeados
-if stripe_secret_from_env and len(stripe_secret_from_env) > 50:
-    STRIPE_SECRET_KEY = stripe_secret_from_env
-    STRIPE_PUBLISHABLE_KEY = stripe_public_from_env
-    print("✅ Claves cargadas desde .env")
-else:
-    print("⚠️ Usando claves hardcodeadas como fallback")
-    STRIPE_SECRET_KEY = 'sk_test_51RVLxu9Vl4VCYzSt344eQFOVJNNwQ7dooAHswV3mPUqE4Vin9gKbi7gtXyVk135AhmdePoawxlsaZMMFTX96fGlm00whgpMpgQ'
-    STRIPE_PUBLISHABLE_KEY = 'pk_test_51RVLxu9Vl4VCYzStTUJvlBdoOTxJaOodMZMEldYaWArfBNVXDU4eQHFs14myRp4b3rN61bhHds6pR5NwwMJ9rUac00cAmQ4cVR'
-
+# Cargar desde variables de entorno únicamente
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
 
-print(f"✅ STRIPE_SECRET_KEY final: {STRIPE_SECRET_KEY[:30]}... (Longitud: {len(STRIPE_SECRET_KEY)})")
-print(f"✅ STRIPE_PUBLISHABLE_KEY final: {STRIPE_PUBLISHABLE_KEY[:30]}... (Longitud: {len(STRIPE_PUBLISHABLE_KEY)})")
+# Verificar que las claves estén disponibles
+if not STRIPE_SECRET_KEY:
+    raise ValueError("⚠️ STRIPE_SECRET_KEY no encontrada en variables de entorno. Verifica tu archivo .env")
+
+if not STRIPE_PUBLISHABLE_KEY:
+    raise ValueError("⚠️ STRIPE_PUBLISHABLE_KEY no encontrada en variables de entorno. Verifica tu archivo .env")
+
+print(f"✅ STRIPE_SECRET_KEY cargada desde .env: {STRIPE_SECRET_KEY[:30]}... (Longitud: {len(STRIPE_SECRET_KEY)})")
+print(f"✅ STRIPE_PUBLISHABLE_KEY cargada desde .env: {STRIPE_PUBLISHABLE_KEY[:30]}... (Longitud: {len(STRIPE_PUBLISHABLE_KEY)})")
 print("================================")
 
 # Configurar Stripe
