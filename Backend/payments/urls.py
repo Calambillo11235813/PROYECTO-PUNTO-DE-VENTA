@@ -1,11 +1,16 @@
 # payments/urls.py
 from django.urls import path
-from . import views
+from .views import (
+    create_payment_intent,         # Función (no clase)
+    ConfirmPaymentView,           # Clase
+    CreateSubscriptionView,       # Clase
+    StripeWebhookView            # Clase
+)
 
 urlpatterns = [
-    path('create-payment-intent/', views.CreatePaymentIntentView.as_view(), name='create-payment-intent'),
-    path('confirm-payment/', views.ConfirmPaymentView.as_view(), name='confirm-payment'),
-    path('create-subscription/', views.CreateSubscriptionView.as_view(), name='create-subscription'),
-    path('webhook/', views.StripeWebhookView.as_view(), name='stripe-webhook'),
+    path('create-payment-intent/', create_payment_intent, name='create_payment_intent'),
+    path('confirm-payment/', ConfirmPaymentView.as_view(), name='confirm_payment'),
+    path('create-subscription/', CreateSubscriptionView.as_view(), name='create_subscription'),
+    path('webhook/', StripeWebhookView.as_view(), name='stripe_webhook'),
 ]
 

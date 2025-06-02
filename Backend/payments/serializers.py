@@ -30,7 +30,9 @@ class PaymentSerializer(serializers.ModelSerializer):
     """
     user = UserSerializer(read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-
+    amount_dollars = serializers.SerializerMethodField()
+    amount_formatted = serializers.SerializerMethodField()
+    
     class Meta:
         model = Payment
         fields = [
@@ -55,6 +57,39 @@ class PaymentSerializer(serializers.ModelSerializer):
             'created_at', 
             'updated_at'
         ]
+
+    def get_amount_dollars(self, obj):
+        """Convertir centavos a dólares"""
+        return obj.amount / 100
+    
+    def get_amount_formatted(self, obj):
+        """Formato amigable del monto"""
+        return f"${obj.amount / 100:.2f} {obj.currency.upper()}"
+
+class CreatePaymentIntentSerializer(serializers.Serializer):
+    """
+    Serializer para validar los datos de entrada al crear un PaymentIntent.
+    """
+    amount = serializers.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        min_value=0.50,
+        help_text="Monto en dólares (ej: 10.50 para $10.50 USD)"
+    )
+    currency = serializers.CharField(
+        max_length=3, 
+        default='usd',
+        help_text="Código de moneda (usd, eur, etc.)"
+    )
+    description = serializers.CharField(
+        max_length=255, 
+        required=False,
+        help_text="Descripción del pago"
+    )
+    registration_flow = serializers.BooleanField(
+        default=False,
+        help_text="Indica si es parte del flujo de registro"
+    )
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     """
@@ -87,18 +122,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             'created_at'
         ]
 
-class CreatePaymentIntentSerializer(serializers.Serializer):
-    """
-    Serializer para validar los datos de entrada al crear un PaymentIntent.
-    """
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=0.50) # Ejemplo: mínimo 0.50 USD
-    currency = serializers.CharField(max_length=3, default='usd')
-    description = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    # Podrías añadir más campos si los necesitas, como 'payment_method_types'
-
 class CreateSubscriptionSerializer(serializers.Serializer):
     """
     Serializer para validar los datos de entrada al crear una Suscripción.
     """
-    price_id = serializers.CharField(max_length=255) # El ID del Price de Stripe
-    # Podrías añadir 'payment_method_id' si el cliente ya tiene uno guardado y quieres usarlo.
+    price_id = serializers.CharField(
+        max_length=255,
+        help_text="ID del precio de Stripe"
+    )

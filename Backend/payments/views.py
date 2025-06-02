@@ -2,7 +2,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny  # Agregar AllowAny
+from rest_framework.decorators import api_view, permission_classes  # Agregar estas importaciones
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
@@ -10,57 +11,96 @@ from django.utils.decorators import method_decorator
 import stripe
 import json
 import logging
+import uuid  # Importar uuid para generar claves de idempotencia
 
 from .services import StripeService 
 from .models import Payment, Subscription
 from .serializers import (
     PaymentSerializer, 
     SubscriptionSerializer,
-    CreatePaymentIntentSerializer,  # ← IMPORTACIÓN FALTANTE
-    CreateSubscriptionSerializer    # ← PARA CONSISTENCIA
+    CreatePaymentIntentSerializer,
+    CreateSubscriptionSerializer
 )
+from .permissions import IsAuthenticatedOrRegistration  # Importar el permiso personalizado
 
 logger = logging.getLogger(__name__)
 
-class CreatePaymentIntentView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        try:
-            # Debug: Verificar configuración
-            logger.info(f"Stripe key configured: {settings.STRIPE_SECRET_KEY[:20] if settings.STRIPE_SECRET_KEY else 'NOT SET'}...")
-            
-            serializer = CreatePaymentIntentSerializer(data=request.data)
-            if serializer.is_valid():
-                # Verificar que el usuario tenga el campo 'correo'
-                if not hasattr(request.user, 'correo'):
-                    return Response(
-                        {'error': 'El usuario no tiene un campo de correo configurado'}, 
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-                
-                stripe_service = StripeService()
-                result = stripe_service.create_payment_intent(
-                    user=request.user,
-                    amount=serializer.validated_data['amount'],
-                    currency=serializer.validated_data.get('currency', 'usd'),
-                    description=serializer.validated_data.get('description', '')
-                )
-                
-                return Response({
-                    'client_secret': result['client_secret'],
-                    'payment_id': result['payment_id'],
-                    'publishable_key': settings.STRIPE_PUBLISHABLE_KEY
-                }, status=status.HTTP_200_OK)
-            
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
-        except Exception as e:
-            logger.error(f"Error creating payment intent: {str(e)}")
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_payment_intent(request):
+    try:
+        # Log de la solicitud recibida
+        logger.info(f"PaymentIntent request received: {request.data}")
+        
+        # Validar datos requeridos
+        required_fields = ['amount', 'currency']
+        missing_fields = [field for field in required_fields if field not in request.data]
+        
+        if missing_fields:
+            logger.error(f"Missing required fields: {missing_fields}")
             return Response(
-                {'error': str(e)}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {'error': f'Campos requeridos faltantes: {missing_fields}'}, 
+                status=status.HTTP_400_BAD_REQUEST
             )
+        
+        amount_dollars = request.data.get('amount')
+        currency = request.data.get('currency', 'usd')
+        description = request.data.get('description', '')
+        registration_flow = request.data.get('registration_flow', False)
+        
+        # Validar y convertir amount de dólares a centavos
+        try:
+            # Convertir a float para manejar decimales (ej: 10.50)
+            amount_dollars = float(amount_dollars)
+            
+            if amount_dollars <= 0:
+                raise ValueError("Amount must be positive")
+            
+            # Verificar mínimo de $0.50 USD
+            if amount_dollars < 0.50:
+                return Response(
+                    {'error': 'El monto mínimo es $0.50 USD'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Convertir dólares a centavos (multiplicar por 100)
+            amount_cents = int(amount_dollars * 100)
+            
+            logger.info(f"💰 Amount conversion: ${amount_dollars} USD → {amount_cents} centavos")
+            
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid amount: {amount_dollars}, error: {e}")
+            return Response(
+                {'error': 'Monto inválido. Debe ser un número positivo en dólares (ej: 10.50)'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Usar el servicio de Stripe (enviar centavos)
+        stripe_service = StripeService()
+        
+        # Crear PaymentIntent con centavos
+        payment_intent_data = stripe_service.create_payment_intent(
+            amount=amount_cents,  # Enviamos centavos a Stripe
+            currency=currency,
+            description=description,
+            registration_flow=registration_flow,
+            user=request.user if request.user.is_authenticated else None
+        )
+        
+        # Agregar información de dólares a la respuesta
+        payment_intent_data['amount_dollars'] = amount_dollars
+        payment_intent_data['amount_formatted'] = f"${amount_dollars:.2f} {currency.upper()}"
+        
+        logger.info(f"PaymentIntent created successfully: {payment_intent_data.get('payment_intent_id')}")
+        
+        return Response(payment_intent_data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error creating payment intent: {str(e)}", exc_info=True)
+        return Response(
+            {'error': 'Error interno del servidor'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 class ConfirmPaymentView(APIView):
     permission_classes = [IsAuthenticated]

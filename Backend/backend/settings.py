@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'Ventas',
     'corsheaders',
     'drf_spectacular',
-    'payments',  # Nueva app para pagos
+    'payments',  
 ]
 
 
@@ -61,10 +61,12 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
          # Asegúrate de que esta configuración no bloquee el registro
          'rest_framework.permissions.AllowAny',
+         
      ],
 }
 

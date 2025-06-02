@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { CreditCard as CreditCardIcon } from 'lucide-react'; // Añadir esta importación
 import PaymentForm from '../PaymentForm';
 import StripeProvider from '../StripeProvider';
 import authService from '../../services/authService';
@@ -24,6 +25,119 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
     direccion: '',
     nit_empresa: ''
   });
+  const [clientSecret, setClientSecret] = useState(null);
+  const [paymentError, setPaymentError] = useState(null);
+  const [timeoutError, setTimeoutError] = useState(false); // Nuevo estado para el error de timeout
+  const [renderKey, setRenderKey] = useState(0); // Estado para forzar re-renderizado
+  const [stripeKey, setStripeKey] = useState(0); // Nueva clave para Stripe
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+
+  // Función de retry con exponential backoff
+  const getClientSecretWithRetry = async () => {
+    if (step !== 3 || !plan?.precio) return;
+    
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        setLoading(true);
+        setPaymentError(null);
+        
+        if (attempt > 0) {
+          console.log(`🔄 Reintentando crear PaymentIntent (intento ${attempt + 1}/${MAX_RETRIES + 1})`);
+          // Exponential backoff: 1s, 2s, 4s
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+        }
+
+        const response = await paymentService.createPaymentIntent(
+          parseFloat(plan.precio),
+          'usd',
+          `Suscripción Plan ${plan.nombre}`,
+          true
+        );
+        
+        setClientSecret(response.client_secret);
+        setRetryCount(0);
+        return; // Éxito, salir del loop
+        
+      } catch (error) {
+        console.error(`❌ Error en intento ${attempt + 1}:`, error);
+        
+        if (attempt === MAX_RETRIES) {
+          // Último intento fallido, mostrar error final
+          setPaymentError(
+            `Error persistente del servidor después de ${MAX_RETRIES + 1} intentos. ` +
+            'Por favor, contacte al soporte técnico.'
+          );
+          setRetryCount(attempt + 1);
+        }
+      } finally {
+        if (attempt === MAX_RETRIES) {
+          setLoading(false);
+        }
+      }
+    }
+  };
+
+  // Obtener el clientSecret cuando entramos al paso 3
+  useEffect(() => {
+    const getClientSecret = async () => {
+      if (step === 3 && plan?.precio) {
+        try {
+          setLoading(true);
+          setPaymentError(null); // Limpiar errores previos
+          
+          console.log('🔄 Creando PaymentIntent para plan:', {
+            planId: plan.id,
+            precio: plan.precio,
+            nombre: plan.nombre
+          });
+
+          const response = await paymentService.createPaymentIntent(
+            parseFloat(plan.precio),
+            'usd',
+            `Suscripción Plan ${plan.nombre}`,
+            true // isRegistration = true
+          );
+          
+          console.log('✅ PaymentIntent creado exitosamente:', response);
+          setClientSecret(response.client_secret);
+          
+        } catch (error) {
+          console.error('❌ Error detallado al crear PaymentIntent:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+            config: error.config
+          });
+          
+          // Manejo específico por tipo de error
+          if (error.response?.status === 500) {
+            setPaymentError(
+              'Error interno del servidor. Por favor, contacte al soporte técnico o intente más tarde.'
+            );
+          } else if (error.response?.status === 400) {
+            setPaymentError(
+              'Datos de pago inválidos. Por favor, verifique la información del plan.'
+            );
+          } else if (error.response?.status === 403) {
+            setPaymentError(
+              'No autorizado para crear el pago. Por favor, inicie sesión nuevamente.'
+            );
+          } else {
+            setPaymentError(
+              error.message || 'Error al preparar el pago. Por favor, intente nuevamente.'
+            );
+          }
+          
+          toast.error('Error al configurar el pago. Por favor, intente nuevamente.');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    getClientSecret();
+  }, [step, plan]);
 
   // Proceso completo de registro y suscripción con Stripe real
   const handlePaymentSuccess = async (paymentIntent, confirmResult) => {
@@ -82,9 +196,29 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
     }
   };
 
+  // Mejorar el manejo de errores en handlePaymentError
   const handlePaymentError = (error) => {
-    console.error('Payment error:', error);
-    toast.error('Error en el pago: ' + error.message);
+    console.log("Payment error:", error);
+    
+    // Manejo específico para error de estado inesperado
+    if (error.code === 'payment_intent_unexpected_state') {
+      console.log('⚠️ Estado inesperado del PaymentIntent, regenerando...');
+      
+      // Mostrar mensaje específico
+      setPaymentError(
+        "El estado del pago es inconsistente. Estamos regenerando el formulario de pago, por favor espere..."
+      );
+      
+      // Esperar un poco y regenerar el clientSecret
+      setTimeout(() => {
+        getClientSecret();
+      }, 2000);
+      
+      return;
+    }
+    
+    // Para otros errores
+    setPaymentError(error.message || 'Error al procesar el pago');
   };
 
   // Navegación entre pasos
@@ -95,6 +229,43 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
   const prevStep = () => {
     setStep(step - 1);
   };
+
+  // Añadir un efecto separado para manejar la visualización del formulario
+  useEffect(() => {
+    // Este efecto se ejecuta cuando clientSecret cambia
+    if (clientSecret) {
+      console.log('🔄 clientSecret actualizado, forzando renderizado del formulario');
+      // Asegurar que loading está en false
+      setLoading(false);
+      // Opcional: forzar un re-renderizado si es necesario
+      setRenderKey(Date.now());
+    }
+  }, [clientSecret]);
+
+  // Cuando recibimos el clientSecret, actualizamos la key para forzar un re-renderizado
+  useEffect(() => {
+    if (clientSecret) {
+      setStripeKey(prev => prev + 1);
+    }
+  }, [clientSecret]);
+
+  // En RegisterWithPlan, añadir este useEffect:
+  useEffect(() => {
+    // Regenerar el clientSecret si lleva mucho tiempo activo (prevenir expiración)
+    let timeoutId;
+    
+    if (clientSecret && step === 3) {
+      // Regenerar después de 45 minutos para evitar que expire (Stripe expira en 1h)
+      timeoutId = setTimeout(() => {
+        console.log('⚠️ Regenerando clientSecret para evitar expiración...');
+        getClientSecret();
+      }, 45 * 60 * 1000);
+    }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [clientSecret, step]);
 
   if (!isOpen) return null;
 
@@ -296,7 +467,6 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                 <p className="text-gray-600">Pago seguro con Stripe</p>
               </div>
 
-              {/* Resumen del plan */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                 <h4 className="font-semibold text-gray-900 mb-3">Resumen del Plan</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -311,16 +481,50 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                 </div>
               </div>
 
-              {/* Integración real de Stripe */}
-              <StripeProvider>
-                <PaymentForm
-                  amount={parseFloat(plan?.precio || 0)}
-                  currency="usd"
-                  description={`Suscripción Plan ${plan?.nombre}`}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                />
-              </StripeProvider>
+              {paymentError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <h3 className="text-sm font-medium text-red-800">
+                        Error en el procesamiento del pago
+                      </h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        {paymentError}
+                      </div>
+                      {retryCount > 0 && (
+                        <div className="mt-3">
+                          <button
+                            onClick={handleRetryPayment}
+                            className="bg-red-100 hover:bg-red-200 text-red-800 text-sm px-3 py-1 rounded-md transition-colors"
+                          >
+                            Intentar nuevamente
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Cargando opciones de pago...</p>
+                </div>
+              ) : clientSecret ? (
+                <StripeProvider clientSecret={clientSecret}>
+                  <PaymentForm
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                    isRegistration={true}
+                  />
+                </StripeProvider>
+              ) : null}
             </div>
           )}
         </div>
@@ -343,7 +547,9 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
             </button>
           ) : (
             <button
-              onClick={handleCompleteRegistration}
+              // Esto conectará el botón con el formulario de Stripe
+              type="submit"
+              form="payment-form"
               disabled={loading}
               className="flex-1 py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >

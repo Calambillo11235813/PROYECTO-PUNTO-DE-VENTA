@@ -30,32 +30,88 @@ const Plans = () => {
     loadInitialData();
   }, []);
 
+  useEffect(() => {
+    // Verificar y limpiar autenticación inválida al cargar
+    const checkAndCleanAuthentication = async () => {
+      const userId = localStorage.getItem('id');
+      const accessToken = localStorage.getItem('access_token');
+      
+      if (userId || accessToken) {
+        try {
+          // Intentar verificar token
+          const isValid = await planService.verifyAuthentication();
+          
+          if (!isValid) {
+            // Limpiar todo si no es válido
+            console.log("Autenticación inválida detectada, limpiando localStorage");
+            localStorage.removeItem('token');
+            localStorage.removeItem('id');
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+          }
+        } catch (error) {
+          console.error("Error verificando autenticación, limpiando por seguridad");
+          localStorage.clear(); // Más agresivo, limpiar todo
+        }
+      }
+    };
+    
+    checkAndCleanAuthentication();
+  }, []);
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
       
-      // Cargar planes disponibles
-      const planesData = await planService.getAllPlans();
-      setPlans(planesData);
-
-      // Intentar cargar suscripción actual
+      // Intentar cargar planes (con fallback si falla)
       try {
-        const subscriptionData = await planService.getUserSubscription();
-        setCurrentSubscription(subscriptionData);
+        console.log('🔍 Cargando planes...');
+        const planesData = await planService.getAllPlans();
+        console.log('✅ Planes cargados:', planesData);
+        setPlans(planesData);
+      } catch (planesError) {
+        console.error('❌ Error cargando planes:', planesError);
         
-        // Si tiene suscripción, cargar límites
-        if (subscriptionData) {
-          const limitsData = await planService.getUserLimits();
-          setUserLimits(limitsData);
+        // Intentar obtener planes básicos como fallback
+        try {
+          const basicPlans = await planService.getBasicPlans();
+          setPlans(basicPlans);
+          toast.info('Mostrando planes básicos. Inicia sesión para ver más opciones.');
+        } catch (fallbackError) {
+          console.error('❌ Error cargando planes básicos:', fallbackError);
+          toast.error('Error al cargar información de planes');
+          setPlans([]); // Establecer array vacío como último recurso
         }
-      } catch (error) {
-        // Usuario no tiene suscripción, es normal
-        console.log('Usuario sin suscripción activa');
       }
+
+      // Solo intentar cargar datos de suscripción si el usuario está autenticado
+      const isAuthenticated = planService.isAuthenticated();
+      console.log('🔍 Usuario autenticado:', isAuthenticated);
       
+      if (isAuthenticated) {
+        try {
+          console.log('🔍 Cargando datos de suscripción...');
+          const subscriptionData = await planService.getUserSubscription();
+          if (subscriptionData) {
+            setCurrentSubscription(subscriptionData);
+            
+            // Cargar límites si hay suscripción
+            try {
+              const limitsData = await planService.getUserLimits();
+              setUserLimits(limitsData);
+            } catch (limitsError) {
+              console.log('⚠️ No se pudieron cargar los límites:', limitsError);
+              // No mostrar error al usuario por esto
+            }
+          }
+        } catch (subscriptionError) {
+          console.log('ℹ️ No se pudieron cargar datos de suscripción:', subscriptionError);
+          // No mostrar error al usuario, es normal si no tiene suscripción
+        }
+      }
     } catch (error) {
-      console.error('Error al cargar datos:', error);
-      toast.error('Error al cargar información de planes');
+      console.error('❌ Error general al cargar datos:', error);
+      toast.error('Error al cargar información. Intenta recargar la página.');
     } finally {
       setLoading(false);
     }
@@ -63,15 +119,22 @@ const Plans = () => {
 
   // Manejar selección de plan
   const handleSelectPlan = (plan) => {
+    // Verificación completa de autenticación
     const userId = localStorage.getItem('id');
+    const accessToken = localStorage.getItem('access_token');
+    const isFullyAuthenticated = userId && accessToken;
     
-    if (!userId) {
+    console.log("Estado de autenticación:", { userId, hasAccessToken: !!accessToken });
+    
+    if (!isFullyAuthenticated) {
       // Usuario no autenticado - mostrar modal de registro
+      console.log("Usuario no autenticado, mostrando modal de registro");
       setSelectedPlan(plan);
       setShowRegisterModal(true);
       return;
     }
-
+    
+    // Verificación adicional de suscripción
     if (currentSubscription && currentSubscription.plan === plan.id) {
       toast.info('Ya tienes este plan activo');
       return;
@@ -81,9 +144,55 @@ const Plans = () => {
     handleUpdatePlan(plan);
   };
 
+  // Añadir una función específica para el proceso de selección de plan
+  const handlePlanSelection = (plan) => {
+    // Verificar si el usuario está completamente autenticado
+    const isAuthenticated = verifyFullAuthentication();
+    
+    if (!isAuthenticated) {
+      console.log("Iniciando flujo de REGISTRO con plan:", plan.nombre);
+      setSelectedPlan(plan);
+      setShowRegisterModal(true);
+      return;
+    }
+    
+    console.log("Iniciando flujo de ACTUALIZACIÓN a plan:", plan.nombre);
+    // Verificar si ya tiene el mismo plan
+    if (currentSubscription && currentSubscription.plan === plan.id) {
+      toast.info('Ya tienes este plan activo');
+      return;
+    }
+    
+    // Confirmar cambio de plan
+    if (window.confirm(`¿Estás seguro de que deseas cambiar al plan ${plan.nombre}?`)) {
+      handleUpdatePlan(plan);
+    }
+  };
+
+  // Función de verificación de autenticación completa
+  const verifyFullAuthentication = () => {
+    const userId = localStorage.getItem('id');
+    const accessToken = localStorage.getItem('access_token');
+    return !!(userId && accessToken);
+  };
+
   // Manejar actualización de plan para usuarios existentes
   const handleUpdatePlan = async (plan) => {
     try {
+      // Verificación de seguridad adicional
+      const userId = localStorage.getItem('id');
+      const accessToken = localStorage.getItem('access_token');
+      
+      if (!userId || !accessToken) {
+        console.error("Intento de actualizar plan sin autenticación completa");
+        toast.error("Necesitas iniciar sesión para actualizar tu plan");
+        
+        // Redirigir al login o mostrar modal de registro
+        setSelectedPlan(plan);
+        setShowRegisterModal(true);
+        return;
+      }
+      
       setLoading(true);
       
       // Simular procesamiento de pago
