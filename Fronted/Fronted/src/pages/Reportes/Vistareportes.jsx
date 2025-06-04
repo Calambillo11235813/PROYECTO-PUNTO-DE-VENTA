@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaChartBar, FaFileDownload, FaFilePdf, FaFilter, FaCalendarAlt, FaSpinner } from 'react-icons/fa';
 import reporteService from '../../services/reporteService';
 import apiClient from '../../services/apiClient';
+import html2pdf from 'html2pdf.js';
 
 const Vistareportes = () => {
   const [reportType, setReportType] = useState('ventas');
@@ -176,15 +177,284 @@ const Vistareportes = () => {
     }
   };
 
-  // Función simplificada para exportar (sin funcionalidad real)
+  // Reemplazar la función exportarReporte existente con esta versión
   const exportarReporte = async (formato) => {
     if (!reportData) {
       alert('Genera un reporte primero');
       return;
     }
 
-    // Mostrar mensaje de funcionalidad no disponible
-    alert(`La exportación a ${formato.toUpperCase()} estará disponible en una futura actualización.`);
+    try {
+      setLoading(true);
+
+      if (formato === 'pdf') {
+        // Obtener el elemento que contiene el reporte
+        const element = document.getElementById('reporte-container');
+        
+        if (!element) {
+          alert('Error: No se encontró el contenido del reporte');
+          setLoading(false);
+          return;
+        }
+
+        // Crear un contenedor temporal para el PDF con estilos específicos
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.width = '100%';
+        pdfContainer.style.padding = '0';
+        pdfContainer.style.boxSizing = 'border-box';
+        pdfContainer.style.fontFamily = 'Arial, sans-serif';
+        
+        // Obtener la fecha actual formateada
+        const fechaActual = new Date().toLocaleDateString();
+        
+        // Crear la cabecera para el PDF
+        const headerHTML = `
+          <div style="text-align: center; margin-bottom: 30px; padding: 10px;">
+            <h1 style="margin: 0; color: #333; font-size: 18px; font-weight: bold;">
+              Reporte de ${reportType === 'productos' ? 'Productos' : reportType}
+              ${reportSubType ? ` - ${subTypeOptions[reportType].find(opt => opt.value === reportSubType)?.label || reportSubType}` : ''}
+            </h1>
+            <p style="margin: 5px 0; color: #666; font-size: 12px;">Fecha de generación: ${fechaActual}</p>
+          </div>
+        `;
+        
+        // Estilos específicos para tablas y otros elementos en el PDF
+        const pdfStyles = `
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              font-size: 10px;
+              line-height: 1.3;
+              color: #333;
+              margin: 0;
+              padding: 0;
+            }
+            
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 10px;
+              font-size: 9px;
+            }
+            
+            th, td {
+              border: 1px solid #ddd;
+              padding: 4px;
+              text-align: left;
+              font-size: 9px;
+            }
+            
+            th {
+              background-color: #f2f2f2;
+              font-weight: bold;
+            }
+            
+            .pdf-grid {
+              width: 100%;
+              display: table;
+              border-collapse: separate;
+              border-spacing: 8px;
+              margin-bottom: 20px;
+              table-layout: fixed;
+            }
+            
+            .pdf-grid-row {
+              display: table-row;
+            }
+            
+            .pdf-grid-cell {
+              display: table-cell;
+              background-color: #f9f9f9;
+              border: 1px solid #e5e7eb;
+              border-radius: 4px;
+              padding: 8px;
+              vertical-align: top;
+            }
+            
+            .pdf-card {
+              background-color: #ffffff;
+              border: 1px solid #e5e7eb;
+              border-radius: 4px;
+              padding: 8px;
+              margin-bottom: 8px;
+            }
+            
+            .pdf-card-header {
+              color: #6b7280;
+              font-size: 9px;
+              margin-bottom: 4px;
+            }
+            
+            .pdf-card-value {
+              font-size: 16px;
+              font-weight: bold;
+            }
+            
+            .pdf-section {
+              margin-bottom: 20px;
+            }
+            
+            .pdf-section-title {
+              font-size: 14px;
+              font-weight: bold;
+              margin-bottom: 10px;
+            }
+            
+            .text-green {
+              color: #059669;
+            }
+            
+            .text-red {
+              color: #dc2626;
+            }
+            
+            .bg-gray {
+              background-color: #f9f9f9;
+            }
+            
+            @page {
+              size: landscape;
+              margin: 15mm 10mm 10mm 10mm;
+            }
+          </style>
+        `;
+        
+        // Clonar el contenido HTML y aplicar modificaciones específicas para PDF
+        let contentHTML = element.innerHTML;
+        
+        // Reemplazar clases específicas de Tailwind con estilos inline ajustados para PDF
+        contentHTML = contentHTML
+          // Reemplazar grids para evitar sobreposición
+          .replace(/<div class="grid[^>]*>/g, '<div class="pdf-grid">')
+          .replace(/<div class="bg-white p-3 rounded-md border[^>]*>/g, 
+                   '<div class="pdf-grid-cell">')
+          .replace(/<div class="bg-gray-50 p-2 rounded[^>]*>/g, 
+                   '<div class="pdf-grid-cell">')
+          // Reemplazar colores
+          .replace(/class="text-green-600([^"]*)"/g, 'class="text-green"')
+          .replace(/class="text-red-600([^"]*)"/g, 'class="text-red"')
+          .replace(/class="bg-gray-50([^"]*)"/g, 'class="bg-gray"')
+          // Reemplazar texto
+          .replace(/class="font-medium([^"]*)"/g, 'style="font-weight: 500;"')
+          .replace(/class="font-bold([^"]*)"/g, 'style="font-weight: bold;"')
+          // Mejorar dimensiones
+          .replace(/class="p-4 mb-4([^"]*)"/g, 'style="padding: 10px; margin-bottom: 20px;"');
+      
+        // Insertar estilos y cabecera en el contenedor temporal
+        pdfContainer.innerHTML = pdfStyles + headerHTML + contentHTML;
+        
+        // Aplicar cambios específicos según el tipo de reporte para evitar sobreposiciones
+        if (reportType === 'productos' || reportType === 'caja' || reportType === 'movimientos') {
+          // Convertir cualquier grid responsiva en estructura de tabla para PDF
+          const grids = pdfContainer.querySelectorAll('.grid');
+          grids.forEach(grid => {
+            // Reemplazar con estructura de tabla
+            const originalContent = grid.innerHTML;
+            const newTable = document.createElement('table');
+            newTable.className = 'pdf-grid';
+            newTable.style.borderCollapse = 'separate';
+            newTable.style.borderSpacing = '8px';
+            newTable.style.width = '100%';
+            newTable.style.marginBottom = '15px';
+            
+            // Crear una fila para los elementos
+            const tr = document.createElement('tr');
+            
+            // Extraer cada tarjeta y ponerla en una celda
+            const cards = grid.querySelectorAll('.bg-white, .bg-gray-50');
+            cards.forEach(card => {
+              const td = document.createElement('td');
+              td.style.backgroundColor = '#f9f9f9';
+              td.style.border = '1px solid #e5e7eb';
+              td.style.borderRadius = '4px';
+              td.style.padding = '8px';
+              td.style.width = `${100 / cards.length}%`;
+              td.innerHTML = card.innerHTML;
+              tr.appendChild(td);
+            });
+            
+            newTable.appendChild(tr);
+            grid.replaceWith(newTable);
+          });
+        }
+        
+        // Configuración para la exportación PDF
+        const opt = {
+          margin: [25, 10, 15, 10], // [top, right, bottom, left]
+          filename: `Reporte_${reportType}_${reportSubType}_${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 1.5,
+            useCORS: true,
+            letterRendering: true,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: 1200,
+            logging: false
+          },
+          jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'landscape',
+            compress: true,
+            precision: 16
+          },
+          pagebreak: { avoid: ['tr', 'td'] }
+        };
+        
+        // Ajustar configuración específica según el tipo de reporte
+        if (reportType === 'productos') {
+          if (reportSubType === 'inventario') {
+            opt.jsPDF.orientation = 'landscape';
+          } else if (reportSubType === 'categorias') {
+            opt.pagebreak.before = '.categoria-section';
+          }
+        } else if (reportType === 'caja' || reportType === 'movimientos') {
+          opt.jsPDF.orientation = 'landscape';
+          opt.html2canvas.scale = 1.3;
+        }
+        
+        console.log('Generando PDF con html2pdf...');
+        
+        // Crear un worker para generar el PDF
+        const worker = html2pdf().from(pdfContainer).set(opt);
+        
+        // Agregar números de página
+        await worker
+          .toPdf()
+          .get('pdf')
+          .then((pdf) => {
+            const totalPages = pdf.internal.getNumberOfPages();
+            
+            // Agregar números de página a cada página
+            for (let i = 1; i <= totalPages; i++) {
+              pdf.setPage(i);
+              pdf.setFontSize(8);
+              pdf.setTextColor(100);
+              
+              const pageWidth = pdf.internal.pageSize.getWidth();
+              const pageHeight = pdf.internal.pageSize.getHeight();
+              
+              pdf.text(
+                `Página ${i} de ${totalPages}`,
+                pageWidth / 2, 
+                pageHeight - 5,
+                { align: 'center' }
+              );
+            }
+          })
+          .save();
+        
+        console.log('PDF generado correctamente');
+      } else if (formato === 'excel') {
+        alert(`La exportación a ${formato.toUpperCase()} estará disponible en una futura actualización.`);
+      }
+    } catch (error) {
+      console.error('Error al exportar a PDF:', error);
+      alert(`Error al exportar a ${formato}: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Renderizar reporte de ventas
@@ -511,7 +781,7 @@ const Vistareportes = () => {
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Stock Mín.</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Valor Stock</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                      {/* Se eliminó la columna de Estado */}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -523,13 +793,7 @@ const Vistareportes = () => {
                         <td className="px-4 py-2 text-sm text-gray-500">{producto.stock}</td>
                         <td className="px-4 py-2 text-sm text-gray-500">{producto.stock_minimo}</td>
                         <td className="px-4 py-2 text-sm text-gray-500">{producto.valor_stock.toFixed(2)} Bs</td>
-                        <td className="px-4 py-2 text-sm">
-                          <span className={`inline-block rounded-full px-2 py-1 text-xs 
-                            ${producto.estado === 'Normal' ? 'bg-green-100 text-green-800' :
-                              producto.estado === 'Bajo' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                            {producto.estado}
-                          </span>
-                        </td>
+                        {/* Se eliminó la celda de Estado */}
                       </tr>
                     ))}
                   </tbody>
@@ -581,7 +845,7 @@ const Vistareportes = () => {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Actual</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock Mínimo</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                {/* Se eliminó la columna de Estado */}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -595,19 +859,13 @@ const Vistareportes = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{producto.precio_venta} Bs</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{producto.inventario?.stock || 0}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{producto.inventario?.cantidad_minima || 0}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`inline-block rounded-full px-2 py-1 text-xs 
-                      ${producto.inventario?.estado === 'Normal' ? 'bg-green-100 text-green-800' :
-                        producto.inventario?.estado === 'Bajo' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                      {producto.inventario?.estado || 'Normal'}
-                    </span>
-                  </td>
+                  {/* Se eliminó la celda de Estado */}
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-gray-50">
               <tr>
-                <td colSpan="7" className="px-6 py-4 text-center text-sm font-medium text-gray-700">
+                <td colSpan="6" className="px-6 py-4 text-center text-sm font-medium text-gray-700">
                   Total de productos: {reportData.productos.length}
                 </td>
               </tr>
@@ -1121,9 +1379,7 @@ const Vistareportes = () => {
                   <>
                     <button
                       onClick={() => exportarReporte('pdf')}
-                      disabled
-                      className="px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed transition-colors flex items-center gap-2"
-                      title="Funcionalidad no disponible"
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
                     >
                       <FaFilePdf /> Exportar PDF
                     </button>
@@ -1163,7 +1419,9 @@ const Vistareportes = () => {
                 <div className="w-10 h-10 mt-4 border-4 border-gray-300 border-t-green-600 rounded-full animate-spin"></div>
               </div>
             ) : reportData ? (
-              renderReportContent()
+              <div id="reporte-container">
+                {renderReportContent()}
+              </div>
             ) : (
               <div className="text-center text-gray-600 dark:text-gray-300 p-10">
                 <FaChartBar className="mx-auto h-12 w-12 text-gray-400" />
