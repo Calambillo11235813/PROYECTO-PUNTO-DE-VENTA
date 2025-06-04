@@ -7,6 +7,9 @@ from accounts.models import Usuario
 from accounts.serializers import UsuarioSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
+from accounts.decorators.plan_limits_decorators import check_product_limit, register_resource_usage
+
+
 class ProductoListaCrearVista(APIView):
     """
     Vista para listar todos los productos de una empresa o crear uno nuevo.
@@ -19,7 +22,10 @@ class ProductoListaCrearVista(APIView):
         productos = Producto.objects.filter(usuario_id=usuario_id)
         serializer = ProductoSerializer(productos, many=True)
         return Response(serializer.data)
-
+    
+    
+    @check_product_limit  # Verificar límite antes de procesar
+    @register_resource_usage('product')  # Registrar uso después de crear exitosamente
     def post(self, request, usuario_id):
         data = request.data.copy()
         nombre_producto = data.get('nombre')
@@ -39,7 +45,8 @@ class ProductoListaCrearVista(APIView):
         producto_existente = Producto.objects.filter(nombre__iexact=nombre_producto, usuario_id=usuario_id).first()
 
         if producto_existente:
-            # Si existe, sumamos el stock
+            # Si existe, sumamos el stock pero NO incrementamos el contador
+            # porque no estamos creando un nuevo producto
             inventario = producto_existente.inventario
             stock_adicional = int(data.get('stock_inicial', 0))  # Si no viene, usa 0
 
@@ -50,7 +57,7 @@ class ProductoListaCrearVista(APIView):
             return Response({
                 "mensaje": "Producto ya existía. Stock actualizado.",
                 "producto": serializer.data
-            }, status=status.HTTP_200_OK)
+            }, status=status.HTTP_200_OK)  # Nota: esto no activará register_resource_usage
 
         # Si no existe, se crea normalmente
         data['usuario_id'] = usuario_id

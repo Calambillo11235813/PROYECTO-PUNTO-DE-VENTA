@@ -50,6 +50,46 @@ class PlanDetailView(APIView):
                 {'error': f'Error al obtener plan: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+    
+    def put(self, request, plan_id):
+        """
+        Actualizar un plan existente (PUT)
+        
+        Permite modificar los atributos de un plan, como nombre, precio,
+        límites de recursos y características habilitadas.
+        """
+        try:
+            plan = Plan.objects.get(id=plan_id)
+            
+            # Validar los datos con el serializer
+            serializer = PlanSerializer(plan, data=request.data, partial=True)
+            if serializer.is_valid():
+                # Guardar los cambios
+                plan_actualizado = serializer.save()
+                
+                # Registrar cambio en bitácora o log si es necesario
+                # ...
+                
+                return Response({
+                    'mensaje': 'Plan actualizado exitosamente',
+                    'plan': PlanSerializer(plan_actualizado).data
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'Datos inválidos',
+                    'detalles': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Plan.DoesNotExist:
+            return Response(
+                {'error': 'Plan no encontrado'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error al actualizar plan: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class SuscripcionUsuarioView(APIView):
@@ -632,3 +672,37 @@ class SincronizarUsuarioPlanView(APIView):
                 {'error': f'Error verificando sincronización: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class VerificarContadoresView(APIView):
+    """
+    Verificar que los contadores de uso coinciden con la realidad
+    """
+    def get(self, request, usuario_id):
+        try:
+            suscripcion = Suscripcion.objects.get(usuario_id=usuario_id)
+            
+            # Contar datos reales
+            from accounts.models import Empleado
+            empleados_count = Empleado.objects.filter(usuario_id=usuario_id).count()
+            
+            # Verificar discrepancias
+            discrepancias = {}
+            if suscripcion.empleados_utilizados != empleados_count:
+                discrepancias['empleados'] = {
+                    'contador': suscripcion.empleados_utilizados,
+                    'real': empleados_count
+                }
+            
+            # Añadir más verificaciones aquí...
+            
+            # Devolver resultado
+            return Response({
+                'contador_empleados': suscripcion.empleados_utilizados,
+                'empleados_reales': empleados_count,
+                'discrepancias': discrepancias,
+                'sincronizado': len(discrepancias) == 0
+            })
+        except Suscripcion.DoesNotExist:
+            return Response({"error": "Usuario sin suscripción"}, 
+                           status=status.HTTP_404_NOT_FOUND)

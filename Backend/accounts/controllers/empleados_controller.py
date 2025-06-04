@@ -6,6 +6,8 @@ from accounts.models import Empleado, Rol
 from accounts.serializers import EmpleadoSerializer
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import get_object_or_404
+# Añade esta importación
+from accounts.decorators.plan_limits_decorators import check_employee_limit, register_resource_usage
 
 class EmpleadoListCreate(APIView):
     def get(self, request, usuario_id):
@@ -13,6 +15,9 @@ class EmpleadoListCreate(APIView):
         serializer = EmpleadoSerializer(empleados, many=True)
         return Response(serializer.data)
 
+    # Añade los decoradores aquí
+    @check_employee_limit
+    @register_resource_usage('employee')
     def post(self, request, usuario_id):
         # Extraer el nombre del rol desde el JSON
         rol_nombre = request.data.get('rol', None)
