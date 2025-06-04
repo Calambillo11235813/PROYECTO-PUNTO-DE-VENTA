@@ -202,7 +202,18 @@ const planService = {
       console.log(`🔍 Verificando límites del usuario ${userId}...`);
       const response = await apiClient.get(`/accounts/usuarios/${userId}/limites/`);
       console.log('✅ Límites obtenidos exitosamente:', response.data);
-      return response.data;
+      
+      // Normalizar estructura para el frontend
+      const normalizedData = {
+        ...response.data,
+        limites: {
+          ...response.data.limites,
+          // Crear alias para ventas_mensuales como ventas para compatibilidad
+          ventas: response.data.limites.ventas_mensuales
+        }
+      };
+      
+      return normalizedData;
     } catch (error) {
       if (error.response?.status === 401) {
         console.log('ℹ️ No autorizado para obtener límites');

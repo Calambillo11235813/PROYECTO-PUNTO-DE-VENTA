@@ -12,7 +12,8 @@ import {
   FaSignOutAlt,
   FaShoppingBag,
   FaUserTie,
-  FaCashRegister, // Nuevo icono para Caja
+  FaCashRegister,
+  FaStar, // Reemplazar FaSparkles por FaStar
 } from "react-icons/fa";
 import authService from "../services/authService";
 
@@ -110,6 +111,13 @@ const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
       text: "Configuración", 
       path: "/admin/configuracion",
       allowedRoles: [undefined, 'Supervisor']
+    },
+    { 
+      id: "MiPlan", 
+      icon: <FaStar className="h-5 w-5" />, // Usar FaStar en lugar de FaSparkles
+      text: "Mi Plan", 
+      path: "/admin/mi-plan",
+      allowedRoles: [undefined, 'Supervisor'] 
     },
   ];
 
