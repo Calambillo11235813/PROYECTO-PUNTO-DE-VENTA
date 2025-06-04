@@ -1,3 +1,4 @@
+from accounts.utils.logger_utils import get_logger_por_usuario
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -22,7 +23,10 @@ class AbrirCajaAPIView(APIView):
         data['usuario'] = usuario_id
         serializer = CajaSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            caja = serializer.save()
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Caja abierta: {caja.id} | Usuario: {caja.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -82,6 +86,9 @@ class CerrarCajaAPIView(APIView):
         caja.estado = 'cerrada'
         caja.save()
 
+        logger = get_logger_por_usuario(usuario_id)
+        logger.info(f"Caja cerrada: {caja.id} | Usuario: {caja.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+
         return Response(CajaSerializer(caja).data, status=status.HTTP_200_OK)
 
 class CajaActualAPIView(APIView):
@@ -124,6 +131,9 @@ class CajaActualAPIView(APIView):
             data['total_tarjeta'] = str(total_tarjeta)
             data['total_movimiento_efectivo'] = str(total_movimiento_efectivo)
             data['movimientos_efectivo'] = MovimientoEfectivoSerializer(movimientos, many=True).data
+
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Consulta caja abierta: {caja.id} | Usuario: {caja.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
 
             return Response(data)
 

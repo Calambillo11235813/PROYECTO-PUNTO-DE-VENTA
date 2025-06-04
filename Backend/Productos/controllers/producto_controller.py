@@ -1,3 +1,4 @@
+from accounts.utils.logger_utils import get_logger_por_usuario
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -53,6 +54,9 @@ class ProductoListaCrearVista(APIView):
             inventario.stock += stock_adicional
             inventario.save()
 
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Producto ya existía. Stock actualizado: {producto_existente.nombre} | Usuario: {producto_existente.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+
             serializer = ProductoSerializer(producto_existente)
             return Response({
                 "mensaje": "Producto ya existía. Stock actualizado.",
@@ -68,6 +72,9 @@ class ProductoListaCrearVista(APIView):
             # Recargar el producto para asegurarnos de tener la URL de la imagen
             producto.refresh_from_db()
             
+            # Log en archivo .log
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Producto creado: {producto.nombre} | Usuario: {producto.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
             # Usar el serializador para devolver todos los datos actualizados
             serializer = ProductoSerializer(producto)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -108,6 +115,9 @@ class ProductoDetalleVista(APIView):
         serializer = ProductoSerializer(producto, data=data)
         if serializer.is_valid():
             serializer.save()
+
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Producto actualizado: {producto.nombre} | Usuario: {producto.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
             return Response(serializer.data)
     
         print("Errores de validación en PUT:", serializer.errors)
@@ -119,6 +129,10 @@ class ProductoDetalleVista(APIView):
         """
         producto = get_object_or_404(Producto, pk=pk, usuario_id=usuario_id)
         producto.delete()
+
+        logger = get_logger_por_usuario(usuario_id)
+        logger.info(f"Producto eliminado: {producto.nombre} | Usuario: {producto.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
