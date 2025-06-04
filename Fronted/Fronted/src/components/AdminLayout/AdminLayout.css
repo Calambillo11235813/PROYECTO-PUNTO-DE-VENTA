@@ -1,18 +1,13 @@
 :root {
   /* Modo claro */
-  --bg-primary: #f8f9fa;
-  --bg-secondary: #e9ecef;
-  --bg-tertiary: #ffffff;
-  --text-primary: #2d3748;
-  --text-secondary: #4a5568;
-  --accent-color: #45a049;
-  --accent-hover: #367c39;
-  --border-color: #dee2e6;
-  --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --sidebar-bg: #ffffff;
-  --sidebar-active: #e9f7ea;
-  --card-bg: #ffffff;
-  --header-bg: #ffffff;
+  --bg-primary: #f8f9fa;/* Color de fondo */
+  --bg-secondary: #e9ecef;/* Color de sidebar */
+  --bg-tertiary: #ffffff;/* Color de objetos*/
+
+  --text-primary: #2d3748;/* Color de letra titulos*/
+  --text-secondary: #2d3748;;/* Color de letra em general*/
+  --accent-color: #45a049;/* Color de iconos*/
+  --header-bg: #ffffff;/* Color del navbar*/
 }
 
 /* Modo oscuro */
@@ -36,7 +31,7 @@
   display: flex;
   min-height: 100vh;
   background-color: var(--bg-primary);
-  color: var(--text-primary);
+  color: var(--text-secondary);
   transition: background-color 0.3s, color 0.3s;
 }
 
@@ -136,7 +131,12 @@
 .page-title svg {
   color: var(--accent-color);
 }
-
+.icon-accent {
+  color: var(--accent-color);
+}
+.title-icon {
+  color: var(--text-primary);
+}
 @media (max-width: 768px) {
   .admin-content {
     margin-left: 0;

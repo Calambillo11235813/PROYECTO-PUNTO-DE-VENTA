@@ -18,7 +18,7 @@ import Header from "./components/HomeHeader/Homeheader";
 import Register from './components/HomeHeader/Register';
 import Login from "./components/HomeHeader/Login";
 import Home from "./pages/Home";
-import Plans from "./components/HomeHeader/Planes/Plans";
+import Plans from "./components/HomeHeader/Plans";
 
 // Componentes de administración
 import AdminLayout from "./components/AdminLayout";
@@ -31,7 +31,6 @@ import Configuracion from './pages/Configuracion';
 import Lista_ventas from './pages/Lista_ventas';
 import Clientes from './pages/Clientes/Clientes';
 import CajaManager from './pages/CajaManager';
-import PlanManager from "./pages/PlanManager";
 
 // Componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
@@ -110,7 +109,6 @@ function App() {
                 <Route path="configuracion" element={<Configuracion />} />
                 <Route path="clientes" element={<Clientes />} />
                 <Route path="caja" element={<CajaManager />} />
-                <Route path="mi-plan" element={<PlanManager />} />
               </Route>
             </Route>
           </Route>

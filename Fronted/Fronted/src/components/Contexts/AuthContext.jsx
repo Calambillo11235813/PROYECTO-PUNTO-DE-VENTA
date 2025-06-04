@@ -1,14 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../../services/authService';
 
-// Crear el contexto con un objeto vacío como valor predeterminado
-const AuthContext = createContext({
-  user: null,
-  login: () => {},
-  logout: () => {},
-  isAuthenticated: false,
-  loading: true
-});
+// Crear el contexto
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -71,11 +65,5 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Modificar el hook para manejar el caso null
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth debe ser utilizado dentro de un AuthProvider');
-  }
-  return context; // Siempre devolverá al menos el objeto con valores vacíos
-};
+// Hook personalizado para usar el contexto
+export const useAuth = () => useContext(AuthContext);
