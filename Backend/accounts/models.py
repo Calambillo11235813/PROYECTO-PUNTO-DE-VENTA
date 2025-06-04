@@ -3,27 +3,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
-class Rol(models.Model):
-    nombre_rol = models.CharField(max_length=100)
-    def __str__(self):   
-        return self.nombre_rol
 
-
-class Privilegio(models.Model):
-    descripcion = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.descripcion
-
-
-class Permisos(models.Model):
-    estado = models.BooleanField(default=True)
-    rol = models.ForeignKey(Rol, on_delete=models.CASCADE, related_name="permisos")
-    privilegio = models.ForeignKey(Privilegio, on_delete=models.CASCADE, related_name="permisos")
-
-    def __str__(self):
-        return f"{self.rol} - {self.privilegio}"
-    
 class UsuarioManager(BaseUserManager):
     """Manager personalizado para el modelo Usuario"""
 
@@ -64,7 +44,29 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.correo
+class Permisos(models.Model):
+    # Ahora Permisos es la tabla principal, no intermedia
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return self.nombre
+    
+    class Meta:
+        verbose_name = "Permiso"
+        verbose_name_plural = "Permisos"
 
+
+class Rol(models.Model):
+    nombre_rol = models.CharField(max_length=100)
+    permisos = models.ManyToManyField(Permisos, related_name="roles", blank=True)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='emplea')
+    def __str__(self):
+        return self.nombre_rol
+        
+    def tiene_permiso(self, permiso_nombre):
+        """Verifica si el rol tiene un permiso específico por nombre"""
+        return self.permisos.filter(nombre=permiso_nombre).exists()
 
 class Bitacora(models.Model):
     ip = models.GenericIPAddressField()
@@ -78,7 +80,7 @@ class Bitacora(models.Model):
     
 
 class Empleado(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='empleados')  # Dueño/administrador
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='roles_creados')  # Dueño/administrador
     nombre = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
     password = models.CharField(max_length=128)  
@@ -89,7 +91,7 @@ class Empleado(models.Model):
     rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True)
     
     def __str__(self):
-        return self.nombre
+        return self.nombredos
 
 
 class Plan(models.Model):

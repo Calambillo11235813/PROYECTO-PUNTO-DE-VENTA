@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from accounts.models import Usuario,Rol, Privilegio,Bitacora,Empleado,Permisos
+from accounts.models import Usuario,Rol, Bitacora,Empleado,Permisos
 from .models import Plan, Suscripcion, HistorialSuscripcion
 
 class UsuarioSerializer(serializers.ModelSerializer):
@@ -16,19 +16,19 @@ class UsuarioSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 class RolSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.ReadOnlyField(source='usuario.nombre')
+    
     class Meta:
         model = Rol
-        fields = ['id', 'nombre_rol']
-
-class PrivilegioSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Privilegio
-        fields = ['id', 'descripcion']
+        fields = ['id', 'nombre_rol', 'usuario', 'usuario_nombre', 'permisos']
+        extra_kwargs = {
+            'permisos': {'required': False}
+        }
 
 class PermisosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permisos
-        fields = ['id', 'rol', 'privilegio', 'estado']
+        fields = ['id', 'nombre', 'descripcion']
 
 class BitacoraSerializer(serializers.ModelSerializer):
     class Meta:

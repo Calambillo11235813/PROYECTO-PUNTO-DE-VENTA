@@ -8,10 +8,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import Usuario, Empleado, Bitacora
 from accounts.serializers import UsuarioSerializer
-
+from backend.permisos import requiere_permiso  # Actualizado al nuevo nombre del decorador
+ 
 class LoginView(APIView):
     permission_classes = [AllowAny]
-
+     
     def post(self, request):
         correo = request.data.get("correo")
         contraseña = request.data.get("password")

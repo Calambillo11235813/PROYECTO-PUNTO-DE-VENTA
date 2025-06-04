@@ -6,26 +6,41 @@ from accounts.models import Empleado, Rol
 from accounts.serializers import EmpleadoSerializer
 from django.contrib.auth.hashers import make_password
 from django.shortcuts import get_object_or_404
+from backend.permisos import requiere_permiso 
+
 
 class EmpleadoListCreate(APIView):
+    
+    # @requiere_permiso("ver_empleados") 
     def get(self, request, usuario_id):
         empleados = Empleado.objects.filter(usuario_id=usuario_id)
         serializer = EmpleadoSerializer(empleados, many=True)
         return Response(serializer.data)
-
+    
+    
+    
     def post(self, request, usuario_id):
-        # Extraer el nombre del rol desde el JSON
-        rol_nombre = request.data.get('rol', None)
-        if rol_nombre:
+        # Extraer el ID o nombre del rol desde el JSON
+        rol_info = request.data.get('rol', None)
+        
+        if rol_info:
             try:
-                rol = Rol.objects.get(nombre_rol=rol_nombre)
+                # Intentar primero como ID (puede venir como string)
+                try:
+                    rol_id = int(rol_info)
+                    rol = Rol.objects.get(id=rol_id)
+                except (ValueError, TypeError):
+                    # Si no es un ID válido, intentar como nombre
+                    rol = Rol.objects.get(nombre_rol=rol_info)
+                    
             except Rol.DoesNotExist:
-                return Response({"error": "Rol no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": f"Rol con ID/nombre '{rol_info}' no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             rol = None
         
         password = request.data.get("password")
         password_encriptada = make_password(password) if password else None
+        
         # Construimos manualmente el diccionario limpio
         data = {
             "usuario": usuario_id,
@@ -50,12 +65,19 @@ class EmpleadoDetail(APIView):
     def put(self, request, usuario_id, pk):
         empleado = self.get_object(usuario_id, pk)
 
-        rol_nombre = request.data.get('rol', None)
-        if rol_nombre:
+        rol_info = request.data.get('rol', None)
+        if rol_info:
             try:
-                rol = Rol.objects.get(nombre_rol=rol_nombre)
+                # Intentar primero como ID (puede venir como string)
+                try:
+                    rol_id = int(rol_info)
+                    rol = Rol.objects.get(id=rol_id)
+                except (ValueError, TypeError):
+                    # Si no es un ID válido, intentar como nombre
+                    rol = Rol.objects.get(nombre_rol=rol_info)
+                    
             except Rol.DoesNotExist:
-                return Response({"error": "Rol no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": f"Rol con ID/nombre '{rol_info}' no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             rol = None
 
@@ -102,12 +124,19 @@ class EmpleadoDetailSimple(APIView):
     def put(self, request, pk):
         empleado = self.get_object(pk)
 
-        rol_nombre = request.data.get('rol', None)
-        if rol_nombre:
+        rol_info = request.data.get('rol', None)
+        if rol_info:
             try:
-                rol = Rol.objects.get(nombre_rol=rol_nombre)
+                # Intentar primero como ID (puede venir como string)
+                try:
+                    rol_id = int(rol_info)
+                    rol = Rol.objects.get(id=rol_id)
+                except (ValueError, TypeError):
+                    # Si no es un ID válido, intentar como nombre
+                    rol = Rol.objects.get(nombre_rol=rol_info)
+                    
             except Rol.DoesNotExist:
-                return Response({"error": "Rol no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": f"Rol con ID/nombre '{rol_info}' no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             rol = None
 
