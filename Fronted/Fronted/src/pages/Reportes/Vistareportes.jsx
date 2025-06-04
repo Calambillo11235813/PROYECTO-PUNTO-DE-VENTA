@@ -453,6 +453,9 @@ const Vistareportes = () => {
         let sheetName = '';
         let fileName = `Reporte_${reportType}_${reportSubType}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
         
+        // Crear un nuevo libro de Excel aquí, ANTES de cualquier uso de wb
+        const wb = XLSX.utils.book_new();
+        
         switch (reportType) {
           case 'productos':
             if (reportSubType === 'inventario') {
@@ -482,7 +485,6 @@ const Vistareportes = () => {
               
             } else if (reportSubType === 'categorias') {
               // Crear un libro con múltiples hojas para cada categoría
-              const wb = XLSX.utils.book_new();
               
               // Hoja con resumen general
               let resumenData = [
@@ -710,13 +712,52 @@ const Vistareportes = () => {
             return;
         }
         
-        // Si llegamos aquí, significa que no hemos retornado temprano y vamos a crear un libro simple
+        // Si llegamos aquí, significa que no hemos retornado temprano y vamos a crear una hoja simple
         
         // Crear una hoja de Excel
         const ws = XLSX.utils.aoa_to_sheet(dataForExcel);
         
-        // Crear un libro de Excel y añadir la hoja
-        const wb = XLSX.utils.book_new();
+        // Aplicar estilos a la hoja de Excel (opcional)
+        function applyStyles(ws) {
+          // Obtener el rango ocupado
+          const range = XLSX.utils.decode_range(ws['!ref']);
+          
+          // Crear un estilo para encabezados
+          const headerStyle = {
+            font: { bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "4F81BD" } },
+            alignment: { horizontal: "center" }
+          };
+          
+          // Aplicar estilo a la fila de encabezados
+          for(let C = range.s.c; C <= range.e.c; ++C) {
+            const cell_address = XLSX.utils.encode_cell({r: 0, c: C});
+            if(!ws[cell_address]) continue;
+            ws[cell_address].s = headerStyle;
+          }
+          
+          // Ajustar anchos de columna automáticamente
+          const colWidths = [];
+          for(let C = range.s.c; C <= range.e.c; ++C) {
+            let maxLen = 10; // Ancho mínimo
+            
+            for(let R = range.s.r; R <= range.e.r; ++R) {
+              const cell_address = XLSX.utils.encode_cell({r: R, c: C});
+              if(!ws[cell_address]) continue;
+              
+              const cellText = String(ws[cell_address].v || '');
+              maxLen = Math.max(maxLen, cellText.length * 1.2);
+            }
+            
+            colWidths[C] = { wch: maxLen };
+          }
+          
+          ws['!cols'] = colWidths;
+          
+          return ws;
+        }
+        
+        applyStyles(ws); // Aplicar estilos
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
         
         // Guardar el archivo Excel
