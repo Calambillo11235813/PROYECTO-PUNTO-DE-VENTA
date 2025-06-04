@@ -2,6 +2,7 @@ from django.urls import path
 from Productos.controllers.producto_controller import (ProductoListaCrearVista, ProductoDetalleVista, ProductosPorCategoriaView)
 from Productos.controllers.categoria_controller import (CategoriaListaCrearVista, CategoriaDetalleVista)
 from Productos.controllers.inventario_controller import (InventarioListaCrearVista, InventarioDetalleVista)
+from Productos.controllers.reporte_controller import ReporteProductosView  # Nueva importación
 
 urlpatterns = [
     path('crear/usuario/<int:usuario_id>/', ProductoListaCrearVista.as_view(), name='producto-lista-crear'),
@@ -13,4 +14,7 @@ urlpatterns = [
     
     path('inventarios/', InventarioListaCrearVista.as_view(), name='inventario-listar-crear'),
     path('inventarios/<int:pk>/', InventarioDetalleVista.as_view(), name='inventario-detalle'),
+    
+    # Nueva ruta para reportes
+    path('reportes/usuario/<int:usuario_id>/', ReporteProductosView.as_view(), name='reporte-productos'),
 ]
