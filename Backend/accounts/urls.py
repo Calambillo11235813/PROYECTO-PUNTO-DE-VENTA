@@ -8,6 +8,13 @@ from accounts.controllers.rol_controller import RolListCreate
 from accounts.controllers.empleados_controller import EmpleadoListCreate, EmpleadoDetail
 from accounts.controllers.privilegios_controller import PrivilegioListCreate
 from accounts.controllers.permisos_controller import RolPrivilegiosView
+from accounts.controllers.plan_controller import (
+    PlanListView,
+    PlanDetailView, 
+    SuscripcionUsuarioView,
+    VerificarLimitesView,
+    HistorialSuscripcionView
+)
 
 
 urlpatterns = [
@@ -39,4 +46,13 @@ urlpatterns = [
     path('privilegios/', PrivilegioListCreate.as_view(), name='privilegios'),
     path('roles/<int:rol_id>/privilegios/', RolPrivilegiosView.as_view(), name='rol-privilegios'),
 
+
+    # Rutas de planes
+    path('planes/', PlanListView.as_view(), name='plan-list'),
+    path('planes/<int:plan_id>/', PlanDetailView.as_view(), name='plan-detail'),
+    
+    # Rutas de suscripciones
+    path('usuarios/<int:usuario_id>/suscripcion/', SuscripcionUsuarioView.as_view(), name='suscripcion-usuario'),
+    path('usuarios/<int:usuario_id>/limites/', VerificarLimitesView.as_view(), name='verificar-limites'),
+    path('usuarios/<int:usuario_id>/historial-suscripcion/', HistorialSuscripcionView.as_view(), name='historial-suscripcion'),
 ]

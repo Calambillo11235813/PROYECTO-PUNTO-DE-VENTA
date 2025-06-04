@@ -180,7 +180,7 @@ const CajaManager = () => {
 
   // Modal de Apertura de Caja
   const AperturaModal = () => {
-    // Use useEffect to maintain focus when the modal opens
+
     useEffect(() => {
       if (montoInputRef.current) {
         montoInputRef.current.focus();
@@ -189,11 +189,11 @@ const CajaManager = () => {
     
     // Función para guardar el monto en la referencia cuando cambie
     const handleMontoChange = (e) => {
-      // Allow only numbers and a single decimal point
+     // Validar el formato del monto antes de actualizar el estado
       const value = e.target.value;
       const regex = /^\d*\.?\d*$/;
       
-      // Only update state if the input matches our pattern or is empty
+   
       if (value === '' || regex.test(value)) {
         setMontoInicial(value);
       }
