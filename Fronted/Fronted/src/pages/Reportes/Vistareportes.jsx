@@ -3,6 +3,7 @@ import { FaChartBar, FaFileDownload, FaFilePdf, FaFilter, FaCalendarAlt, FaSpinn
 import reporteService from '../../services/reporteService';
 import apiClient from '../../services/apiClient';
 import html2pdf from 'html2pdf.js';
+import * as XLSX from 'xlsx';
 
 const Vistareportes = () => {
   const [reportType, setReportType] = useState('ventas');
@@ -447,12 +448,285 @@ const Vistareportes = () => {
         
         console.log('PDF generado correctamente');
       } else if (formato === 'excel') {
-        alert(`La exportación a ${formato.toUpperCase()} estará disponible en una futura actualización.`);
+        // Preparar los datos para Excel según el tipo de reporte
+        let dataForExcel = [];
+        let sheetName = '';
+        let fileName = `Reporte_${reportType}_${reportSubType}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
+        
+        switch (reportType) {
+          case 'productos':
+            if (reportSubType === 'inventario') {
+              // Preparar datos para reporte de inventario
+              sheetName = 'Inventario';
+              
+              // Encabezados
+              dataForExcel.push([
+                'ID', 'Producto', 'Categoría', 'Precio', 'Stock Actual', 'Stock Mínimo'
+              ]);
+              
+              // Datos
+              reportData.productos.forEach(producto => {
+                dataForExcel.push([
+                  producto.id,
+                  producto.nombre,
+                  producto.categoria?.nombre || 'Sin categoría',
+                  parseFloat(producto.precio_venta),
+                  parseInt(producto.inventario?.stock || 0),
+                  parseInt(producto.inventario?.cantidad_minima || 0)
+                ]);
+              });
+              
+              // Añadir información de resumen
+              dataForExcel.push([]);
+              dataForExcel.push(['Total productos', reportData.total_productos || reportData.productos.length]);
+              
+            } else if (reportSubType === 'categorias') {
+              // Crear un libro con múltiples hojas para cada categoría
+              const wb = XLSX.utils.book_new();
+              
+              // Hoja con resumen general
+              let resumenData = [
+                ['Reporte de Productos por Categorías'],
+                ['Fecha de generación:', new Date().toLocaleDateString()],
+                [],
+                ['Total categorías:', reportData.total_categorias],
+                []
+              ];
+              
+              const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+              XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+              
+              // Crear una hoja para cada categoría
+              reportData.categorias.forEach(categoriaData => {
+                let catData = [
+                  [`Categoría: ${categoriaData.categoria.nombre}`],
+                  ['Descripción:', categoriaData.categoria.descripcion || 'Sin descripción'],
+                  [],
+                  ['Total Productos:', categoriaData.resumen.total_productos],
+                  ['Bajo Stock:', categoriaData.resumen.productos_bajo_stock],
+                  ['Stock Total:', categoriaData.resumen.stock_total],
+                  ['Stock Promedio:', categoriaData.resumen.stock_promedio],
+                  ['Valor Total:', categoriaData.resumen.valor_total_inventario.toFixed(2) + ' Bs'],
+                  ['Valor Promedio:', categoriaData.resumen.valor_promedio_producto.toFixed(2) + ' Bs'],
+                  [],
+                  ['ID', 'Producto', 'Precio (Bs)', 'Stock', 'Stock Mín.', 'Valor Stock (Bs)']
+                ];
+                
+                categoriaData.productos.forEach(producto => {
+                  catData.push([
+                    producto.id,
+                    producto.nombre,
+                    parseFloat(producto.precio_venta.toFixed(2)),
+                    producto.stock,
+                    producto.stock_minimo,
+                    parseFloat(producto.valor_stock.toFixed(2))
+                  ]);
+                });
+                
+                const ws = XLSX.utils.aoa_to_sheet(catData);
+                XLSX.utils.book_append_sheet(wb, ws, categoriaData.categoria.nombre.substring(0, 30));
+              });
+              
+              // Guardar el archivo Excel
+              XLSX.writeFile(wb, fileName);
+              setLoading(false);
+              return;
+            }
+            break;
+          
+          case 'ventas':
+            // Implementar para ventas
+            if (reportSubType === 'general') {
+              sheetName = 'Ventas';
+              
+              // Encabezados
+              dataForExcel.push([
+                'ID', 'Fecha', 'Cliente', 'Estado', 'Items', 'Total (Bs)', 'Método de Pago'
+              ]);
+              
+              // Datos
+              reportData.ventas.forEach(venta => {
+                dataForExcel.push([
+                  venta.id,
+                  venta.fecha,
+                  venta.cliente,
+                  venta.estado,
+                  venta.cantidad_items,
+                  parseFloat(venta.total.toFixed(2)),
+                  venta.metodos_pago?.map(m => `${m.tipo}: ${m.monto.toFixed(2)} Bs`).join(', ') || ''
+                ]);
+              });
+              
+              // Añadir información de resumen
+              dataForExcel.push([]);
+              dataForExcel.push(['Total Ventas (Bs):', parseFloat(reportData.resumen?.total_ventas_bs?.toFixed(2) || 0)]);
+              dataForExcel.push(['Cantidad de Ventas:', reportData.resumen?.cantidad_ventas || 0]);
+              dataForExcel.push(['Promedio por Venta (Bs):', parseFloat(reportData.resumen?.promedio_venta?.toFixed(2) || 0)]);
+            } else if (reportSubType === 'productos') {
+              sheetName = 'VentasProductos';
+              
+              // Encabezados
+              dataForExcel.push([
+                'ID', 'Producto', 'Cantidad Vendida', 'Precio Promedio (Bs)', 'Total Ventas (Bs)'
+              ]);
+              
+              // Datos
+              reportData.productos.forEach(producto => {
+                dataForExcel.push([
+                  producto.id,
+                  producto.nombre,
+                  producto.cantidad_vendida,
+                  parseFloat(producto.precio_promedio?.toFixed(2) || 0),
+                  parseFloat(producto.ventas_total?.toFixed(2) || 0)
+                ]);
+              });
+            }
+            break;
+            
+          case 'clientes':
+            sheetName = 'Clientes';
+            
+            // Encabezados
+            dataForExcel.push([
+              'ID', 'Nombre', 'Cédula', 'Teléfono', 'Email', 'Dirección'
+            ]);
+            
+            // Datos
+            reportData.clientes.forEach(cliente => {
+              dataForExcel.push([
+                cliente.id,
+                cliente.nombre,
+                cliente.cedula_identidad || '',
+                cliente.telefono || '',
+                cliente.email || '',
+                cliente.direccion || ''
+              ]);
+            });
+            
+            // Añadir información de resumen
+            dataForExcel.push([]);
+            dataForExcel.push(['Total Clientes:', reportData.resumen?.total_clientes || reportData.clientes.length]);
+            break;
+            
+          case 'caja':
+            sheetName = 'Cajas';
+            
+            // Encabezados
+            dataForExcel.push([
+              'ID', 'Apertura', 'Cierre', 'Estado', 'Inicial (Bs)', 'Final (Bs)', 
+              'Efectivo (Bs)', 'QR (Bs)', 'Tarjeta (Bs)', 'Ventas'
+            ]);
+            
+            // Datos
+            reportData.cajas.forEach(caja => {
+              dataForExcel.push([
+                caja.id,
+                caja.fecha_apertura,
+                caja.fecha_cierre,
+                caja.estado,
+                parseFloat(caja.monto_inicial?.toFixed(2) || 0),
+                parseFloat(caja.monto_final?.toFixed(2) || 0),
+                parseFloat(caja.total_efectivo?.toFixed(2) || 0),
+                parseFloat(caja.total_qr?.toFixed(2) || 0),
+                parseFloat(caja.total_tarjeta?.toFixed(2) || 0),
+                caja.total_ventas || 0
+              ]);
+            });
+            
+            // Añadir información de resumen si hay totales generales
+            if (reportData.total_general) {
+              dataForExcel.push([]);
+              dataForExcel.push(['Total Cajas:', reportData.total_cajas || reportData.cajas.length]);
+              dataForExcel.push(['Monto Inicial Total (Bs):', parseFloat(reportData.total_general.monto_inicial_total?.toFixed(2) || 0)]);
+              dataForExcel.push(['Monto Final Total (Bs):', parseFloat(reportData.total_general.monto_final_total?.toFixed(2) || 0)]);
+              dataForExcel.push(['Total Ventas:', reportData.total_general.total_ventas || 0]);
+            }
+            break;
+            
+          case 'movimientos':
+            // Crear un libro con hojas para movimientos por caja
+            const wbMov = XLSX.utils.book_new();
+            
+            // Hoja de resumen
+            if (reportData.resumen) {
+              let resumenData = [
+                ['Reporte de Movimientos'],
+                ['Fecha de generación:', new Date().toLocaleDateString()],
+                [],
+                ['Total Movimientos:', reportData.resumen.total_movimientos || 0],
+                ['Total Ingresos (Bs):', parseFloat(reportData.resumen.total_ingresos?.toFixed(2) || 0)],
+                ['Total Retiros (Bs):', parseFloat(reportData.resumen.total_retiros?.toFixed(2) || 0)],
+                ['Balance Neto (Bs):', parseFloat(reportData.resumen.balance_neto?.toFixed(2) || 0)]
+              ];
+              
+              const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+              XLSX.utils.book_append_sheet(wbMov, wsResumen, 'Resumen');
+            }
+            
+            // Crear una hoja para cada caja
+            reportData.cajas.forEach((cajaData, index) => {
+              let cajaTitle = `Caja #${cajaData.caja_id || index + 1}`;
+              
+              let movData = [
+                [cajaTitle],
+                ['Empleado:', cajaData.empleado || 'N/A'],
+                ['Apertura:', cajaData.fecha_apertura],
+                ['Estado:', cajaData.estado_caja],
+                ['Ingresos (Bs):', parseFloat(cajaData.total_ingresos?.toFixed(2) || 0)],
+                ['Retiros (Bs):', parseFloat(cajaData.total_retiros?.toFixed(2) || 0)],
+                [],
+                ['ID', 'Fecha', 'Tipo', 'Monto (Bs)', 'Descripción']
+              ];
+              
+              if (cajaData.movimientos && cajaData.movimientos.length > 0) {
+                cajaData.movimientos.forEach(movimiento => {
+                  movData.push([
+                    movimiento.id,
+                    movimiento.fecha,
+                    movimiento.tipo,
+                    parseFloat(movimiento.monto.toFixed(2)),
+                    movimiento.descripcion || ''
+                  ]);
+                });
+                
+                movData.push([]);
+                movData.push(['Balance (Bs):', parseFloat(cajaData.balance_neto?.toFixed(2) || 0)]);
+              } else {
+                movData.push(['No hay movimientos registrados para esta caja']);
+              }
+              
+              const ws = XLSX.utils.aoa_to_sheet(movData);
+              XLSX.utils.book_append_sheet(wbMov, ws, `Caja_${cajaData.caja_id || index + 1}`);
+            });
+            
+            // Guardar el archivo Excel
+            XLSX.writeFile(wbMov, fileName);
+            setLoading(false);
+            return;
+            
+          default:
+            alert(`Exportación a Excel para reportes de ${reportType} no implementada.`);
+            setLoading(false);
+            return;
+        }
+        
+        // Si llegamos aquí, significa que no hemos retornado temprano y vamos a crear un libro simple
+        
+        // Crear una hoja de Excel
+        const ws = XLSX.utils.aoa_to_sheet(dataForExcel);
+        
+        // Crear un libro de Excel y añadir la hoja
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        
+        // Guardar el archivo Excel
+        XLSX.writeFile(wb, fileName);
       }
     } catch (error) {
-      console.error('Error al exportar a PDF:', error);
+      console.error('Error al exportar a ' + formato + ':', error);
       alert(`Error al exportar a ${formato}: ${error.message}`);
     } finally {
+      // Asegurarse de desactivar el estado de carga
       setLoading(false);
     }
   };
@@ -1385,9 +1659,7 @@ const Vistareportes = () => {
                     </button>
                     <button
                       onClick={() => exportarReporte('excel')}
-                      disabled
-                      className="px-4 py-2 bg-gray-400 text-white rounded-md cursor-not-allowed transition-colors flex items-center gap-2"
-                      title="Funcionalidad no disponible"
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
                     >
                       <FaFileDownload /> Exportar Excel
                     </button>
