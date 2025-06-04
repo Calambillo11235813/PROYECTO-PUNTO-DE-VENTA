@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv # type: ignore
 import os
+import stripe
+from decouple import config
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
@@ -51,6 +53,7 @@ INSTALLED_APPS = [
     'Ventas',
     'corsheaders',
     'drf_spectacular',
+    'payments',  
 ]
 
 
@@ -58,10 +61,12 @@ REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
          # Asegúrate de que esta configuración no bloquee el registro
          'rest_framework.permissions.AllowAny',
+         
      ],
 }
 
@@ -112,6 +117,8 @@ CORS_ALLOW_ALL_ORIGINS = False  # En producción, esto debería ser False
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # Para Vite (ajusta según tu puerto)
     "http://localhost:3000",  # Para create-react-app
+    "https://js.stripe.com",
+    "http://127.0.0.1:3000",
 ]
 
 # Permitir credenciales en las solicitudes CORS
@@ -198,3 +205,26 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Configuración de Stripe - VERSIÓN SEGURA (SIN CLAVES HARDCODEADAS)
+print("=== CARGANDO CLAVES DE STRIPE ===")
+
+# Cargar desde variables de entorno únicamente
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+
+# Verificar que las claves estén disponibles
+if not STRIPE_SECRET_KEY:
+    raise ValueError("⚠️ STRIPE_SECRET_KEY no encontrada en variables de entorno. Verifica tu archivo .env")
+
+if not STRIPE_PUBLISHABLE_KEY:
+    raise ValueError("⚠️ STRIPE_PUBLISHABLE_KEY no encontrada en variables de entorno. Verifica tu archivo .env")
+
+print(f"✅ STRIPE_SECRET_KEY cargada desde .env: {STRIPE_SECRET_KEY[:30]}... (Longitud: {len(STRIPE_SECRET_KEY)})")
+print(f"✅ STRIPE_PUBLISHABLE_KEY cargada desde .env: {STRIPE_PUBLISHABLE_KEY[:30]}... (Longitud: {len(STRIPE_PUBLISHABLE_KEY)})")
+print("================================")
+
+# Configurar Stripe
+stripe.api_key = STRIPE_SECRET_KEY

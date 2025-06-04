@@ -82,69 +82,52 @@ const authService = {
   // Iniciar sesión
   login: async (correo, contrasena) => {
     try {
-      console.log('Intentando login con:', { correo, contrasena });
-    
-      // Elimina cualquier token previo para asegurar una solicitud limpia
-      localStorage.removeItem('access_token');
+      console.log('Intentando login con:', { correo });
       
-      // Asegúrate de enviar exactamente lo que espera el backend
+      localStorage.removeItem('access_token'); // Limpiar tokens previos
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('id');
+      localStorage.removeItem('user_type');
+      localStorage.removeItem('rol');
+      
       const response = await apiClient.post('login/', { 
         correo: correo,
         password: contrasena
       });
       
-      console.log('Login exitoso:', response.data);
+      console.log('Login exitoso - DATOS COMPLETOS:', response.data);
       
       // Guardar tokens
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
       
-      // Determinar el tipo de usuario y guardar datos apropiados
-      console.log(response); 
-
-
+      // Determinar explícitamente el tipo de usuario
       if (response.data.tipo === "empleado") {
-        localStorage.setItem('user_data', JSON.stringify(response.data.empleado));
-        localStorage.setItem('empleado_id', response.data.empleado.id);
-        console.log('Empleado ID:', response.data.empleado.id);
-        const a =  await empleadoService.getEmpleadoById(response.data.empleado.id)
-         console.log('Empleado:', a);
-        localStorage.setItem('id', a.usuario);
-
-        console.log('ID de usuario 222:', a.usuario);
-        localStorage.setItem('usuario_id', response.data.empleado.usuario);
+        console.log("GUARDANDO DATOS DE EMPLEADO");
         localStorage.setItem('user_type', 'empleado');
-
-        localStorage.setItem('rol',response.data.empleado.rol);
-        console.log('Rol:', response.data.empleado.rol);
-    
+        localStorage.setItem('rol', response.data.empleado.rol);
+        localStorage.setItem('id', response.data.empleado.id);
       } else {
-        localStorage.setItem('user_data', JSON.stringify(response.data.usuario));
-        localStorage.setItem('id', response.data.usuario.id);
+        console.log("GUARDANDO DATOS DE USUARIO ADMIN");
         localStorage.setItem('user_type', 'usuario');
+        localStorage.setItem('id', response.data.usuario.id);
         
-        // No guardar "undefined" como string, simplemente no guardar nada si es undefined
         if (response.data.usuario.rol) {
           localStorage.setItem('rol', response.data.usuario.rol);
         }
-        // O alternativamente, establecer un valor específico para superadmin
-        // localStorage.setItem('rol', response.data.usuario.rol || 'superadmin');
-        
-        console.log('desde el else', response.data.usuario.id);
       }
-      console.log('Datos del usuario guardados:', localStorage.getItem('id'));
-      console.log(localStorage);
+      
+      // Verificación final
+      console.log('VERIFICACIÓN DEL LOCALSTORAGE:');
+      console.log('id:', localStorage.getItem('id'));
+      console.log('user_type:', localStorage.getItem('user_type'));
+      console.log('rol:', localStorage.getItem('rol'));
+      console.log('access_token:', localStorage.getItem('access_token') ? 'Presente' : 'No presente');
       
       return response.data;
     } catch (error) {
       console.error('Error completo:', error);
-      console.error('Datos de error:', error.response?.data);
-      console.error('Estado:', error.response?.status);
-      
-      const errorMessage = 
-        error.response?.data?.error || 
-        'Error al conectar con el servidor';
-      throw new Error(errorMessage);
+      throw error;
     }
   },
   
@@ -156,6 +139,7 @@ const authService = {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_data');
     localStorage.removeItem('empresa_data');
+    localStorage.removeItem("user_type");
   },
   
   // Verificar si el usuario está autenticado
