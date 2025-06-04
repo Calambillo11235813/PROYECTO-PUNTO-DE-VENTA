@@ -32,6 +32,7 @@ import Lista_ventas from './pages/Lista_ventas';
 import Clientes from './pages/Clientes/Clientes';
 import CajaManager from './pages/CajaManager';
 import PlanManager from "./pages/PlanManager";
+import Vistareportes from './pages/Reportes/Vistareportes'; // Importamos el componente de reportes
 
 // Componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
@@ -40,14 +41,7 @@ import EmpleadoForm from './pages/Empleados/EmpleadoForm';
 // Componente para acceso denegado
 const AccesoDenegado = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-    <div className="p-8 bg-white rounded-lg shadow-md">Según el código de Sidebar.jsx que has compartido, un usuario con rol "Cajero" debería tener acceso a las opciones "Administrar Caja" y "Clientes", ya que están configuradas correctamente en los allowedRoles. El problema podría estar relacionado con alguna de estas causas:
-    
-    Posibles causas:
-    Caso en el texto del rol: El sistema podría estar guardando el rol con una capitalización diferente (por ejemplo, "cajero" en lugar de "Cajero").
-    
-    Problema de validación adicional: Aunque el menú muestre las opciones, podría haber validaciones adicionales en las rutas.
-    
-    Problema en localStorage: El valor del rol podría no estar guardándose correctamente.
+    <div className="p-8 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl font-bold text-red-600 mb-4">Acceso Denegado</h1>
       <p className="text-gray-700 mb-4">No tienes permisos para acceder a esta sección.</p>
       <button 
@@ -61,7 +55,7 @@ const AccesoDenegado = () => (
 );
 
 const Facturacion = () => <div>Página de Facturación en desarrollo</div>;
-const Reportes = () => <div>Página de Reportes en desarrollo</div>;
+// Eliminamos la declaración del componente Reportes porque ahora usaremos Vistareportes
 
 function App() {
   return (
@@ -106,7 +100,7 @@ function App() {
                 <Route path="empleados/crear" element={<EmpleadoForm />} />
                 <Route path="empleados/editar/:id" element={<EmpleadoForm />} />
                 <Route path="facturacion" element={<Facturacion />} />
-                <Route path="reportes" element={<Reportes />} />
+                <Route path="reportes" element={<Vistareportes />} /> {/* Cambiamos a Vistareportes */}
                 <Route path="configuracion" element={<Configuracion />} />
                 <Route path="clientes" element={<Clientes />} />
                 <Route path="caja" element={<CajaManager />} />
