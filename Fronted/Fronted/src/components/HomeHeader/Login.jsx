@@ -24,55 +24,38 @@ const Login = () => {
 
     try {
       const response = await authService.login(correo, contrasena);
+      setIsLoading(false);
       
-      // Esperar un momento para asegurar que el localStorage se actualice
-      setTimeout(() => {
-        // Comprobación explícita del tipo de usuario
-        const userType = localStorage.getItem('user_type');
-        console.log("Redirección después del login - Tipo de usuario:", userType);
-        
-        // Verificar si hay un ciclo de redirección
-        const redirectCount = parseInt(localStorage.getItem('redirect_count') || '0');
-        if (redirectCount > 3) {
-          // Resetear contador y mostrar mensaje de error
-          localStorage.removeItem('redirect_count');
-          setError("Se detectó un problema con la navegación. Por favor, intente de nuevo.");
-          console.error("Ciclo de redirección detectado y detenido");
-          setIsLoading(false);
-          return;
+      // Obtener el rol del usuario desde localStorage después del login
+      const userRole = localStorage.getItem('rol');
+      const userType = localStorage.getItem('user_type');
+      
+      console.log('Login exitoso, rol:', userRole, 'tipo:', userType);
+      
+      // Redirigir según el rol
+      if (userType === 'empleado') {
+        switch(userRole) {
+          case 'Cajero':
+            navigate('/admin/ventas');
+            break;
+          case 'Gestion de inventario':
+            navigate('/admin/inventario');
+            break;
+          case 'Supervisor':
+            navigate('/admin');
+            break;
+          default:
+            navigate('/admin');
         }
-
-        // Establecer contador
-        localStorage.setItem('redirect_count', (redirectCount + 1).toString());
-
-        // Continuar con la redirección normal
-        if (userType === 'usuario') {
-          console.log("Redirigiendo a usuario administrador al dashboard");
-          navigate('/admin');
-        } else {
-          // Lógica para otros tipos de usuario
-          const userRole = localStorage.getItem('rol');
-          console.log("Redirigiendo a empleado con rol:", userRole);
-          
-          switch(userRole) {
-            case 'Cajero':
-              navigate('/admin/ventas');
-              break;
-            case 'Gestor de Inventario':
-              navigate('/admin/inventario');
-              break;
-            default:
-              navigate('/admin');
-          }
-        }
-        
-        setIsLoading(false);
-      }, 300); // Pequeña pausa para asegurar que todo se guarde bien
+      } else {
+        // Usuario administrador o sin rol específico
+        navigate('/admin');
+      }
       
     } catch (error) {
-      console.error("Error en login:", error);
-      setError(error.response?.data?.detail || error.message || "Error al iniciar sesión");
       setIsLoading(false);
+      setError(error.message);
+      console.error('Error de login:', error);
     }
   };
 
@@ -124,25 +107,6 @@ const Login = () => {
         <div className="text-center mt-4 text-sm text-gray-500">
           <Link to="/forgot-password" className="text-green-500 hover:underline">¿Olvidaste tu contraseña?</Link>
         </div>
-
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-2">
-            <button
-              type="button"
-              onClick={() => {
-                const allStorage = {};
-                Object.keys(localStorage).forEach(key => {
-                  allStorage[key] = localStorage.getItem(key);
-                });
-                console.log("Diagnóstico de localStorage:", allStorage);
-                alert("Diagnóstico enviado a la consola. Presiona F12 para ver detalles.");
-              }}
-              className="text-xs text-gray-400 hover:text-gray-600"
-            >
-              Diagnóstico
-            </button>
-          </div>
-        )}
       </form>
     </div>
   );

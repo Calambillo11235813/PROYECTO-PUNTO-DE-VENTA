@@ -1,120 +1,44 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FaAngleLeft, FaAngleRight, FaChartBar, FaShoppingCart, FaBoxOpen, FaUsers, FaFileInvoiceDollar, FaCog, FaSun, FaMoon, FaSignOutAlt, FaShoppingBag, FaUserTie, FaCashRegister, FaUserLock } from "react-icons/fa";
+import {
+  FaChartBar,
+  FaShoppingCart,
+  FaBoxOpen,
+  FaUsers,
+  FaFileInvoiceDollar,
+  FaCog,
+  FaSun,
+  FaMoon,
+  FaSignOutAlt,
+  FaShoppingBag,
+  FaUserTie,
+  FaCashRegister, // Nuevo icono para Caja
+} from "react-icons/fa";
 import authService from "../services/authService";
-import permisoService from "../services/permisoService";
 
-const Sidebar = ({ darkMode = false, toggleDarkMode, isOpen, toggleSidebar }) => {
-  const [loading, setLoading] = useState(true);
-  const [userPermisos, setUserPermisos] = useState([]);
+const Sidebar = ({ darkMode = false, toggleDarkMode }) => {
+  const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
-  
-  // Obtener el ID del empleado desde localStorage
-  const empleadoId = localStorage.getItem('id');
-  
-  // Carga de permisos optimizada
-  useEffect(() => {
-    const cargarPermisos = async () => {
-      try {
-        // Depuración adicional
-        console.log("======= INICIALIZANDO SIDEBAR =======");
-        console.log("empleadoId:", empleadoId);
-        console.log("user_type:", localStorage.getItem('user_type'));
-        console.log("rol:", localStorage.getItem('rol'));
-        
-        // Verificar si hay acceso token
-        if (!localStorage.getItem('access_token')) {
-          console.error("No se encontró token de acceso - Redirigiendo a login");
-          navigate('/login');
-          return;
-        }
-        
-        // Verificar primero si es usuario administrador
-        const userType = localStorage.getItem('user_type');
-        
-        if (userType === 'usuario') {
-          // Los usuarios administradores tienen todos los permisos
-          console.log("Usuario administrador detectado - asignando todos los permisos");
-          setUserPermisos([
-            "dashboard_acceso", "administrar_caja", "ventas_realizar", 
-            "ver_lista_de_ventas", "ver_inventarios", "agregar_inventario", 
-            "editar_inventario", "eliminar_inventario", "ver_clientes", 
-            "agregar_cliente", "editar_cliente", "eliminar_cliente", 
-            "ver_empleados", "agregar_empleados", "editar_empleado", 
-            "eliminar_empleado", "facturacion_gestionar", "reportes_ver", 
-            "configuracion_acceso", "roles_y_permisos", "admin_acceso_total"
-          ]);
-          setLoading(false);
-          return;
-        }
-        
-        // Para empleados normales, seguir con el flujo actual
-        if (!empleadoId) {
-          console.warn("No se encontró ID de empleado en localStorage");
-          setLoading(false);
-          // No redireccionar, podría haber un error, pero no bloquear la UI
-          return;
-        }
-        
-        console.log("Cargando permisos para empleado:", empleadoId);
-        try {
-          const permisosData = await permisoService.getPermisosEmpleado(empleadoId);
-          console.log("Permisos obtenidos:", permisosData);
-          
-          // Convertir el resultado a un array de nombres de permisos
-          if (Array.isArray(permisosData)) {
-            setUserPermisos(permisosData.map(p => p.nombre));
-          } else {
-            console.warn("Formato de permisos inesperado:", permisosData);
-            setUserPermisos([]);
-          }
-        } catch (permisoError) {
-          console.error("Error específico al cargar permisos:", permisoError);
-          setUserPermisos([]);
-        }
-      } catch (error) {
-        console.error("Error general al cargar permisos:", error);
-        setUserPermisos([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    cargarPermisos();
-  }, [empleadoId, navigate]);
+  const userRole = localStorage.getItem('rol');
 
   useEffect(() => {
     console.log("Modo oscuro: ", darkMode);
   }, [darkMode]);
 
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
+
   const handleLogout = (e) => {
     e.preventDefault();
+
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
-    localStorage.removeItem("id");
-    localStorage.removeItem("rol");
     authService.logout();
     navigate("/login");
   };
 
-  // Verificar si el usuario tiene el permiso requerido
-  const tienePermiso = useCallback((permisoRequerido) => {
-    // Si el usuario es de tipo "usuario" (administrador general), tiene acceso a todo
-    const userType = localStorage.getItem('user_type');
-    if (userType === 'usuario') return true;
-    
-    // Para otros tipos de usuarios, verificar permisos específicos
-    if (!permisoRequerido) return true; // Si no se requiere permiso específico
-    if (permisoRequerido === '*') return true; // Permiso especial que todos pueden ver
-    
-    // Si es usuario admin (puedes identificarlo por un permiso especial)
-    if (userPermisos.includes('admin_acceso_total')) return true;
-    
-    // Verificar si el usuario tiene el permiso específico
-    return userPermisos.includes(permisoRequerido);
-  }, [userPermisos]);
-
-  // Definir los elementos del menú con sus rutas y permisos requeridos
+  // Definir los elementos del menú con sus rutas y roles permitidos
   const menuItems = [
     { 
       id: "Dashboard", 
@@ -122,189 +46,143 @@ const Sidebar = ({ darkMode = false, toggleDarkMode, isOpen, toggleSidebar }) =>
       text: "Dashboard", 
       path: "/admin", 
       exact: true,
-      permisoRequerido: "dashboard_acceso" 
+      allowedRoles: [undefined, 'Supervisor'] 
     },
     { 
       id: "Caja", 
       icon: <FaCashRegister />, 
       text: "Administrar Caja", 
       path: "/admin/caja",
-      permisoRequerido: "administrar_caja"
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Ventas", 
       icon: <FaShoppingCart />, 
       text: "Punto de Venta", 
       path: "/admin/ventas",
-      permisoRequerido: "ventas_realizar"
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Pedidos", 
       icon: <FaShoppingBag />, 
       text: "Lista de ventas", 
       path: "/admin/Lista_ventas",
-      permisoRequerido: "ver_lista_de_ventas"
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Inventario", 
       icon: <FaBoxOpen />, 
       text: "Inventario", 
       path: "/admin/inventario",
-      permisoRequerido: "ver_inventarios"
+      allowedRoles: [undefined, 'Supervisor', 'Gestion de inventario']
     },
     { 
       id: "Clientes", 
       icon: <FaUsers />, 
       text: "Clientes", 
       path: "/admin/clientes",
-      permisoRequerido: "ver_clientes"
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Empleados", 
       icon: <FaUserTie />, 
       text: "Empleados", 
       path: "/admin/empleados",
-      permisoRequerido: "ver_empleados" 
+      allowedRoles: [undefined, 'Supervisor'] 
     },
     { 
       id: "Facturacion", 
       icon: <FaFileInvoiceDollar />, 
       text: "Facturación", 
       path: "/admin/facturacion",
-      permisoRequerido: "facturacion_gestionar"
+      allowedRoles: [undefined, 'Supervisor']
     },
     { 
       id: "Reportes", 
       icon: <FaChartBar />, 
       text: "Reportes", 
       path: "/admin/reportes",
-      permisoRequerido: "reportes_ver" 
+      allowedRoles: [undefined, 'Supervisor'] 
     },
     { 
       id: "Configuracion", 
       icon: <FaCog />, 
       text: "Configuración", 
       path: "/admin/configuracion",
-      permisoRequerido: "configuracion_acceso"
-    },
-    { 
-      id: "RolesYPermisos", 
-      icon: <FaUserLock />, 
-      text: "Roles y Permisos", 
-      path: "/admin/roles-permisos",
-      permisoRequerido: "roles_y_permisos" // Cualquier usuario autenticado tiene acceso
+      allowedRoles: [undefined, 'Supervisor']
     },
   ];
 
-  // Renderizado seguro de menú items
-  const renderMenuItems = () => {
-    try {
-      return menuItems
-        .filter(item => tienePermiso(item.permisoRequerido))
-        .map(item => (
-          <li key={item.id}>
-            <NavLink 
-              to={item.path} 
-              className={({ isActive }) =>
-                `flex items-center px-4 py-2 mt-2 ${
-                  isActive
-                    ? "text-gray-800 dark:text-gray-100 bg-gradient-to-r from-yellow-300 to-yellow-200 dark:from-yellow-700 dark:to-yellow-600 rounded-lg"
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg"
-                }`
-              }
-            >
-              {item.icon}
-              <span className={`mx-4 font-medium ${!isOpen && "hidden"}`}>
-                {item.text}
-              </span>
-            </NavLink>
-          </li>
-        ));
-    } catch (err) {
-      console.error("Error al renderizar menú:", err);
-      return (
-        <li className="text-red-500 px-4 py-2">
-          Error al cargar menú. 
-          <button 
-            onClick={() => window.location.reload()}
-            className="underline ml-2"
-          >
-            Reintentar
-          </button>
-        </li>
-      );
-    }
-  };
+  // Filtrar los elementos del menú según el rol del usuario
+  const filteredMenuItems = menuItems.filter(item => {
+    // Si no se especifican roles permitidos o el ítem permite cualquier rol
+    if (!item.allowedRoles) return true;
+    
+    // Si el rol es undefined (superusuario), mostrar todo
+    if (!userRole) return true;
+    
+    // Verificar si el rol del usuario está en los roles permitidos del ítem
+    return item.allowedRoles.includes(userRole);
+  });
 
   return (
-    <aside 
-      className={`${darkMode ? "bg-gray-900" : "bg-white"} ${
+    <div
+      className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300 ${
         isOpen ? "w-64" : "w-20"
-      } h-screen fixed top-0 left-0 z-30 transition-all duration-300 ease-in-out shadow-md`}
+      } ${darkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"} border-r`}
     >
-      <div className="h-full flex flex-col">
-        {/* Logo y toggle button - Reemplazando la imagen con un texto o ícono */}
-        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-          <div className="flex items-center">
-            {/* Reemplazo del logo con una letra o ícono */}
-            <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-              P
-            </div>
-            <span className={`ml-2 font-bold text-xl ${!isOpen && "hidden"}`}>
-              Point of Sale
-            </span>
-          </div>
-          <button
-            onClick={toggleSidebar}
-            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
-          >
-            {isOpen ? <FaAngleLeft /> : <FaAngleRight />}
-          </button>
-        </div>
-
-        {/* Estado de carga */}
-        {loading ? (
-          <div className="flex justify-center items-center h-20">
-            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        ) : null}
-
-        {/* Menu - Usando filteredMenuItems basado en permisos */}
-        <div className="flex-1 overflow-y-auto py-4">
-          {loading ? (
-            <div className="text-center py-4">Cargando menú...</div>
-          ) : (
-            <nav>
-              <ul>
-                {renderMenuItems()}
-              </ul>
-            </nav>
-          )}
-        </div>
-
-        {/* Footer del sidebar */}
-        <div className="mt-auto border-t border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <span className={`text-sm ${!isOpen && "hidden"}`}>Tema Oscuro</span>
-            </div>
-            <button
-              onClick={toggleDarkMode}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
-            >
-              {darkMode ? "☀️" : "🌙"}
-            </button>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="mt-2 w-full flex items-center justify-center px-4 py-2 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-200 rounded-lg hover:bg-red-200 dark:hover:bg-red-800"
-          >
-            <span className={isOpen ? "block" : "hidden"}>Cerrar Sesión</span>
-            {!isOpen && "🚪"}
-          </button>
-        </div>
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b">
+        {isOpen && <h2 className="text-xl font-bold text-blue-600">POS System</h2>}
+        <button onClick={toggleSidebar} className="text-lg focus:outline-none">
+          ☰
+        </button>
       </div>
-    </aside>
+
+      {/* Menu - MODIFICADO para usar filteredMenuItems */}
+      <nav className="flex-1 overflow-y-auto mt-2">
+        {filteredMenuItems.map((item) => (
+          <NavLink
+            key={item.id}
+            to={item.path}
+            end={item.exact}
+            className={({ isActive }) =>
+              `flex items-center px-6 py-3 transition-all ${
+                isActive
+                  ? "bg-blue-100 text-blue-600 border-l-4 border-blue-600"
+                  : "hover:bg-gray-100"
+              }`
+            }
+          >
+            <div className="text-lg">{item.icon}</div>
+            {isOpen && <span className="ml-3 truncate">{item.text}</span>}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="border-t px-6 py-4 space-y-3">
+        <button
+          onClick={toggleDarkMode}
+          className="flex items-center w-full text-left focus:outline-none"
+        >
+          {darkMode ? <FaSun className="text-lg" /> : <FaMoon className="text-lg" />}
+          {isOpen && (
+            <span className="ml-3">
+              {darkMode ? "Modo Claro" : "Modo Oscuro"}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="flex items-center w-full text-left text-red-600 hover:text-red-800 focus:outline-none"
+        >
+          <FaSignOutAlt className="text-lg" />
+          {isOpen && <span className="ml-3">Cerrar Sesión</span>}
+        </button>
+      </div>
+    </div>
   );
 };
 
