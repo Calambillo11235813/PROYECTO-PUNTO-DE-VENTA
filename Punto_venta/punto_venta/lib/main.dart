@@ -1,10 +1,23 @@
-// lib/main.dart
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/panel.dart';
 import 'screens/menu_screen.dart';
 import 'screens/register_screen.dart';
+import 'screens/Planes_screen.dart';
+import 'screens/Dashboard_screen.dart';
+import 'screens/Ventas_screen.dart';
+import 'screens/Inventario_screen.dart';
+import 'screens/Facturacion_screen.dart';
+import 'screens/Reportes_screen.dart';
+import 'screens/Configuracion_screen.dart';
+import 'screens/Pedidos_screen.dart';
+import 'screens/Empleado_screen.dart';
+import 'screens/RegistrarEmpleado_screen.dart';
+import 'screens/menuCajero_screen.dart';
+import 'screens/menuGestor_screen.dart';
+import 'screens/menuSuperv_screen.dart';
+import 'screens/Cliente_screen.dart';
+import 'screens/caja_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,14 +37,22 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/home': (context) => const HomeScreen(),
-        '/panel': (context) => const Panel(),
         '/menu': (context) => const HomePage(),
-        '/balance': (context) => const BalanceScreen(),
-
-        '/config': (context) => const ConfigScreen(),
-        '/ventasg': (context) => const GestionarVentasScreen(),
+        '/planes': (context) => const PlanesPage(),
+        '/Dashboard': (context) => const DashboardScreen(),
+        '/pedidos': (context) => const PedidosScreen(),
+        '/ventas': (context) => const VentasScreen(),
         '/inventario': (context) => const InventarioScreen(),
-        '/vender': (context) => const SellScreen(),
+        '/empleado': (context) => const EmpleadoScreen(),
+        '/registro_empleado': (context) => const RegistrarempleadoScreen(),
+        '/facturacion': (context) => const FacturacionScreen(),
+        '/reportes': (context) => const ReportesScreen(),
+        '/configuracion': (context) => const ConfiguracionScreen(),
+        '/menuCajero': (context) => const HomePageCajero(),
+        '/menuGestor': (context) => const HomePageGestor(),
+        '/menuSuperv': (context) => const HomePageSuperv(),
+        '/cliente': (context) => const ClienteScreen(),
+        '/caja': (context) => const CajaScreen(),
       },
     );
   }

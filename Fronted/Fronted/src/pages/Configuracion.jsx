@@ -189,8 +189,8 @@ const Configuracion = () => {
       )}
 
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-          <FaUserCog className="mr-2 text-blue-600" />
+        <h1 className="text-2xl font-bold title-icon flex items-center">
+          <FaUserCog className="mr-2 icon-accent" />
           Configuración de Cuenta
         </h1>
         <p className="text-gray-600 mt-2">
@@ -199,7 +199,7 @@ const Configuracion = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-        <div className="flex flex-wrap border-b border-gray-200">
+        <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="flex flex-wrap border-b border-gray-200">
           <button
             className={`px-6 py-3 font-medium text-sm rounded-t-lg transition-colors duration-200 ease-in-out focus:outline-none ${
               activeTab === 'perfil'
@@ -235,7 +235,7 @@ const Configuracion = () => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6">
+        <form style={{ backgroundColor: "var(--bg-tertiary)" }}onSubmit={handleSubmit} className="p-6">
           {activeTab === 'perfil' && (
             <div className="space-y-6">
               <div className="bg-blue-50 p-4 rounded-lg mb-6">

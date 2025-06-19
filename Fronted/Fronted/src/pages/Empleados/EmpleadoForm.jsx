@@ -144,7 +144,7 @@ const EmpleadoForm = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
+      <form onSubmit={handleSubmit} style={{ backgroundColor: "var(--bg-tertiary)" }}className="bg-white rounded-lg shadow-md p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="nombre">
