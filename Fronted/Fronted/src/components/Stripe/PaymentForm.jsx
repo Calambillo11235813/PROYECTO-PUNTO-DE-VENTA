@@ -17,75 +17,90 @@ const PaymentForm = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isReady, setIsReady] = useState(false);
+  const [paymentElementReady, setPaymentElementReady] = useState(false);
   const formRef = useRef(null);
+  const mountedRef = useRef(true);
+  const submittingRef = useRef(false);
 
-  // ✅ VALIDACIÓN DE PROPS AL INICIALIZAR
+  // ✅ VALIDACIÓN Y PREPARACIÓN INICIAL
   useEffect(() => {
-    console.log('🔍 PaymentForm inicializado con:', {
+    mountedRef.current = true;
+    submittingRef.current = false;
+    
+    console.log('🔍 PaymentForm inicializado:', {
       amount,
       currency,
       description,
       hasStripe: !!stripe,
-      hasElements: !!elements
+      hasElements: !!elements,
+      paymentElementReady
     });
 
-    // ✅ VALIDAR AMOUNT
+    // Validar amount
     if (!amount || isNaN(amount) || amount <= 0) {
-      console.error('❌ Amount inválido en PaymentForm:', amount);
+      console.error('❌ Amount inválido:', amount);
       setError('Monto de pago inválido');
       onError?.(new Error('Monto de pago inválido'));
       return;
     }
 
-    setIsReady(true);
-  }, [amount, currency, stripe, elements]);
+    // Solo marcar como listo cuando todo esté disponible
+    if (stripe && elements) {
+      setIsReady(true);
+      setError(null);
+    }
+
+    return () => {
+      console.log('🧹 Limpiando PaymentForm...');
+      mountedRef.current = false;
+      submittingRef.current = false;
+    };
+  }, [amount, currency, stripe, elements, paymentElementReady]);
 
   // ✅ INFORMAR CAMBIOS DE LOADING
   useEffect(() => {
     onLoadingChange?.(loading);
   }, [loading, onLoadingChange]);
 
-  // ✅ CLEANUP AL DESMONTAR
-  useEffect(() => {
-    return () => {
-      console.log('🧹 Limpiando PaymentForm...');
-      setError(null);
-      setLoading(false);
-    };
-  }, []);
-
-  // ✅ FUNCIÓN PARA LIMPIAR ELEMENTOS PROBLEMÁTICOS
-  const cleanupStripeDOM = useCallback(() => {
-    try {
-      // Buscar y limpiar elementos problemáticos de Stripe Link
-      const hiddenElements = document.querySelectorAll('[aria-hidden="true"] input, [aria-hidden="true"] button');
-      hiddenElements.forEach(element => {
-        if (element.matches(':focus')) {
-          element.blur();
-        }
-      });
-
-      // Limpiar elementos específicos de Stripe Link
-      const linkElements = document.querySelectorAll('.p-CodePuncher-controllingInput, .p-LogoutMenu, .p-Picker-change');
-      linkElements.forEach(element => {
-        if (element.style) {
-          element.style.display = 'none';
-        }
-      });
-    } catch (error) {
-      console.warn('⚠️ Error al limpiar DOM de Stripe:', error);
+  // ✅ CALLBACK PARA CUANDO EL PAYMENT ELEMENT ESTÉ LISTO
+  const handlePaymentElementReady = useCallback(() => {
+    if (mountedRef.current) {
+      console.log('✅ PaymentElement montado y listo');
+      setPaymentElementReady(true);
     }
   }, []);
 
+  // ✅ CALLBACK PARA ERRORES DEL PAYMENT ELEMENT
+  const handlePaymentElementError = useCallback((event) => {
+    if (mountedRef.current) {
+      console.error('❌ Error en PaymentElement:', event.error);
+      setError(event.error.message);
+    }
+  }, []);
+
+  // ✅ FUNCIÓN DE ENVÍO SIN DELAY PROBLEMÁTICO
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // ✅ VALIDACIONES CRÍTICAS
+    // ✅ PREVENIR DOBLE SUBMIT
+    if (submittingRef.current) {
+      console.log('⚠️ Ya hay un pago en proceso, ignorando...');
+      return;
+    }
+    
+    // Validaciones críticas
     if (!stripe || !elements) {
       const error = new Error('Stripe no está disponible');
       console.error('❌', error.message);
       setError(error.message);
       onError(error);
+      return;
+    }
+
+    if (!paymentElementReady) {
+      const error = new Error('Formulario de pago no está listo. Espere un momento.');
+      console.error('❌', error.message);
+      setError(error.message);
       return;
     }
     
@@ -97,26 +112,37 @@ const PaymentForm = ({
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
       console.log('🔄 Iniciando confirmación de pago...');
       
-      // ✅ LIMPIAR DOM ANTES DE PROCESAR
-      cleanupStripeDOM();
+      // ✅ VERIFICACIONES INMEDIATAS SIN DELAY
+      const paymentElement = elements.getElement('payment');
+      if (!paymentElement) {
+        throw new Error('El elemento de pago no está disponible');
+      }
 
-      // ✅ SOLUCIÓN: CONFIGURAR BILLING DETAILS COMPLETOS
+      // ✅ VERIFICAR QUE EL COMPONENTE SIGUE MONTADO
+      if (!mountedRef.current) {
+        console.log('⚠️ Componente desmontado, cancelando pago...');
+        return;
+      }
+
+      console.log('✅ Todas las validaciones pasadas, procesando pago INMEDIATAMENTE...');
+
+      // ✅ SIN DELAY - PROCESAR INMEDIATAMENTE
       const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/payment-confirmation`,
-          // ✅ AGREGAR BILLING DETAILS REQUERIDOS
           payment_method_data: {
             billing_details: {
-              name: 'Usuario Anónimo', // Valor por defecto
-              email: null, // Stripe lo obtendrá del PaymentElement
-              phone: null, // ✅ CRÍTICO: Proporcionar valor null explícito
+              name: 'Cliente',
+              email: null,
+              phone: null,
               address: {
                 country: null,
                 line1: null,
@@ -130,6 +156,12 @@ const PaymentForm = ({
         },
         redirect: 'if_required'
       });
+
+      // ✅ VERIFICAR SI EL COMPONENTE SIGUE MONTADO DESPUÉS DEL PAGO
+      if (!mountedRef.current) {
+        console.log('⚠️ Componente desmontado durante el pago');
+        return;
+      }
 
       console.log('📋 Resultado de confirmPayment:', result);
 
@@ -145,23 +177,28 @@ const PaymentForm = ({
         status: result.paymentIntent.status
       });
 
-      // ✅ LIMPIAR DOM DESPUÉS DEL ÉXITO
-      setTimeout(cleanupStripeDOM, 100);
-
-      // Continuar con el flujo principal
-      onSuccess(result.paymentIntent, result);
+      // ✅ VERIFICAR ANTES DE LLAMAR CALLBACK
+      if (mountedRef.current && onSuccess) {
+        onSuccess(result.paymentIntent, result);
+      }
       
     } catch (error) {
       console.error('❌ Error processing payment:', error);
-      const errorMessage = error.message || 'Error al procesar el pago';
-      setError(errorMessage);
-      onError(error);
+      
+      if (mountedRef.current) {
+        const errorMessage = error.message || 'Error al procesar el pago';
+        setError(errorMessage);
+        onError(error);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      submittingRef.current = false;
     }
   };
 
-  // ✅ MOSTRAR LOADING SI NO ESTÁ LISTO
+  // ✅ MOSTRAR LOADING MEJORADO
   if (!isReady || !stripe || !elements) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
@@ -179,24 +216,25 @@ const PaymentForm = ({
       className="space-y-4"
     >
       <PaymentElement 
+        onReady={handlePaymentElementReady}
+        onLoaderStart={() => console.log('🔄 PaymentElement cargando...')}
+        onLoadError={handlePaymentElementError}
         options={{
-          // ✅ CONFIGURACIÓN CORREGIDA Y SIMPLIFICADA
           fields: {
             billingDetails: {
-              name: 'auto', // Mostrar campo nombre
-              email: 'auto', // Mostrar campo email
-              phone: 'auto', // ✅ CAMBIADO: Mostrar campo teléfono
+              name: 'auto',
+              email: 'auto', 
+              phone: 'auto',
               address: {
                 country: 'never',
                 line1: 'never',
                 line2: 'never',
                 city: 'never',
                 state: 'never',
-                postalCode: 'auto' // Mostrar código postal
+                postalCode: 'auto'
               }
             }
           },
-          // ✅ DESHABILITAR ELEMENTOS PROBLEMÁTICOS
           terms: {
             card: 'never'
           },
@@ -212,16 +250,31 @@ const PaymentForm = ({
           {error}
         </div>
       )}
-      
-      <div className="mt-4">
-        <button 
-          type="submit" 
-          disabled={!stripe || loading}
-          className="hidden" // Oculto ya que usamos el botón externo
-        >
-          Pagar
-        </button>
+
+      {/* ✅ INDICADOR DE ESTADO MEJORADO */}
+      <div className="text-xs text-gray-500 text-center">
+        {!paymentElementReady ? (
+          <span className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-3 w-3 border-b border-gray-400 mr-2"></div>
+            Preparando formulario...
+          </span>
+        ) : submittingRef.current ? (
+          <span className="flex items-center justify-center text-blue-600">
+            <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600 mr-2"></div>
+            Procesando pago...
+          </span>
+        ) : (
+          <span className="text-green-600">✓ Formulario listo para el pago</span>
+        )}
       </div>
+      
+      <button 
+        type="submit" 
+        disabled={!stripe || loading || !paymentElementReady || submittingRef.current}
+        className="hidden"
+      >
+        Pagar
+      </button>
     </form>
   );
 };

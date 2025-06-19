@@ -7,13 +7,22 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   ChevronRightIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  CreditCardIcon,
+  ShieldCheckIcon,
+  LockClosedIcon
 } from '@heroicons/react/24/solid';
+
+// ✅ IMPORTAR COMPONENTES STRIPE
+import StripeProvider from '../components/Stripe/StripeProvider';
+import PaymentForm from '../components/Stripe/PaymentForm';
+
 import planService from '../services/planService';
+import paymentService from '../services/paymentService';
 import PlanCard from '../components/HomeHeader/Planes/PlanCard';
 
 const PlanManager = () => {
-  // Estados
+  // Estados existentes
   const [currentPlan, setCurrentPlan] = useState(null);
   const [availablePlans, setAvailablePlans] = useState([]);
   const [userLimits, setUserLimits] = useState(null);
@@ -22,6 +31,12 @@ const PlanManager = () => {
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // ✅ NUEVOS ESTADOS PARA PAGO CON STRIPE
+  const [paymentStep, setPaymentStep] = useState('confirmation'); // 'confirmation', 'payment'
+  const [clientSecret, setClientSecret] = useState(null);
+  const [paymentError, setPaymentError] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -67,41 +82,98 @@ const PlanManager = () => {
     
     setSelectedPlan(plan);
     setUpgradeModalOpen(true);
+    setPaymentStep('confirmation');
+    setClientSecret(null);
+    setPaymentError(null);
   };
 
-  const handlePlanUpgrade = async () => {
+  // ✅ FUNCIÓN MEJORADA createPaymentIntent
+  const createPaymentIntent = async () => {
+    if (!selectedPlan?.precio) {
+      setPaymentError('Precio del plan no válido');
+      return;
+    }
+
     try {
-      setConfirmLoading(true);
-      
-      // Procesar el pago
-      const paymentResult = await planService.processPayment({
-        amount: selectedPlan.precio,
-        method: 'tarjeta',
-        plan_id: selectedPlan.id
+      setPaymentLoading(true);
+      setPaymentError(null);
+
+      console.log('🔄 Creando PaymentIntent para actualización de plan:', {
+        planId: selectedPlan.id,
+        precio: selectedPlan.precio,
+        nombre: selectedPlan.nombre
       });
 
-      if (paymentResult.success) {
-        // Actualizar suscripción
-        await planService.updateSubscription({
-          plan: selectedPlan.id,
-          fecha_expiracion: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-          metodo_pago: 'tarjeta',
-          monto_pagado: selectedPlan.precio,
-          referencia_pago: paymentResult.transaction_id
-        });
-        
-        toast.success(`¡Plan actualizado a ${selectedPlan.nombre}!`);
-        setUpgradeModalOpen(false);
-        
-        // Recargar datos
-        await loadPlanData();
-      }
+      const response = await paymentService.createPaymentIntent(
+        parseFloat(selectedPlan.precio),
+        'usd',
+        `Actualización a Plan ${selectedPlan.nombre}`,
+        false // No es registro
+      );
+
+      console.log('✅ PaymentIntent creado:', response);
+      
+      // ✅ ESTABLECER CLIENT SECRET Y CAMBIAR PASO ATÓMICAMENTE
+      setClientSecret(response.client_secret);
+      setPaymentStep('payment');
+      
+      // ✅ NO CAMBIAR paymentLoading AQUÍ - DEJAR QUE EL PAYMENT FORM LO MANEJE
+
     } catch (error) {
-      console.error("Error al actualizar plan:", error);
-      toast.error("No se pudo actualizar el plan. Inténtelo más tarde.");
-    } finally {
-      setConfirmLoading(false);
+      console.error('❌ Error al crear PaymentIntent:', error);
+      setPaymentError(error.message || 'Error al preparar el pago');
+      toast.error('Error al configurar el pago');
+      setPaymentLoading(false);
     }
+    // ✅ NO CAMBIAR paymentLoading aquí si todo salió bien
+  };
+
+  // ✅ MANEJAR PAGO EXITOSO CON STRIPE
+  const handlePaymentSuccess = async (paymentIntent, confirmResult) => {
+    try {
+      setPaymentLoading(true);
+      console.log('🎉 Pago exitoso, actualizando suscripción...', paymentIntent);
+
+      // Actualizar suscripción con referencia de pago real
+      const fechaExpiracion = new Date();
+      fechaExpiracion.setFullYear(fechaExpiracion.getFullYear() + 1);
+
+      await planService.updateSubscription({
+        plan: selectedPlan.id,
+        fecha_expiracion: fechaExpiracion.toISOString(),
+        metodo_pago: 'tarjeta',
+        monto_pagado: parseFloat(selectedPlan.precio),
+        referencia_pago: paymentIntent.id // ID real de Stripe
+      });
+
+      toast.success(`¡Plan actualizado exitosamente a ${selectedPlan.nombre.toUpperCase()}!`);
+      
+      // Cerrar modal y recargar datos
+      setUpgradeModalOpen(false);
+      await loadPlanData();
+
+    } catch (error) {
+      console.error("❌ Error al actualizar suscripción:", error);
+      toast.error("El pago fue exitoso, pero hubo un error al activar el plan. Contacte soporte.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  // ✅ MANEJAR ERRORES DE PAGO
+  const handlePaymentError = (error) => {
+    console.error('❌ Error en el pago:', error);
+    setPaymentError(error.message || 'Error al procesar el pago');
+    toast.error('Error al procesar el pago. Intente nuevamente.');
+  };
+
+  // ✅ FUNCIÓN PARA CERRAR MODAL CON LIMPIEZA
+  const handleCloseModal = () => {
+    setUpgradeModalOpen(false);
+    setPaymentStep('confirmation');
+    setClientSecret(null);
+    setPaymentError(null);
+    setSelectedPlan(null);
   };
 
   // Calcular días restantes hasta la expiración
@@ -285,55 +357,254 @@ const PlanManager = () => {
         </ul>
       </div>
 
-      {/* Modal de confirmación de cambio de plan */}
+      {/* ✅ MODAL REDISEÑADO CON PAGO POR TARJETA */}
       {upgradeModalOpen && selectedPlan && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">
-              Confirmar cambio de plan
-            </h2>
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[95vh] overflow-y-auto">
             
-            <p className="text-gray-700 mb-4">
-              ¿Estás seguro que deseas cambiar tu plan a <span className="font-semibold capitalize">{selectedPlan.nombre}</span>?
-            </p>
-            
-            <div className="bg-gray-50 p-4 rounded-lg mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-700">Nuevo plan:</span>
-                <span className="font-medium capitalize">{selectedPlan.nombre}</span>
+            {/* ✅ HEADER MEJORADO */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <CreditCardIcon className="h-6 w-6 text-green-600 mr-2" />
+                  {paymentStep === 'confirmation' ? 'Confirmar cambio de plan' : 'Completar Pago'}
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  Plan {selectedPlan.nombre} - Bs. {parseFloat(selectedPlan.precio).toFixed(2)}/año
+                </p>
               </div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-700">Precio:</span>
-                <span className="font-medium">Bs. {parseFloat(selectedPlan.precio).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">Duración:</span>
-                <span className="font-medium">1 año</span>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* ✅ INDICADOR DE PROGRESO */}
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className={`flex items-center ${paymentStep === 'confirmation' ? 'text-green-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    paymentStep === 'confirmation' ? 'bg-green-600 text-white' : 'bg-gray-200'
+                  }`}>
+                    1
+                  </div>
+                  <span className="ml-2 text-sm font-medium">Confirmar Plan</span>
+                </div>
+                
+                <div className={`flex items-center ${paymentStep === 'payment' ? 'text-green-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    paymentStep === 'payment' ? 'bg-green-600 text-white' : 'bg-gray-200'
+                  }`}>
+                    2
+                  </div>
+                  <span className="ml-2 text-sm font-medium">Pago con Tarjeta</span>
+                </div>
               </div>
             </div>
-            
-            <div className="flex justify-end space-x-3">
+
+            <div className="p-6">
+              {/* ✅ PASO 1: CONFIRMACIÓN DEL PLAN */}
+              {paymentStep === 'confirmation' && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                      <SparklesIcon className="h-6 w-6 text-green-600" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      ¿Confirmas el cambio de plan?
+                    </h3>
+                    <p className="text-gray-600">
+                      Estás a punto de cambiar tu plan a <span className="font-semibold capitalize">{selectedPlan.nombre}</span>
+                    </p>
+                  </div>
+
+                  {/* ✅ RESUMEN DEL PLAN MEJORADO */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                      <CheckCircleIcon className="h-5 w-5 text-green-600 mr-2" />
+                      Resumen del Plan
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600">Plan:</span>
+                        <span className="ml-2 font-medium capitalize">{selectedPlan.nombre}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Precio:</span>
+                        <span className="ml-2 font-medium">Bs. {parseFloat(selectedPlan.precio).toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Monto USD:</span>
+                        <span className="ml-2 font-medium">${parseFloat(selectedPlan.precio).toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Duración:</span>
+                        <span className="ml-2 font-medium">1 año</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ✅ INFORMACIÓN DE PAGO SEGURO */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
+                      <ShieldCheckIcon className="h-5 w-5 text-blue-600 mr-2" />
+                      Pago Seguro con Stripe
+                    </h4>
+                    <ul className="text-sm text-blue-800 space-y-1">
+                      <li className="flex items-center">
+                        <LockClosedIcon className="h-4 w-4 mr-2" />
+                        Conexión encriptada SSL
+                      </li>
+                      <li className="flex items-center">
+                        <CreditCardIcon className="h-4 w-4 mr-2" />
+                        Acepta Visa, Mastercard, American Express
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircleIcon className="h-4 w-4 mr-2" />
+                        Procesamiento seguro garantizado
+                      </li>
+                    </ul>
+                  </div>
+
+                  {paymentError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-red-800">
+                            Error al preparar el pago
+                          </h3>
+                          <p className="text-sm text-red-700 mt-1">{paymentError}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ✅ PASO 2: FORMULARIO DE PAGO SIN HELPER DE PRUEBAS */}
+              {paymentStep === 'payment' && (
+                <div className="space-y-6">
+                  <div className="text-center">
+                    <CreditCardIcon className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900">Completar Pago</h3>
+                    <p className="text-gray-600">Pago seguro con Stripe</p>
+                  </div>
+
+                  {/* ✅ RESUMEN COMPACTO */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">Plan {selectedPlan.nombre}:</span>
+                      <span className="font-semibold">${parseFloat(selectedPlan.precio).toFixed(2)} USD</span>
+                    </div>
+                  </div>
+
+                  {paymentError && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+                        <div className="ml-3">
+                          <h3 className="text-sm font-medium text-red-800">
+                            Error en el pago
+                          </h3>
+                          <p className="text-sm text-red-700 mt-1">{paymentError}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ✅ RENDERIZADO CONDICIONAL ULTRA-ESTABLE */}
+                  {paymentLoading && paymentStep === 'payment' && !clientSecret ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                      <p className="text-gray-600">Cargando formulario de pago...</p>
+                    </div>
+                  ) : clientSecret && paymentStep === 'payment' ? (
+                    <div className="min-h-[200px]">
+                      {/* ✅ STRIPE PROVIDER SIN CAMBIOS */}
+                      <StripeProvider 
+                        clientSecret={clientSecret}
+                        onError={handlePaymentError}
+                      >
+                        <PaymentForm
+                          amount={parseFloat(selectedPlan.precio)}
+                          currency="usd"
+                          description={`Actualización a Plan ${selectedPlan.nombre}`}
+                          onSuccess={handlePaymentSuccess}
+                          onError={handlePaymentError}
+                          onLoadingChange={setPaymentLoading}
+                          isRegistration={false}
+                        />
+                      </StripeProvider>
+                    </div>
+                  ) : paymentStep === 'payment' ? (
+                    <div className="text-center py-8">
+                      <ExclamationTriangleIcon className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
+                      <p className="text-gray-600">Error al cargar las opciones de pago</p>
+                      <button
+                        onClick={createPaymentIntent}
+                        className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Reintentar
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+            </div>
+
+            {/* ✅ FOOTER CON VALIDACIONES MEJORADAS */}
+            <div className="flex gap-3 p-6 border-t border-gray-200">
               <button
-                onClick={() => setUpgradeModalOpen(false)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                onClick={paymentStep === 'confirmation' ? handleCloseModal : () => setPaymentStep('confirmation')}
+                className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                disabled={paymentLoading && paymentStep === 'confirmation'}
               >
-                Cancelar
+                {paymentStep === 'confirmation' ? 'Cancelar' : 'Atrás'}
               </button>
-              <button
-                onClick={handlePlanUpgrade}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                disabled={confirmLoading}
-              >
-                {confirmLoading ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Procesando...
-                  </span>
-                ) : 'Confirmar cambio'}
-              </button>
+              
+              {paymentStep === 'confirmation' ? (
+                <button
+                  onClick={createPaymentIntent}
+                  disabled={paymentLoading}
+                  className="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {paymentLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Preparando pago...
+                    </>
+                  ) : (
+                    <>
+                      <CreditCardIcon className="h-4 w-4" />
+                      Proceder al Pago
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  form="payment-form"
+                  disabled={!clientSecret || paymentLoading}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {paymentLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Procesando Pago...
+                    </>
+                  ) : (
+                    <>
+                      <LockClosedIcon className="h-4 w-4" />
+                      Completar Pago Seguro
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

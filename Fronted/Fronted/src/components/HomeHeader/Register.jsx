@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { CreditCard as CreditCardIcon } from 'lucide-react';
 
-// ✅ IMPORTACIONES CORREGIDAS
+// ✅ IMPORTACIONES CORREGIDAS - ELIMINAR StripeTestHelper
 import PaymentForm from '../Stripe/PaymentForm';
 import StripeProvider from '../Stripe/StripeProvider';
-import StripeTestHelper from '../Stripe/StripeTesHelper'; // ✅ AGREGAR IMPORT
+// import StripeTestHelper from '../Stripe/StripeTesHelper'; // ❌ ELIMINADO
 
 import authService from '../../services/authService';
 import planService from '../../services/planService';
@@ -71,6 +71,9 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
   const { step, loading, userData, payment } = state;
   const { clientSecret, error: paymentError, retryCount } = payment;
   const MAX_RETRIES = 3;
+
+  // ✅ NUEVO ESTADO PARA MANEJAR LOADING DEL PAYMENT FORM
+  const [paymentFormLoading, setPaymentFormLoading] = useState(false);
 
   // Debug del plan recibido
   useEffect(() => {
@@ -294,13 +297,11 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
     if (error.code === 'payment_intent_unexpected_state') {
       console.log('⚠️ Estado inesperado del PaymentIntent, regenerando...');
       
-      // Mostrar mensaje específico
       dispatch({ 
         type: 'SET_PAYMENT_ERROR',
         payload: "El estado del pago es inconsistente. Estamos regenerando el formulario de pago, por favor espere..."
       });
       
-      // Esperar un poco y regenerar el clientSecret
       setTimeout(() => {
         getClientSecret();
       }, 2000);
@@ -308,11 +309,23 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
       return;
     }
     
-    // Para otros errores
-    dispatch({ 
-      type: 'SET_PAYMENT_ERROR',
-      payload: error.message || 'Error al procesar el pago'
-    });
+    // Para otros errores de Stripe
+    if (error.type === 'card_error') {
+      dispatch({ 
+        type: 'SET_PAYMENT_ERROR',
+        payload: `Error de tarjeta: ${error.message}`
+      });
+    } else if (error.type === 'validation_error') {
+      dispatch({ 
+        type: 'SET_PAYMENT_ERROR',
+        payload: `Error de validación: ${error.message}`
+      });
+    } else {
+      dispatch({ 
+        type: 'SET_PAYMENT_ERROR',
+        payload: error.message || 'Error al procesar el pago'
+      });
+    }
   };
 
   // ✅ FUNCIÓN CORREGIDA handleRetryPayment
@@ -642,6 +655,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                 </div>
               </div>
 
+              {/* Error de pago */}
               {paymentError && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                   <div className="flex items-start">
@@ -660,9 +674,10 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                       <div className="mt-3">
                         <button
                           onClick={handleRetryPayment}
-                          className="bg-red-100 hover:bg-red-200 text-red-800 text-sm px-3 py-1 rounded-md transition-colors"
+                          disabled={loading || paymentFormLoading}
+                          className="bg-red-100 hover:bg-red-200 text-red-800 text-sm px-3 py-1 rounded-md transition-colors disabled:opacity-50"
                         >
-                          Intentar nuevamente
+                          {loading || paymentFormLoading ? 'Reintentando...' : 'Intentar nuevamente'}
                         </button>
                       </div>
                     </div>
@@ -670,23 +685,30 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                 </div>
               )}
 
+              {/* ✅ SECCIÓN DE PAGO SIN CAMBIOS */}
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
                   <p className="text-gray-600">Cargando opciones de pago...</p>
                 </div>
               ) : clientSecret ? (
-                // ✅ KEY SIMPLE BASADA SOLO EN clientSecret
-                <StripeProvider key={clientSecret} clientSecret={clientSecret}>
-                  <PaymentForm
-                    amount={parseFloat(plan?.precio || 0)}
-                    currency="usd"
-                    description={`Suscripción Plan ${plan?.nombre}`}
-                    onSuccess={handlePaymentSuccess}
+                <div className="min-h-[200px]">
+                  <StripeProvider 
+                    key={clientSecret} 
+                    clientSecret={clientSecret}
                     onError={handlePaymentError}
-                    isRegistration={true}
-                  />
-                </StripeProvider>
+                  >
+                    <PaymentForm
+                      amount={parseFloat(plan?.precio || 0)}
+                      currency="usd"
+                      description={`Suscripción Plan ${plan?.nombre}`}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                      onLoadingChange={setPaymentFormLoading}
+                      isRegistration={true}
+                    />
+                  </StripeProvider>
+                </div>
               ) : (
                 <div className="text-center py-8">
                   <div className="text-gray-500">
@@ -710,8 +732,9 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
         {/* Footer con botones */}
         <div className="flex gap-3 p-6 border-t border-gray-200">
           <button
-            onClick={step === 1 ? handleClose : prevStep} // ✅ USAR FUNCIÓN DE LIMPIEZA
+            onClick={step === 1 ? handleClose : prevStep}
             className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+            disabled={loading || paymentFormLoading}
           >
             {step === 1 ? 'Cancelar' : 'Anterior'}
           </button>
@@ -720,18 +743,18 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
             <button
               onClick={nextStep}
               className="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+              disabled={loading}
             >
               Siguiente
             </button>
           ) : (
             <button
-              // Esto conectará el botón con el formulario de Stripe
               type="submit"
               form="payment-form"
-              disabled={loading}
+              disabled={loading || paymentFormLoading}
               className="flex-1 py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {loading || paymentFormLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                   Procesando Pago...
