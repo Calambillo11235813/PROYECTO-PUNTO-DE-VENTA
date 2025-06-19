@@ -1,36 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useReducer } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { CreditCard as CreditCardIcon } from 'lucide-react'; // Añadir esta importación
-import PaymentForm from '../PaymentForm';
-import StripeProvider from '../StripeProvider';
+import { CreditCard as CreditCardIcon } from 'lucide-react';
+
+// ✅ IMPORTACIONES CORREGIDAS
+import PaymentForm from '../Stripe/PaymentForm';
+import StripeProvider from '../Stripe/StripeProvider';
+import StripeTestHelper from '../Stripe/StripeTesHelper'; // ✅ AGREGAR IMPORT
+
 import authService from '../../services/authService';
 import planService from '../../services/planService';
 import paymentService from '../../services/paymentService';
 import { useAuth } from '../Contexts/AuthContext';
 
+const initialState = {
+  step: 1,
+  loading: false,
+  userData: {
+    nombre: '', correo: '', contrasena: '', confirmContrasena: '',
+    nombre_empresa: '', direccion: '', nit_empresa: ''
+  },
+  payment: {
+    clientSecret: null,
+    error: null,
+    retryCount: 0
+  }
+};
+
+const registrationReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_STEP':
+      return { ...state, step: action.payload };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'UPDATE_USER_DATA':
+      return { 
+        ...state, 
+        userData: { ...state.userData, ...action.payload }
+      };
+    case 'SET_CLIENT_SECRET':
+      return { 
+        ...state, 
+        payment: { ...state.payment, clientSecret: action.payload, error: null }
+      };
+    case 'SET_PAYMENT_ERROR':
+      return { 
+        ...state, 
+        payment: { ...state.payment, error: action.payload }
+      };
+    case 'INCREMENT_RETRY':
+      return { 
+        ...state, 
+        payment: { ...state.payment, retryCount: state.payment.retryCount + 1 }
+      };
+    case 'RESET_PAYMENT':
+      return { 
+        ...state, 
+        payment: { clientSecret: null, error: null, retryCount: 0 }
+      };
+    default:
+      return state;
+  }
+};
+
 const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
-
-  // Estados del formulario
-  const [step, setStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [userData, setUserData] = useState({
-    nombre: '',
-    correo: '',
-    contrasena: '',
-    confirmContrasena: '',
-    nombre_empresa: '',
-    direccion: '',
-    nit_empresa: ''
-  });
-  const [clientSecret, setClientSecret] = useState(null);
-  const [paymentError, setPaymentError] = useState(null);
-  const [timeoutError, setTimeoutError] = useState(false); // Nuevo estado para el error de timeout
-  const [renderKey, setRenderKey] = useState(0); // Estado para forzar re-renderizado
-  const [stripeKey, setStripeKey] = useState(0); // Nueva clave para Stripe
-  const [retryCount, setRetryCount] = useState(0);
+  const [state, dispatch] = useReducer(registrationReducer, initialState);
+  
+  const { step, loading, userData, payment } = state;
+  const { clientSecret, error: paymentError, retryCount } = payment;
   const MAX_RETRIES = 3;
 
   // Debug del plan recibido
@@ -40,121 +79,117 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
       console.log('   - ID:', plan.id);
       console.log('   - Nombre:', plan.nombre);
       console.log('   - Precio:', plan.precio);
+      console.log('   - Precio parseado:', parseFloat(plan.precio || 0));
+      console.log('   - Es válido:', !isNaN(parseFloat(plan.precio)) && parseFloat(plan.precio) > 0);
     } else {
       console.warn('⚠️ No se recibió plan en RegisterWithPlan');
     }
   }, [plan]);
 
-  // Función de retry con exponential backoff
-  const getClientSecretWithRetry = async () => {
-    if (step !== 3 || !plan?.precio) return;
+  // ✅ FUNCIÓN MEJORADA DE OBTENER CLIENT SECRET
+  const getClientSecret = async () => {
+    if (step !== 3 || !plan?.precio) {
+      console.warn('⚠️ No se puede crear PaymentIntent:', { step, plan });
+      return;
+    }
     
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      try {
-        setLoading(true);
-        setPaymentError(null);
-        
-        if (attempt > 0) {
-          console.log(`🔄 Reintentando crear PaymentIntent (intento ${attempt + 1}/${MAX_RETRIES + 1})`);
-          // Exponential backoff: 1s, 2s, 4s
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-        }
+    // ✅ VALIDACIÓN ADICIONAL DEL MONTO
+    const amount = parseFloat(plan.precio);
+    if (isNaN(amount) || amount <= 0) {
+      console.error('❌ Monto inválido:', { precio: plan.precio, amount });
+      dispatch({ 
+        type: 'SET_PAYMENT_ERROR',
+        payload: 'El precio del plan no es válido. Por favor, contacte al soporte.'
+      });
+      return;
+    }
+    
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
+      
+      console.log('🔄 Creando PaymentIntent para plan:', {
+        planId: plan.id,
+        precio: plan.precio,
+        amount: amount,
+        nombre: plan.nombre
+      });
 
-        const response = await paymentService.createPaymentIntent(
-          parseFloat(plan.precio),
-          'usd',
-          `Suscripción Plan ${plan.nombre}`,
-          true
-        );
-        
-        setClientSecret(response.client_secret);
-        setRetryCount(0);
-        return; // Éxito, salir del loop
-        
-      } catch (error) {
-        console.error(`❌ Error en intento ${attempt + 1}:`, error);
-        
-        if (attempt === MAX_RETRIES) {
-          // Último intento fallido, mostrar error final
-          setPaymentError(
-            `Error persistente del servidor después de ${MAX_RETRIES + 1} intentos. ` +
-            'Por favor, contacte al soporte técnico.'
-          );
-          setRetryCount(attempt + 1);
-        }
-      } finally {
-        if (attempt === MAX_RETRIES) {
-          setLoading(false);
-        }
+      const response = await paymentService.createPaymentIntent(
+        amount,
+        'usd',
+        `Suscripción Plan ${plan.nombre}`,
+        true
+      );
+      
+      console.log('✅ PaymentIntent creado exitosamente:', response);
+      dispatch({ type: 'SET_CLIENT_SECRET', payload: response.client_secret });
+      
+    } catch (error) {
+      console.error('❌ Error detallado al crear PaymentIntent:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config
+      });
+      
+      // Manejo específico por tipo de error
+      if (error.response?.status === 500) {
+        dispatch({ 
+          type: 'SET_PAYMENT_ERROR',
+          payload: 'Error interno del servidor. Por favor, contacte al soporte técnico o intente más tarde.'
+        });
+      } else if (error.response?.status === 400) {
+        dispatch({ 
+          type: 'SET_PAYMENT_ERROR',
+          payload: 'Datos de pago inválidos. Por favor, verifique la información del plan.'
+        });
+      } else if (error.response?.status === 403) {
+        dispatch({ 
+          type: 'SET_PAYMENT_ERROR',
+          payload: 'No autorizado para crear el pago. Por favor, inicie sesión nuevamente.'
+        });
+      } else {
+        dispatch({ 
+          type: 'SET_PAYMENT_ERROR',
+          payload: error.message || 'Error al preparar el pago. Por favor, intente nuevamente.'
+        });
       }
+      
+      toast.error('Error al configurar el pago. Por favor, intente nuevamente.');
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  // Obtener el clientSecret cuando entramos al paso 3
+  // ✅ EFECTO PRINCIPAL PARA OBTENER CLIENT SECRET
   useEffect(() => {
-    const getClientSecret = async () => {
-      if (step === 3 && plan?.precio) {
-        try {
-          setLoading(true);
-          setPaymentError(null); // Limpiar errores previos
-          
-          console.log('🔄 Creando PaymentIntent para plan:', {
-            planId: plan.id,
-            precio: plan.precio,
-            nombre: plan.nombre
-          });
+    if (step === 3 && plan?.precio && !clientSecret) { // ✅ Solo si no hay clientSecret
+      getClientSecret();
+    }
+  }, [step, plan?.id]); // ✅ Dependencia en plan.id, no en todo el objeto plan
 
-          const response = await paymentService.createPaymentIntent(
-            parseFloat(plan.precio),
-            'usd',
-            `Suscripción Plan ${plan.nombre}`,
-            true // isRegistration = true
-          );
-          
-          console.log('✅ PaymentIntent creado exitosamente:', response);
-          setClientSecret(response.client_secret);
-          
-        } catch (error) {
-          console.error('❌ Error detallado al crear PaymentIntent:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status,
-            config: error.config
-          });
-          
-          // Manejo específico por tipo de error
-          if (error.response?.status === 500) {
-            setPaymentError(
-              'Error interno del servidor. Por favor, contacte al soporte técnico o intente más tarde.'
-            );
-          } else if (error.response?.status === 400) {
-            setPaymentError(
-              'Datos de pago inválidos. Por favor, verifique la información del plan.'
-            );
-          } else if (error.response?.status === 403) {
-            setPaymentError(
-              'No autorizado para crear el pago. Por favor, inicie sesión nuevamente.'
-            );
-          } else {
-            setPaymentError(
-              error.message || 'Error al preparar el pago. Por favor, intente nuevamente.'
-            );
-          }
-          
-          toast.error('Error al configurar el pago. Por favor, intente nuevamente.');
-        } finally {
-          setLoading(false);
-        }
-      }
+  // ✅ EFECTO PARA PREVENIR EXPIRACIÓN
+  useEffect(() => {
+    let timeoutId;
+    
+    if (clientSecret && step === 3) {
+      // Regenerar después de 45 minutos para evitar que expire (Stripe expira en 1h)
+      timeoutId = setTimeout(() => {
+        console.log('⚠️ Regenerando clientSecret para evitar expiración...');
+        getClientSecret();
+      }, 45 * 60 * 1000);
+    }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
     };
-
-    getClientSecret();
-  }, [step, plan]);
+  }, [clientSecret, step]);
 
   // Proceso completo de registro y suscripción con Stripe real
   const handlePaymentSuccess = async (paymentIntent, confirmResult) => {
     try {
-      setLoading(true);
+      dispatch({ type: 'SET_LOADING', payload: true });
       console.log('🎉 Pago exitoso, iniciando proceso de registro completo...');
       console.log('PaymentIntent:', paymentIntent);
       console.log('Plan seleccionado:', plan);
@@ -247,7 +282,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
         }, 3000);
       }
     } finally {
-      setLoading(false);
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
@@ -260,9 +295,10 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
       console.log('⚠️ Estado inesperado del PaymentIntent, regenerando...');
       
       // Mostrar mensaje específico
-      setPaymentError(
-        "El estado del pago es inconsistente. Estamos regenerando el formulario de pago, por favor espere..."
-      );
+      dispatch({ 
+        type: 'SET_PAYMENT_ERROR',
+        payload: "El estado del pago es inconsistente. Estamos regenerando el formulario de pago, por favor espere..."
+      });
       
       // Esperar un poco y regenerar el clientSecret
       setTimeout(() => {
@@ -273,7 +309,66 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
     }
     
     // Para otros errores
-    setPaymentError(error.message || 'Error al procesar el pago');
+    dispatch({ 
+      type: 'SET_PAYMENT_ERROR',
+      payload: error.message || 'Error al procesar el pago'
+    });
+  };
+
+  // ✅ FUNCIÓN CORREGIDA handleRetryPayment
+  const handleRetryPayment = async () => {
+    dispatch({ type: 'SET_PAYMENT_ERROR', payload: null });
+    dispatch({ type: 'RESET_PAYMENT' });
+    
+    // ✅ NO usar setStripeKey - dejar que se re-renderice naturalmente
+    try {
+      dispatch({ type: 'SET_LOADING', payload: true });
+      const response = await paymentService.createPaymentIntent(
+        parseFloat(plan.precio),
+        'usd',
+        `Suscripción Plan ${plan.nombre}`,
+        true
+      );
+      
+      dispatch({ type: 'SET_CLIENT_SECRET', payload: response.client_secret });
+      
+    } catch (error) {
+      dispatch({ 
+        type: 'SET_PAYMENT_ERROR',
+        payload: error.message || 'Error al reintentar el pago'
+      });
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // ✅ FUNCIÓN CORREGIDA handleClose
+  const handleClose = () => {
+    console.log('🧹 Cerrando formulario de registro...');
+    
+    // Resetear estado
+    dispatch({ type: 'RESET_PAYMENT' });
+    dispatch({ type: 'SET_STEP', payload: 1 });
+    dispatch({ 
+      type: 'UPDATE_USER_DATA', 
+      payload: {
+        nombre: '', correo: '', contrasena: '', confirmContrasena: '',
+        nombre_empresa: '', direccion: '', nit_empresa: ''
+      }
+    });
+    
+    // ✅ LIMPIAR DOM SIN setStripeKey
+    setTimeout(() => {
+      const stripeElements = document.querySelectorAll('[aria-hidden="true"]');
+      stripeElements.forEach(element => {
+        const focusedChild = element.querySelector(':focus');
+        if (focusedChild) {
+          focusedChild.blur();
+        }
+      });
+    }, 100);
+    
+    onClose();
   };
 
   // Navegación entre pasos
@@ -303,54 +398,31 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
         toast.error('Por favor, completa todos los campos de la empresa');
         return;
       }
+      
+      // ✅ VALIDACIÓN ADICIONAL DEL PLAN ANTES DE PASO 3
+      if (!plan || !plan.id || !plan.precio) {
+        toast.error('Información del plan no válida. Por favor, selecciona un plan nuevamente.');
+        onClose();
+        return;
+      }
+      
+      const amount = parseFloat(plan.precio);
+      if (isNaN(amount) || amount <= 0) {
+        toast.error('El precio del plan no es válido. Por favor, contacte al soporte.');
+        onClose();
+        return;
+      }
     }
     
     console.log(`✅ Paso ${step} validado correctamente, avanzando al paso ${step + 1}`);
     console.log('📋 Plan seleccionado:', plan);
     
-    setStep(step + 1);
+    dispatch({ type: 'SET_STEP', payload: step + 1 });
   };
 
   const prevStep = () => {
-    setStep(step - 1);
+    dispatch({ type: 'SET_STEP', payload: step - 1 });
   };
-
-  // Añadir un efecto separado para manejar la visualización del formulario
-  useEffect(() => {
-    // Este efecto se ejecuta cuando clientSecret cambia
-    if (clientSecret) {
-      console.log('🔄 clientSecret actualizado, forzando renderizado del formulario');
-      // Asegurar que loading está en false
-      setLoading(false);
-      // Opcional: forzar un re-renderizado si es necesario
-      setRenderKey(Date.now());
-    }
-  }, [clientSecret]);
-
-  // Cuando recibimos el clientSecret, actualizamos la key para forzar un re-renderizado
-  useEffect(() => {
-    if (clientSecret) {
-      setStripeKey(prev => prev + 1);
-    }
-  }, [clientSecret]);
-
-  // En RegisterWithPlan, añadir este useEffect:
-  useEffect(() => {
-    // Regenerar el clientSecret si lleva mucho tiempo activo (prevenir expiración)
-    let timeoutId;
-    
-    if (clientSecret && step === 3) {
-      // Regenerar después de 45 minutos para evitar que expire (Stripe expira en 1h)
-      timeoutId = setTimeout(() => {
-        console.log('⚠️ Regenerando clientSecret para evitar expiración...');
-        getClientSecret();
-      }, 45 * 60 * 1000);
-    }
-    
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [clientSecret, step]);
 
   if (!isOpen) return null;
 
@@ -368,7 +440,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose} // ✅ USAR FUNCIÓN DE LIMPIEZA
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -435,7 +507,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     type="text"
                     name="nombre"
                     value={userData.nombre}
-                    onChange={e => setUserData({ ...userData, nombre: e.target.value })}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { nombre: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Tu nombre completo"
                   />
@@ -449,7 +521,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     type="email"
                     name="correo"
                     value={userData.correo}
-                    onChange={e => setUserData({ ...userData, correo: e.target.value })}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { correo: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="ejemplo@correo.com"
                   />
@@ -463,7 +535,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     type="password"
                     name="contrasena"
                     value={userData.contrasena}
-                    onChange={e => setUserData({ ...userData, contrasena: e.target.value })}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { contrasena: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Mínimo 6 caracteres"
                   />
@@ -477,7 +549,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     type="password"
                     name="confirmContrasena"
                     value={userData.confirmContrasena}
-                    onChange={e => setUserData({ ...userData, confirmContrasena: e.target.value })}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { confirmContrasena: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Confirma tu contraseña"
                   />
@@ -506,7 +578,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     type="text"
                     name="nombre_empresa"
                     value={userData.nombre_empresa}
-                    onChange={e => setUserData({ ...userData, nombre_empresa: e.target.value })}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { nombre_empresa: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Nombre de tu empresa"
                   />
@@ -520,7 +592,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     type="text"
                     name="direccion"
                     value={userData.direccion}
-                    onChange={e => setUserData({ ...userData, direccion: e.target.value })}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { direccion: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Dirección de la empresa"
                   />
@@ -534,7 +606,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     type="text"
                     name="nit_empresa"
                     value={userData.nit_empresa}
-                    onChange={e => setUserData({ ...userData, nit_empresa: e.target.value })}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { nit_empresa: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Número de Identificación Tributaria"
                   />
@@ -563,6 +635,10 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     <span className="text-gray-600">Precio:</span>
                     <span className="ml-2 font-medium">Bs. {plan?.precio}/año</span>
                   </div>
+                  <div>
+                    <span className="text-gray-600">Monto USD:</span>
+                    <span className="ml-2 font-medium">${parseFloat(plan?.precio || 0).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -581,16 +657,14 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                       <div className="mt-2 text-sm text-red-700">
                         {paymentError}
                       </div>
-                      {retryCount > 0 && (
-                        <div className="mt-3">
-                          <button
-                            onClick={handleRetryPayment}
-                            className="bg-red-100 hover:bg-red-200 text-red-800 text-sm px-3 py-1 rounded-md transition-colors"
-                          >
-                            Intentar nuevamente
-                          </button>
-                        </div>
-                      )}
+                      <div className="mt-3">
+                        <button
+                          onClick={handleRetryPayment}
+                          className="bg-red-100 hover:bg-red-200 text-red-800 text-sm px-3 py-1 rounded-md transition-colors"
+                        >
+                          Intentar nuevamente
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -602,14 +676,33 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                   <p className="text-gray-600">Cargando opciones de pago...</p>
                 </div>
               ) : clientSecret ? (
-                <StripeProvider clientSecret={clientSecret}>
+                // ✅ KEY SIMPLE BASADA SOLO EN clientSecret
+                <StripeProvider key={clientSecret} clientSecret={clientSecret}>
                   <PaymentForm
+                    amount={parseFloat(plan?.precio || 0)}
+                    currency="usd"
+                    description={`Suscripción Plan ${plan?.nombre}`}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
                     isRegistration={true}
                   />
                 </StripeProvider>
-              ) : null}
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-gray-500">
+                    <svg className="h-12 w-12 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <p>Error al cargar las opciones de pago</p>
+                    <button
+                      onClick={getClientSecret}
+                      className="mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      Reintentar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -617,7 +710,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
         {/* Footer con botones */}
         <div className="flex gap-3 p-6 border-t border-gray-200">
           <button
-            onClick={step === 1 ? onClose : prevStep}
+            onClick={step === 1 ? handleClose : prevStep} // ✅ USAR FUNCIÓN DE LIMPIEZA
             className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
           >
             {step === 1 ? 'Cancelar' : 'Anterior'}

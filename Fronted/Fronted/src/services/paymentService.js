@@ -120,6 +120,95 @@ class PaymentService {
       payment_intent_status: 'requires_payment_method'
     };
   }
+
+  /**
+   * Registrar el pago exitoso en el backend
+   * @param {Object} paymentData - Datos del pago a registrar
+   * @returns {Promise<Object>} - Respuesta del servidor
+   */
+  async recordPayment(paymentData) {
+    try {
+      const { paymentIntentId, amount, currency, description } = paymentData;
+      
+      // Validaciones
+      if (!paymentIntentId) {
+        throw new Error('PaymentIntent ID es requerido');
+      }
+      
+      if (!amount || amount <= 0) {
+        throw new Error('Monto inválido para registrar el pago');
+      }
+
+      console.log('📋 Registrando pago exitoso:', {
+        paymentIntentId,
+        amount,
+        currency,
+        description
+      });
+
+      const requestData = {
+        payment_intent_id: paymentIntentId,
+        amount_paid: amount,
+        currency: currency || 'usd',
+        description: description || '',
+        status: 'completed',
+        payment_method: 'card',
+        timestamp: new Date().toISOString()
+      };
+
+      // Usar cliente autenticado para registrar el pago
+      const response = await api.post('/payments/record-payment/', requestData);
+      
+      console.log('✅ Pago registrado exitosamente:', response.data);
+      return response.data;
+      
+    } catch (error) {
+      console.error('❌ Error al registrar el pago:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
+      // No lanzar error crítico si el registro falla
+      // El pago ya fue procesado por Stripe
+      console.warn('⚠️ Pago procesado por Stripe pero no registrado en BD local');
+      
+      return {
+        success: false,
+        error: error.message,
+        payment_intent_id: paymentData.paymentIntentId
+      };
+    }
+  }
+
+  /**
+   * Obtener historial de pagos del usuario
+   * @returns {Promise<Array>} - Lista de pagos
+   */
+  async getPaymentHistory() {
+    try {
+      const response = await api.get('/payments/history/');
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo historial de pagos:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener detalles de un pago específico
+   * @param {string} paymentIntentId - ID del PaymentIntent
+   * @returns {Promise<Object>} - Detalles del pago
+   */
+  async getPaymentDetails(paymentIntentId) {
+    try {
+      const response = await api.get(`/payments/details/${paymentIntentId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error obteniendo detalles del pago:', error);
+      throw error;
+    }
+  }
 }
 
 export default new PaymentService();

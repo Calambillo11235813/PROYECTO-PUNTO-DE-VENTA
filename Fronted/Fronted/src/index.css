@@ -1,0 +1,40 @@
+/* ✅ ESTILOS PARA OCULTAR ELEMENTOS PROBLEMÁTICOS DE STRIPE LINK */
+.p-CodePuncher-controllingInput[aria-hidden="true"],
+.p-LogoutMenu[aria-hidden="true"],
+.p-Picker-change[aria-hidden="true"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* ✅ PREVENIR FOCUS EN ELEMENTOS OCULTOS */
+[aria-hidden="true"] input,
+[aria-hidden="true"] button,
+[aria-hidden="true"] a {
+  pointer-events: none !important;
+  tabindex: -1 !important;
+}
+
+/* ✅ MEJORAR ACCESIBILIDAD DEL PAYMENT ELEMENT */
+.StripeElement {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  background-color: white;
+}
+
+.StripeElement--focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.StripeElement--invalid {
+  border-color: #ef4444;
+}
+
+/* ✅ OCULTAR STRIPE LINK ESPECÍFICAMENTE */
+.p-Link,
+.p-LinkAuthentication,
+.p-LogoutMenu {
+  display: none !important;
+}
