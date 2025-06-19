@@ -1,38 +1,5 @@
+// menu_screen.dart
 import 'package:flutter/material.dart';
-
-void main() {
-  runApp(const TiendaApp());
-}
-
-class TiendaApp extends StatelessWidget {
-  const TiendaApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Roboto',
-        primaryColor: const Color(0xFF43A047),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF43A047),
-          primary: const Color(0xFF43A047),
-          secondary: const Color(0xFF66BB6A),
-        ),
-      ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const HomePage(),
-        '/balance': (context) => const BalanceScreen(),
-        '/clientes': (context) => const ClientesScreen(),
-        '/config': (context) => const ConfigScreen(),
-        '/ventas': (context) => const GestionarVentasScreen(),
-        '/inventario': (context) => const InventarioScreen(),
-        '/vender': (context) => const SellScreen(),
-      },
-    );
-  }
-}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -41,95 +8,32 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tienda Usuario'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: () {
-              // Handle logout logic here
-              Navigator.pushReplacementNamed(context, '/');
-            },
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'POS System',
+          style: TextStyle(
+            fontSize: 27,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
-        ],
+        ),
+        backgroundColor: const Color(0xFF45a049),
       ),
+
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF43A047), Color(0xFF66BB6A)],
+            colors: [
+              Color.fromARGB(255, 225, 225, 241),
+              Color.fromARGB(255, 225, 225, 241),
+            ],
           ),
         ),
         child: SafeArea(
           child: Column(
             children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFFFFF).withOpacity(0.25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 3,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.person_outline,
-                        color: Colors.black54,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFFFFF).withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              spreadRadius: 1,
-                              blurRadius: 3,
-                            ),
-                          ],
-                        ),
-                        child: const Text(
-                          'Tienda Usuario',
-                          style: TextStyle(
-                            color: Color(0xFF2E7D32),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Main Menu Grid
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
@@ -139,14 +43,24 @@ class HomePage extends StatelessWidget {
                     crossAxisSpacing: 16,
                     children: [
                       MenuCard(
+                        icon: Icons.point_of_sale,
+                        label: 'Gestionar Caja',
+                        route: '/caja',
+                      ),
+                      MenuCard(
                         icon: Icons.storefront,
-                        label: 'Gestionar Ventas',
-                        route: '/ventasg',
+                        label: 'Dashboard',
+                        route: '/Dashboard',
                       ),
                       MenuCard(
                         icon: Icons.shopping_cart,
-                        label: 'Vender',
-                        route: '/vender',
+                        label: 'Punto de Venta',
+                        route: '/ventas',
+                      ),
+                      MenuCard(
+                        icon: Icons.shopping_bag,
+                        label: 'Lista de Ventas',
+                        route: '/pedidos',
                       ),
                       MenuCard(
                         icon: Icons.inventory_2,
@@ -154,29 +68,38 @@ class HomePage extends StatelessWidget {
                         route: '/inventario',
                       ),
                       MenuCard(
-                        icon: Icons.people,
-                        label: 'Lista de Clientes',
-                        route: '/clientes',
+                        icon: Icons.person,
+                        label: ' Clientes',
+                        route: '/cliente',
+                      ),
+                      MenuCard(
+                        icon: Icons.man,
+                        label: 'Empleado',
+                        route: '/empleado',
+                      ),
+                      MenuCard(
+                        icon: Icons.description,
+                        label: 'Facturacion',
+                        route: '/facturacion',
                       ),
                       MenuCard(
                         icon: Icons.bar_chart,
-                        label: 'Balance',
-                        route: '/balance',
+                        label: 'Reportes',
+                        route: '/reportes',
                       ),
                       MenuCard(
                         icon: Icons.settings,
-                        label: 'Configuración',
-                        route: '/config',
+                        label: 'Configuracion',
+                        route: '/configuracion',
+                      ),
+                      MenuCard(
+                        icon: Icons.exit_to_app,
+                        label: 'Cerrar Sesión',
+                        route: '/cerrarSesion',
                       ),
                     ],
                   ),
                 ),
-              ),
-
-              // Footer
-              Container(
-                height: 4,
-                color: const Color(0xFFFFFFFF).withOpacity(0.3),
               ),
             ],
           ),
@@ -211,7 +134,11 @@ class _MenuCardState extends State<MenuCard> {
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
         setState(() => _isPressed = false);
-        Navigator.pushNamed(context, widget.route);
+        if (widget.label == 'Cerrar Sesión') {
+          Navigator.pushReplacementNamed(context, '/login');
+        } else {
+          Navigator.pushNamed(context, widget.route);
+        }
       },
       onTapCancel: () => setState(() => _isPressed = false),
       child: AnimatedContainer(
@@ -232,11 +159,7 @@ class _MenuCardState extends State<MenuCard> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              widget.icon,
-              size: 48,
-              color: const Color(0xFF2E7D32),
-            ),
+            Icon(widget.icon, size: 48, color: const Color(0xFF2E7D32)),
             const SizedBox(height: 10),
             Text(
               widget.label,
@@ -250,79 +173,6 @@ class _MenuCardState extends State<MenuCard> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// Example screens for navigation
-class BalanceScreen extends StatelessWidget {
-  const BalanceScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Balance')),
-      body: const Center(child: Text('Balance Screen')),
-    );
-  }
-}
-
-class ClientesScreen extends StatelessWidget {
-  const ClientesScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Clientes')),
-      body: const Center(child: Text('Clientes Screen')),
-    );
-  }
-}
-
-class ConfigScreen extends StatelessWidget {
-  const ConfigScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Configuración')),
-      body: const Center(child: Text('Configuración Screen')),
-    );
-  }
-}
-
-class GestionarVentasScreen extends StatelessWidget {
-  const GestionarVentasScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Gestionar Ventas')),
-      body: const Center(child: Text('Gestionar Ventas Screen')),
-    );
-  }
-}
-
-class InventarioScreen extends StatelessWidget {
-  const InventarioScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Inventario')),
-      body: const Center(child: Text('Inventario Screen')),
-    );
-  }
-}
-
-class SellScreen extends StatelessWidget {
-  const SellScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Vender')),
-      body: const Center(child: Text('Vender Screen')),
     );
   }
 }

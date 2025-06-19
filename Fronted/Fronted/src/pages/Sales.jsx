@@ -238,9 +238,9 @@ const VentasView = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col">
-      <div className="py-4 px-6 bg-white border-b">
-        <h1 className="text-xl font-medium text-green-600">Punto de Venta</h1>
+    <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="w-full h-full flex flex-col">
+      <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="py-4 px-6  border-b">
+        <h1 className="text-xl font-medium title-icon">Punto de Venta</h1>
         {cajaActual && (
           <p className="text-sm text-gray-600">
             Caja # abierta desde {new Date(cajaActual.fecha_apertura).toLocaleString()}
@@ -272,7 +272,7 @@ const VentasView = () => {
                 </div>
               )}
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {filteredProducts.map(product => (
                   <ProductCard 
                     key={product.id} 

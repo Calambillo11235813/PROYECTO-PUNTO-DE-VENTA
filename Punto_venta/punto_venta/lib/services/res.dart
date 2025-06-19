@@ -1,8 +1,11 @@
 import 'dart:convert'; // 👈 Necesario para usar jsonDecode
 import 'package:http/http.dart' as http;
+import 'package:punto_venta/global/global_storage.dart';
 
 main() async {
-  var response = await http.post(Uri.parse('http://127.0.0.1:8000/accounts/usuarios/')); // Llamada HTTP
+  var response = await http.post(
+    Uri.parse(GlobalStorage.url + 'accounts/usuarios/'),
+  ); // Llamada HTTP
   print('Respuesta cruda: ${response.body}'); // Solo para debug
 
   // Convertir el body a JSON
@@ -18,5 +21,4 @@ main() async {
       print('Nombre: ${usuario['nombre']} - Correo: ${usuario['correo']}');
     }
   }
-
 }

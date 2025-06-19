@@ -136,8 +136,8 @@ const Lista_ventas = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center mb-2">
-          <FaShoppingBag className="mr-2 text-green-600" />
+        <h1 className="text-2xl font-bold title-icon flex items-center mb-2">
+          <FaShoppingBag className="mr-2 icon-accent" />
           Lista de ventas
         </h1>
         <p className="text-gray-600">
@@ -146,7 +146,7 @@ const Lista_ventas = () => {
       </div>
 
       {/* Filtros y Búsqueda */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div style={{ backgroundColor: "var(--bg-tertiary)" }}className=" rounded-lg shadow-md p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="col-span-1 md:col-span-2">
             <div className="relative">
@@ -201,7 +201,7 @@ const Lista_ventas = () => {
       </div>
 
       {/* Tabla de Ventas */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div style={{ backgroundColor: "var(--bg-tertiary)" }}className=" rounded-lg shadow-md overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center p-10">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
@@ -269,7 +269,7 @@ const Lista_ventas = () => {
           </div>
         ) : (
           <div className="text-center p-10">
-            <FaShoppingBag className="mx-auto h-12 w-12 text-gray-400" />
+            <FaShoppingBag className="mx-auto h-12 w-12 icon-accent" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No hay ventas</h3>
             <p className="mt-1 text-sm text-gray-500">
               No se encontraron ventas que coincidan con los filtros aplicados.
