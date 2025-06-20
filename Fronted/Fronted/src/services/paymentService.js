@@ -1,14 +1,5 @@
 // src/services/paymentService.js
-import axios from 'axios';
-import api from './apiClient'; // Cliente API con interceptor para autenticación
-
-// Cliente API sin interceptores de autenticación para el registro
-const publicApiClient = axios.create({
-  baseURL: 'http://127.0.0.1:8000', // Asegúrate de que coincida con la URL base de api
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
+import api, { publicApi } from './apiClient';
 
 class PaymentService {
   async createPaymentIntent(amount, currency = 'usd', description = '', isRegistration = false) {
@@ -18,7 +9,7 @@ class PaymentService {
         throw new Error('Monto inválido para el pago');
       }
       
-      const client = isRegistration ? publicApiClient : api;
+      const client = isRegistration ? publicApi : api;
       const amountInCents = Math.round(parseFloat(amount) * 100);
       
       const requestData = {
@@ -28,12 +19,7 @@ class PaymentService {
         registration_flow: isRegistration
       };
       
-      console.log('📤 Enviando solicitud de PaymentIntent:', {
-        endpoint: '/payments/create-payment-intent/',
-        data: requestData,
-        isRegistration,
-        client: isRegistration ? 'publicApiClient' : 'authenticatedApi'
-      });
+      console.log('📤 Enviando solicitud de PaymentIntent:', requestData);
       
       const response = await client.post('/payments/create-payment-intent/', requestData);
       
@@ -50,24 +36,13 @@ class PaymentService {
       
       return response.data;
     } catch (error) {
-      console.error('❌ Error detallado en createPaymentIntent:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        url: error.config?.url,
-        method: error.config?.method,
-        data: error.config?.data
-      });
+      console.error('❌ Error detallado en createPaymentIntent:', error);
       
       // Re-lanzar con información más específica
       if (error.response?.status === 500) {
         throw new Error('Error interno del servidor al procesar el pago');
       } else if (error.response?.status === 400) {
         throw new Error(`Datos inválidos: ${error.response.data?.detail || error.response.data?.message || 'Verifique los datos enviados'}`);
-      } else if (error.response?.status === 403) {
-        throw new Error('No autorizado para realizar esta operación');
-      } else if (error.response?.status === 404) {
-        throw new Error('Endpoint de pagos no encontrado');
       }
       
       throw error;
@@ -139,13 +114,6 @@ class PaymentService {
         throw new Error('Monto inválido para registrar el pago');
       }
 
-      console.log('📋 Registrando pago exitoso:', {
-        paymentIntentId,
-        amount,
-        currency,
-        description
-      });
-
       const requestData = {
         payment_intent_id: paymentIntentId,
         amount_paid: amount,
@@ -156,22 +124,13 @@ class PaymentService {
         timestamp: new Date().toISOString()
       };
 
-      // Usar cliente autenticado para registrar el pago
       const response = await api.post('/payments/record-payment/', requestData);
       
       console.log('✅ Pago registrado exitosamente:', response.data);
       return response.data;
       
     } catch (error) {
-      console.error('❌ Error al registrar el pago:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-
-      // No lanzar error crítico si el registro falla
-      // El pago ya fue procesado por Stripe
-      console.warn('⚠️ Pago procesado por Stripe pero no registrado en BD local');
+      console.error('❌ Error al registrar el pago:', error);
       
       return {
         success: false,
