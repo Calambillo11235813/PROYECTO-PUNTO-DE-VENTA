@@ -4,8 +4,12 @@ import reporteService from '../../services/reporteService';
 import apiClient from '../../services/apiClient';
 import html2pdf from 'html2pdf.js';
 import * as XLSX from 'xlsx';
+import useTheme from '../../hooks/useTheme'; // Importar el hook de temas
 
 const Vistareportes = () => {
+  // Usar el hook de temas
+  const { palette } = useTheme();
+  
   const [reportType, setReportType] = useState('ventas');
   const [reportSubType, setReportSubType] = useState('general');
   const [reportData, setReportData] = useState(null);
@@ -815,7 +819,7 @@ const Vistareportes = () => {
       
       return (
         <div className="overflow-x-auto">
-          <div className="p-4 mb-4 bg-gray-50 rounded-md">
+          <div className="p-4 mb-4 rounded-md" style={{ backgroundColor: "var(--bg-report-section)" }}>
             <h4 className="font-medium text-lg mb-2">Resumen de Ventas</h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-3 rounded-md border">
@@ -852,7 +856,7 @@ const Vistareportes = () => {
           </div>
           
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead style={{ backgroundColor: "var(--bg-report-section)" }}>
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
@@ -882,7 +886,7 @@ const Vistareportes = () => {
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-gray-50">
+            <tfoot style={{ backgroundColor: "var(--bg-report-section)" }}>
               <tr>
                 <td colSpan="5" className="px-6 py-4 text-right text-sm font-medium">Total:</td>
                 <td className="px-6 py-4 text-sm font-bold text-gray-900">{reportData.resumen?.total_ventas_bs?.toFixed(2) || '0.00'} Bs</td>
@@ -909,13 +913,13 @@ const Vistareportes = () => {
       
       return (
         <div className="overflow-x-auto">
-          <div className="p-4 mb-4 bg-gray-50 rounded-md">
+          <div className="p-4 mb-4 rounded-md" style={{ backgroundColor: "var(--bg-report-section)" }}>
             <h4 className="font-medium text-lg mb-2">Ventas por Productos</h4>
             <p>Total productos vendidos: {reportData.total_productos_vendidos || reportData.productos.length}</p>
           </div>
           
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead style={{ backgroundColor: "var(--bg-report-section)" }}>
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
@@ -955,13 +959,13 @@ const Vistareportes = () => {
       
       return (
         <div className="overflow-x-auto">
-          <div className="p-4 mb-4 bg-gray-50 rounded-md">
+          <div className="p-4 mb-4 rounded-md" style={{ backgroundColor: "var(--bg-report-section)" }}>
             <h4 className="font-medium text-lg mb-2">Ventas por Cliente</h4>
             <p>Total clientes: {reportData.total_clientes || reportData.clientes.length}</p>
           </div>
           
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead style={{ backgroundColor: "var(--bg-report-section)" }}>
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
@@ -1040,7 +1044,7 @@ const Vistareportes = () => {
 
       return (
         <div className="space-y-6">
-          <div className="p-4 mb-4 bg-gray-50 rounded-md">
+          <div className="p-4 mb-4 rounded-md" style={{ backgroundColor: "var(--bg-report-section)" }}>
             <h4 className="font-medium text-lg mb-2">Reporte por Categorías</h4>
             <p>Total categorías: {reportData.total_categorias}</p>
             {reportData.categoria_filtro && (
@@ -1088,7 +1092,7 @@ const Vistareportes = () => {
 
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead style={{ backgroundColor: "var(--bg-report-section)" }}>
                     <tr>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
@@ -1136,7 +1140,7 @@ const Vistareportes = () => {
     if (reportSubType === 'inventario') {
       return (
         <div className="overflow-x-auto">
-          <div className="p-4 mb-4 bg-gray-50 rounded-md">
+          <div className="p-4 mb-4 rounded-md" style={{ backgroundColor: "var(--bg-report-section)" }}>
             <h4 className="font-medium text-lg mb-2">Resumen de Inventario</h4>
             <div className="space-y-1">
               <p>Total productos: {reportData.total_productos || reportData.productos.length}</p>
@@ -1152,7 +1156,7 @@ const Vistareportes = () => {
           </div>
           
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead style={{ backgroundColor: "var(--bg-report-section)" }}>
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
@@ -1178,7 +1182,7 @@ const Vistareportes = () => {
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-gray-50">
+            <tfoot style={{ backgroundColor: "var(--bg-report-section)" }}>
               <tr>
                 <td colSpan="6" className="px-6 py-4 text-center text-sm font-medium text-gray-700">
                   Total de productos: {reportData.productos.length}
@@ -1241,7 +1245,7 @@ const Vistareportes = () => {
     
     return (
       <div className="overflow-x-auto">
-        <div className="p-4 mb-4 bg-gray-50 rounded-md">
+        <div className="p-4 mb-4 rounded-md" style={{ backgroundColor: "var(--bg-report-section)" }}>
           <h4 className="font-medium text-lg mb-2">Reporte de Clientes Registrados</h4>
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
             <div className="bg-white p-3 rounded-md border">
@@ -1252,7 +1256,7 @@ const Vistareportes = () => {
         </div>
         
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead style={{ backgroundColor: "var(--bg-report-section)" }}>
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
@@ -1347,7 +1351,7 @@ const Vistareportes = () => {
     return (
       <div className="overflow-x-auto">
         {reportData.total_general && (
-          <div className="p-4 mb-4 bg-gray-50 rounded-md">
+          <div className="p-4 mb-4 rounded-md" style={{ backgroundColor: "var(--bg-report-section)" }}>
             <h4 className="font-medium text-lg mb-2">Resumen General de Cajas</h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-3 rounded-md border">
@@ -1371,7 +1375,7 @@ const Vistareportes = () => {
         )}
         
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead style={{ backgroundColor: "var(--bg-report-section)" }}>
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apertura</th>
@@ -1454,7 +1458,7 @@ const Vistareportes = () => {
     return (
       <div className="overflow-x-auto">
         {reportData.resumen && (
-          <div className="p-4 mb-4 bg-gray-50 rounded-md">
+          <div className="p-4 mb-4 rounded-md" style={{ backgroundColor: "var(--bg-report-section)" }}>
             <h4 className="font-medium text-lg mb-2">Resumen de Movimientos</h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-white p-3 rounded-md border">
@@ -1522,7 +1526,7 @@ const Vistareportes = () => {
               {cajaData.movimientos && cajaData.movimientos.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead style={{ backgroundColor: "var(--bg-report-section)" }}>
                       <tr>
                         <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           ID
@@ -1566,7 +1570,7 @@ const Vistareportes = () => {
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-gray-50">
+                    <tfoot style={{ backgroundColor: "var(--bg-report-section)" }}>
                       <tr>
                         <td colSpan="3" className="px-4 py-2 text-right text-sm font-medium">
                           Balance:
@@ -1618,27 +1622,32 @@ const Vistareportes = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <div className="min-h-screen p-4" style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white shadow-md rounded-lg p-6">
+        <div className="shadow-md rounded-lg p-6" style={{ backgroundColor: "var(--bg-tertiary)" }}>
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <FaChartBar className="text-green-600" />
+            <h1 className="text-2xl font-bold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
+              <FaChartBar style={{ color: "var(--accent-color)" }} />
               Reportes del Sistema
             </h1>
           </div>
 
           {/* Filtros y controles */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: "var(--bg-report-section)" }}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
                   Tipo de Reporte
                 </label>
                 <select
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  style={{ 
+                    backgroundColor: "var(--bg-terciario)", 
+                    color: "var(--text-primary)",
+                    borderColor: "var(--accent-color)",
+                  }}
                 >
                   <option value="ventas">Ventas</option>
                   <option value="productos">Productos</option>
@@ -1649,13 +1658,18 @@ const Vistareportes = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
                   Subtipo
                 </label>
                 <select
                   value={reportSubType}
                   onChange={(e) => setReportSubType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  style={{ 
+                    backgroundColor: "var(--bg-terciario)", 
+                    color: "var(--text-primary)",
+                    borderColor: "var(--accent-color)",
+                  }}
                 >
                   {subTypeOptions[reportType]?.map(option => (
                     <option key={option.value} value={option.value}>{option.label}</option>
@@ -1664,26 +1678,36 @@ const Vistareportes = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
                   <FaCalendarAlt className="inline mr-1" /> Fecha Inicio
                 </label>
                 <input
                   type="date"
                   value={dateRange.startDate}
                   onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  style={{ 
+                    backgroundColor: "var(--bg-terciario)", 
+                    color: "var(--text-primary)",
+                    borderColor: "var(--accent-color)",
+                  }}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
                   <FaCalendarAlt className="inline mr-1" /> Fecha Fin
                 </label>
                 <input
                   type="date"
                   value={dateRange.endDate}
                   onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2"
+                  style={{ 
+                    backgroundColor: "var(--bg-terciario)", 
+                    color: "var(--text-primary)",
+                    borderColor: "var(--accent-color)",
+                  }}
                 />
               </div>
             </div>
@@ -1694,13 +1718,15 @@ const Vistareportes = () => {
                   <>
                     <button
                       onClick={() => exportarReporte('pdf')}
-                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+                      className="px-4 py-2 text-white rounded-md transition-colors flex items-center gap-2"
+                      style={{ backgroundColor: "var(--accent-color)" }}
                     >
                       <FaFilePdf /> Exportar PDF
                     </button>
                     <button
                       onClick={() => exportarReporte('excel')}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+                      className="px-4 py-2 text-white rounded-md transition-colors flex items-center gap-2"
+                      style={{ backgroundColor: "var(--accent-color)" }}
                     >
                       <FaFileDownload /> Exportar Excel
                     </button>
@@ -1710,7 +1736,8 @@ const Vistareportes = () => {
               <button
                 onClick={generateReport}
                 disabled={loading}
-                className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`px-4 py-2 text-white rounded-md transition-colors flex items-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={{ backgroundColor: "var(--accent-color)" }}
               >
                 {loading ? <FaSpinner className="animate-spin" /> : <FaFilter />} 
                 {loading ? 'Generando...' : 'Generar Reporte'}
@@ -1725,7 +1752,11 @@ const Vistareportes = () => {
             </div>
           )}
 
-          <div className="bg-white border border-gray-200 rounded-lg">
+          <div className="border rounded-lg" style={{ 
+            backgroundColor: "var(--bg-tertiary)",
+            borderColor: "var(--bg-secondary)",
+            color: "var(--text-primary)"
+          }}>
             {loading ? (
               <div className="flex flex-col items-center text-gray-600 dark:text-gray-300 p-10">
                 <span className="text-lg">Generando reporte...</span>

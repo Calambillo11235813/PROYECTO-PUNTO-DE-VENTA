@@ -1,0 +1,8 @@
+/* src/styles/theme.css */
+.theme-bg-primary { background-color: var(--bg-primary); }
+.theme-bg-secondary { background-color: var(--bg-secondary); }
+.theme-text-primary { color: var(--text-primary); }
+.theme-text-secondary { color: var(--text-secondary); }
+.theme-accent { color: var(--accent-color); }
+.theme-accent-bg { background-color: var(--accent-color); }
+.theme-bg-report-section { background-color: var(--bg-secondary); }
