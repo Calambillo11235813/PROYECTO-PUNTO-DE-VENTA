@@ -1,118 +1,107 @@
 import apiClient from './apiClient';
 
 const rolService = {
-  /**
-   * Obtiene todos los roles del sistema
-   * @returns {Promise<Array>} Lista de roles
-   */
+  // Obtener todos los roles
   getAllRoles: async () => {
     try {
-      console.log('Intentando obtener todos los roles...');
-      const response = await apiClient.get('/accounts/roles/');
-      console.log('✅ Roles obtenidos:', response.data);
+      const response = await apiClient.get('accounts/roles/');
       return response.data;
     } catch (error) {
-      console.error('❌ Error al obtener roles:', error.response ? error.response.data : error.message);
+      console.error('Error al obtener roles:', error);
       throw error;
     }
   },
 
-  /**
-   * Obtiene los roles creados por un usuario específico
-   * @param {number} usuarioId - ID del usuario creador
-   * @returns {Promise<Object>} Datos con información del usuario y sus roles
-   */
+  // Obtener los roles de un usuario específico
   getRolesByUsuario: async (usuarioId) => {
     try {
-      console.log(`Intentando obtener roles del usuario ${usuarioId}...`);
-      const response = await apiClient.get(`/accounts/usuarios/${usuarioId}/roles/`);
-      console.log('✅ Roles del usuario obtenidos:', response.data);
+      const response = await apiClient.get(`accounts/usuarios/${usuarioId}/roles/`);
       return response.data;
     } catch (error) {
-      console.error(`❌ Error al obtener roles del usuario ${usuarioId}:`, error.response ? error.response.data : error.message);
+      console.error(`Error al obtener roles del usuario ${usuarioId}:`, error);
       throw error;
     }
   },
 
-  /**
-   * Obtiene un rol específico por su ID
-   * @param {number} rolId - ID del rol
-   * @returns {Promise<Object>} Datos del rol
-   */
+  // Obtener un rol por su ID
   getRolById: async (rolId) => {
     try {
-      console.log(`Intentando obtener rol con ID ${rolId}...`);
-      const response = await apiClient.get(`/accounts/roles/${rolId}/`);
-      console.log('✅ Rol obtenido:', response.data);
+      const response = await apiClient.get(`accounts/roles/${rolId}/`);
       return response.data;
     } catch (error) {
-      console.error(`❌ Error al obtener rol con ID ${rolId}:`, error.response ? error.response.data : error.message);
+      console.error(`Error al obtener rol ${rolId}:`, error);
       throw error;
     }
   },
 
-  /**
-   * Crea un nuevo rol
-   * @param {Object} rolData - Datos del rol
-   * @param {string} rolData.nombre_rol - Nombre del rol (obligatorio)
-   * @param {Array<number>} rolData.permisos - IDs de los permisos asignados (opcional)
-   * @returns {Promise<Object>} Datos del rol creado
-   */
+  // Crear un nuevo rol
   createRol: async (rolData) => {
     try {
-      // Obtener el ID del usuario del localStorage
-      const userId = localStorage.getItem('id');
-      if (!userId) {
-        throw new Error('No se encontró ID de usuario en localStorage');
-      }
-      
-      // Crear una copia del objeto para no modificar el original
-      const rolDataWithUser = { 
-        ...rolData,
-        usuario: parseInt(userId) // Convertir a número y agregar al objeto
-      };
-      
-      console.log('Intentando crear rol:', rolDataWithUser);
-      const response = await apiClient.post('/accounts/roles/', rolDataWithUser);
-      console.log('✅ Rol creado:', response.data);
+      const response = await apiClient.post('accounts/roles/', rolData);
       return response.data;
     } catch (error) {
-      console.error('❌ Error al crear rol:', error.response ? error.response.data : error.message);
+      console.error('Error al crear rol:', error);
       throw error;
     }
   },
 
-  /**
-   * Actualiza un rol existente
-   * @param {number} rolId - ID del rol a actualizar
-   * @param {Object} rolData - Datos actualizados del rol
-   * @returns {Promise<Object>} Datos del rol actualizado
-   */
+  // Actualizar un rol existente
   updateRol: async (rolId, rolData) => {
     try {
-      console.log(`Intentando actualizar rol con ID ${rolId}...`);
-      const response = await apiClient.put(`/accounts/roles/${rolId}/`, rolData);
-      console.log('✅ Rol actualizado:', response.data);
+      const response = await apiClient.put(`accounts/roles/${rolId}/`, rolData);
       return response.data;
     } catch (error) {
-      console.error(`❌ Error al actualizar rol con ID ${rolId}:`, error.response ? error.response.data : error.message);
+      console.error(`Error al actualizar rol ${rolId}:`, error);
       throw error;
     }
   },
 
-  /**
-   * Elimina un rol existente
-   * @param {number} rolId - ID del rol a eliminar
-   * @returns {Promise<Object>} Respuesta de confirmación
-   */
+  // Eliminar un rol
   deleteRol: async (rolId) => {
     try {
-      console.log(`Intentando eliminar rol con ID ${rolId}...`);
-      const response = await apiClient.delete(`/accounts/roles/${rolId}/`);
-      console.log('✅ Rol eliminado correctamente');
-      return response.data || { success: true };
+      const response = await apiClient.delete(`accounts/roles/${rolId}/`);
+      return response.data;
     } catch (error) {
-      console.error(`❌ Error al eliminar rol con ID ${rolId}:`, error.response ? error.response.data : error.message);
+      console.error(`Error al eliminar rol ${rolId}:`, error);
+      throw error;
+    }
+  },
+
+  // ================ GESTIÓN DE PERMISOS DEL ROL ================
+
+  // Obtener todos los permisos de un rol
+  getRolPermisos: async (rolId) => {
+    try {
+      const response = await apiClient.get(`accounts/roles/${rolId}/permisos/`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error al obtener permisos del rol ${rolId}:`, error);
+      throw error;
+    }
+  },
+
+  // Añadir permisos a un rol
+  addPermisosToRol: async (rolId, permisosIds) => {
+    try {
+      const response = await apiClient.post(`accounts/roles/${rolId}/permisos/`, {
+        permisos: permisosIds
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error al añadir permisos al rol ${rolId}:`, error);
+      throw error;
+    }
+  },
+
+  // Eliminar permisos de un rol
+  removePermisosFromRol: async (rolId, permisosIds) => {
+    try {
+      const response = await apiClient.delete(`accounts/roles/${rolId}/permisos/`, {
+        data: { permisos: permisosIds }
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error al eliminar permisos del rol ${rolId}:`, error);
       throw error;
     }
   }

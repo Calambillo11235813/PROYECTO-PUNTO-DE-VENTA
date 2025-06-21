@@ -20,6 +20,7 @@ class UsuarioManager(BaseUserManager):
     def create_superuser(self, correo, nombre, contraseña=None, **extra_fields):
         """Crear un superusuario"""
         extra_fields.setdefault("is_staff", True)
+
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(correo, nombre, contraseña, **extra_fields)
 
@@ -80,7 +81,7 @@ class Bitacora(models.Model):
     
 
 class Empleado(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='roles_creados')  # Dueño/administrador
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='roles_creados')
     nombre = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
     password = models.CharField(max_length=128)  
@@ -91,7 +92,7 @@ class Empleado(models.Model):
     rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True)
     
     def __str__(self):
-        return self.nombredos
+        return self.nombre  # Corregido: usar self.nombre en lugar de self.nombredos
 
 
 class Plan(models.Model):

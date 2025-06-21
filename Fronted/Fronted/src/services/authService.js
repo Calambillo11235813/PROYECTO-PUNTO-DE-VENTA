@@ -85,8 +85,8 @@ const authService = {
       console.log('Intentando login con:', { correo, contrasena });
     
       // Elimina cualquier token previo para asegurar una solicitud limpia
-      localStorage.removeItem('access_token');
-      
+      localStorage.clear();
+      console.log(localStorage);
       // Asegúrate de enviar exactamente lo que espera el backend
       const response = await apiClient.post('login/', { 
         correo: correo,
@@ -102,38 +102,43 @@ const authService = {
       // Determinar el tipo de usuario y guardar datos apropiados
       console.log(response); 
 
-
       if (response.data.tipo === "empleado") {
         localStorage.setItem('user_data', JSON.stringify(response.data.empleado));
         localStorage.setItem('empleado_id', response.data.empleado.id);
         console.log('Empleado ID:', response.data.empleado.id);
-        const a =  await empleadoService.getEmpleadoById(response.data.empleado.id)
-         console.log('Empleado:', a);
+        const a = await empleadoService.getEmpleadoById(response.data.empleado.id)
+        console.log('Empleado completo:', a);
         localStorage.setItem('id', a.usuario);
 
-        console.log('ID de usuario 222:', a.usuario);
+        console.log('ID de usuario:', a.usuario);
         localStorage.setItem('usuario_id', response.data.empleado.usuario);
         localStorage.setItem('user_type', 'empleado');
 
-        localStorage.setItem('rol',response.data.empleado.rol);
-        console.log('Rol:', response.data.empleado.rol);
-    
-      } else {
+        // Guardar el nombre del rol
+        localStorage.setItem('rol', response.data.empleado.rol_nombre || '');
+        
+        // Guardar el ID del rol (esto es crucial para verificar permisos)
+        localStorage.setItem('rol_id', a.rol || '');
+        console.log('Rol ID:', response.data.empleado.rol || '');
+      } 
+      else {
         localStorage.setItem('user_data', JSON.stringify(response.data.usuario));
         localStorage.setItem('id', response.data.usuario.id);
         localStorage.setItem('user_type', 'usuario');
         
-        // No guardar "undefined" como string, simplemente no guardar nada si es undefined
+        // Para usuarios principales, podemos asignar un valor específico o dejarlo vacío
         if (response.data.usuario.rol) {
           localStorage.setItem('rol', response.data.usuario.rol);
         }
-        // O alternativamente, establecer un valor específico para superadmin
-        // localStorage.setItem('rol', response.data.usuario.rol || 'superadmin');
         
-        console.log('desde el else', response.data.usuario.id);
+        // Para usuarios tipo 'usuario', podemos asignar un rol_id especial o dejarlo en blanco
+        // No es necesario un rol_id para usuarios principales ya que tendrán acceso total
+        localStorage.setItem('rol_id', response.data.usuario.rol_id || '');
+        
+        console.log('Usuario principal ID:', response.data.usuario.id);
       }
       console.log('Datos del usuario guardados:', localStorage.getItem('id'));
-      console.log(localStorage);
+      console.log('localStorage actualizado:', localStorage);
       
       return response.data;
     } catch (error) {

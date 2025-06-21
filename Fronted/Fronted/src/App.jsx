@@ -36,6 +36,9 @@ import CajaManager from './pages/CajaManager';
 import Empleados from './pages/Empleados/Empleados';
 import EmpleadoForm from './pages/Empleados/EmpleadoForm';
 
+// Importa el nuevo componente
+import RolesPage from './pages/Roles/RolesPage';
+
 // Componente para acceso denegado
 const AccesoDenegado = () => (
   <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -109,6 +112,7 @@ function App() {
                 <Route path="configuracion" element={<Configuracion />} />
                 <Route path="clientes" element={<Clientes />} />
                 <Route path="caja" element={<CajaManager />} />
+                <Route path="roles" element={<RolesPage />} /> {/* Nueva ruta para los roles */}
               </Route>
             </Route>
           </Route>

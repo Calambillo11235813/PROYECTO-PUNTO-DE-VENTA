@@ -1,32 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../Contexts/AuthContext';
-
-// Definimos las rutas permitidas por rol
-const rolePermissions = {
-  'undefined': ['*'], // Superusuario - acceso a todo como string
-  undefined: ['*'],   // También manejamos el caso de undefined real
-  Supervisor: [
-    '/admin',
-    '/admin/inventario',
-    '/admin/ventas',
-    '/admin/Lista_ventas',
-    '/admin/pedidos',
-    '/admin/facturacion',
-    '/admin/reportes'
-  ],
-  Cajero: [
-    '/admin/ventas',
-    '/admin/Lista_ventas',
-    '/admin/pedidos',
-    '/admin/clientes',
-    '/admin/caja'
-
-  ],
-  'Gestion de inventario': [
-    '/admin/inventario'
-  ]
-};
+import permisoAccesoService from '../../services/permisoAccesoService';
 
 export const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -48,61 +23,104 @@ export const AdminRoute = () => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const currentPath = location.pathname;
+  const [tieneAcceso, setTieneAcceso] = useState(false);
+  const [verificando, setVerificando] = useState(true);
   
   useEffect(() => {
-    if (user) {
-      console.log('Datos del usuario para verificación:', user);
-      console.log('Ruta actual:', currentPath);
-      console.log('Rol del usuario:', localStorage.getItem('rol'));
-    }
+    const verificarAcceso = async () => {
+      if (!user) {
+        setVerificando(false);
+        return;
+      }
+
+      try {
+        // Verificar si es usuario principal (no empleado)
+        const userType = localStorage.getItem('user_type');
+        if (userType === 'usuario') {
+          console.log('Usuario principal: acceso concedido automáticamente');
+          setTieneAcceso(true);
+          setVerificando(false);
+          return;
+        }
+
+        // Para empleados, obtener ID de usuario y rol del localStorage
+        const usuarioId = localStorage.getItem('id');
+        const rolId = localStorage.getItem('rol_id');
+        
+        console.log('Verificando acceso:');
+        console.log('- Usuario ID:', usuarioId);
+        console.log('- Rol ID:', rolId);
+        console.log('- Ruta actual:', currentPath);
+        
+        // Verificar si el empleado tiene acceso a esta ruta
+        const acceso = await permisoAccesoService.verificarAccesoRuta(
+          usuarioId,
+          rolId,
+          currentPath
+        );
+        
+        console.log('¿Tiene acceso?', acceso);
+        setTieneAcceso(acceso);
+      } catch (error) {
+        console.error('Error al verificar acceso:', error);
+        setTieneAcceso(false);
+      } finally {
+        setVerificando(false);
+      }
+    };
+
+    verificarAcceso();
   }, [user, currentPath]);
   
-  if (loading) {
-    return <div>Cargando...</div>;
+  if (loading || verificando) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        <span className="ml-4 text-lg">Verificando permisos...</span>
+      </div>
+    );
   }
   
   // Si no hay usuario, redirigir al login
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
-  // Obtener el rol desde localStorage
-  const userRole = localStorage.getItem('rol');
-  
-  // Verificar si el usuario tiene acceso a la ruta actual
-  const hasAccess = () => {
-    // Si el rol es "undefined" (como string) o es null/undefined, considerarlo superadmin
-    if (!userRole || userRole === 'undefined') {
-      return true;
-    }
-    
-    const allowedPaths = rolePermissions[userRole] || [];
-    
-    // Si tiene acceso a todas las rutas
-    if (allowedPaths.includes('*')) {
-      return true;
-    }
-    
-    // Verificar si la ruta actual está en las rutas permitidas o si es una subruta
-    return allowedPaths.some(path => currentPath === path || currentPath.startsWith(`${path}/`));
-  };
-  
-  if (hasAccess()) {
-    console.log(`Usuario con rol ${userRole} tiene acceso a ${currentPath}`);
+  // Si tiene acceso, mostrar la ruta
+  if (tieneAcceso) {
     return <Outlet />;
-  } else {
-    console.log(`Usuario con rol ${userRole} NO tiene acceso a ${currentPath}`);
+  }
+
+  // Si no tiene acceso, redirigir según el rol
+  const rolNombre = localStorage.getItem('rol');
+  console.log(`Usuario con rol ${rolNombre} NO tiene acceso a ${currentPath}`);
+
+  // Intentar obtener una ruta permitida para este usuario
+  const obtenerRutaPermitida = async () => {
+    const usuarioId = localStorage.getItem('id');
+    const rolId = localStorage.getItem('rol_id');
+    const rutasPermitidas = await permisoAccesoService.obtenerRutasPermitidas(usuarioId, rolId);
     
-    // Redirecciones basadas en el rol
-    switch (userRole) {
-      case 'Supervisor':
-        return <Navigate to="/admin" replace />;
-      case 'Cajero':
-        return <Navigate to="/admin/ventas" replace />;
-      case 'Gestion de inventario':
-        return <Navigate to="/admin/inventario" replace />;
-      default:
-        return <Navigate to="/acceso-denegado" replace />;
+    if (rutasPermitidas.includes('*') || rutasPermitidas.includes('/admin')) {
+      return '/admin'; // Si tiene acceso al dashboard
     }
+    
+    if (rutasPermitidas.length > 0) {
+      return rutasPermitidas[0]; // Devolver la primera ruta permitida
+    }
+    
+    return '/acceso-denegado';
+  };
+
+  // Para simplificar, usamos lógica condicional basada en el rol como fallback
+  switch (rolNombre) {
+    case 'Supervisor':
+      return <Navigate to="/admin" replace />;
+    case 'Cajero':
+      return <Navigate to="/admin/ventas" replace />;
+    case 'Gestion de inventario':
+      return <Navigate to="/admin/inventario" replace />;
+    default:
+      return <Navigate to="/acceso-denegado" replace />;
   }
 };

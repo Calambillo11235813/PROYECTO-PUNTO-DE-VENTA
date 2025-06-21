@@ -2,82 +2,60 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaEdit, FaBan, FaUserCheck, FaSearch } from 'react-icons/fa';
 import { empleadoService } from '../../services/EmpleadoService';
+import rolService from '../../services/rolService'; // Importar el servicio de roles
 
 const Empleados = () => {
   const [empleados, setEmpleados] = useState([]);
+  const [roles, setRoles] = useState({}); // Objeto para mapear IDs de roles a nombres de roles
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [error, setError] = useState(null); // Agregamos state para manejar errores
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const usuarioId = localStorage.getItem('id'); // Obtener ID del usuario logueado
 
-  // Mapeo de roles
-  const rolMapping = {
-    1: "Supervisor",
-    2: "Cajero",
-    3: "Gestor de Inventario"
-  };
-
-  // Cargar empleados al montar el componente
+  // Cargar roles y empleados al montar el componente
   useEffect(() => {
-    const fetchEmpleados = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null); // Reiniciar errores previos
-        const data = await empleadoService.getAllEmpleados();
-        setEmpleados(data);
-      } catch (error) {
-        console.error('Error al cargar empleados:', error);
-        setError('No se pudieron cargar los empleados. Por favor, inténtalo de nuevo.');
-        // Datos de demostración en caso de error
-        setEmpleados([
-          { 
-            id: 1, 
-            nombre: 'Juan', 
-            apellido: 'Pérez', 
-            email: 'juan@ejemplo.com', 
-            rol: 'Supervisor', 
-            telefono: '555-1234',
-            estado: true
-          },
-          { 
-            id: 2, 
-            nombre: 'María', 
-            apellido: 'González', 
-            email: 'maria@ejemplo.com', 
-            rol: 'Cajero', 
-            telefono: '555-5678',
-            estado: false
-          },
-          { 
-            id: 3, 
-            nombre: 'Carlos', 
-            apellido: 'Rodríguez', 
-            email: 'carlos@ejemplo.com', 
-            rol: 'Gestor de Inventario', 
-            telefono: '555-9012',
-            estado: true
-          }
+        setError(null);
+        
+        // Cargar roles y empleados en paralelo
+        const [rolesData, empleadosData] = await Promise.all([
+          rolService.getAllRoles(),
+          empleadoService.getAllEmpleados()
         ]);
+        
+        // Crear un mapa de IDs de roles a nombres de roles
+        const rolesMap = {};
+        rolesData.forEach(rol => {
+          rolesMap[rol.id] = rol.nombre_rol;
+        });
+        
+        setRoles(rolesMap);
+        setEmpleados(empleadosData);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        setError('No se pudieron cargar los datos. Por favor, inténtalo de nuevo.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEmpleados();
-  }, []);
+    fetchData();
+  }, [usuarioId]);
 
   // Filtrar empleados por término de búsqueda
   const filteredEmpleados = empleados.filter(empleado => {
     const searchTermLower = searchTerm.toLowerCase();
     
-    // Convertir el ID del rol a su nombre usando el mapeo
-    const rolNombre = rolMapping[empleado.rol] || 'N/A';
+    // Obtener el nombre del rol usando el mapa de roles
+    const rolNombre = roles[empleado.rol] || 'Rol no asignado';
     
     return (
       empleado.nombre?.toLowerCase().includes(searchTermLower) ||
-      (empleado.apellido && empleado.apellido.toLowerCase().includes(searchTermLower)) ||
       empleado.correo?.toLowerCase().includes(searchTermLower) ||
       rolNombre.toLowerCase().includes(searchTermLower) ||
       (empleado.telefono && empleado.telefono.includes(searchTerm))
@@ -100,13 +78,12 @@ const Empleados = () => {
     navigate(`/admin/empleados/editar/${id}`);
   };
 
-  // Reemplaza la función handleDeleteEmpleado
+  // Cambiar estado del empleado (activar/desactivar)
   const handleToggleEstado = async (id, nombre, estadoActual) => {
     const accion = estadoActual ? 'desactivar' : 'activar';
     
     if (window.confirm(`¿Está seguro que desea ${accion} al empleado ${nombre}?`)) {
       try {
-        // Llamamos al servicio con el estado opuesto al actual
         await empleadoService.toggleEmpleadoEstado(id, !estadoActual);
         
         // Actualizamos el estado en la interfaz
@@ -120,6 +97,19 @@ const Empleados = () => {
         alert(`Error al ${accion} el empleado`);
       }
     }
+  };
+
+  // Función para extraer nombre y apellido
+  const getNombreApellido = (nombreCompleto) => {
+    if (!nombreCompleto) return { nombre: 'N/A', apellido: '' };
+    
+    const partes = nombreCompleto.trim().split(' ');
+    if (partes.length === 1) return { nombre: partes[0], apellido: '' };
+    
+    return { 
+      nombre: partes[0], 
+      apellido: partes.slice(1).join(' ') 
+    };
   };
 
   return (
@@ -191,45 +181,52 @@ const Empleados = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {currentItems.map((empleado) => (
-                    <tr key={empleado.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {empleado.nombre} {empleado.apellido}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{empleado.correo}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {rolMapping[empleado.rol] || empleado.rol || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">{empleado.telefono || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          empleado.estado 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {empleado.estado ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex space-x-2">
-                          <button 
-                            onClick={() => handleEditEmpleado(empleado.id)}
-                            className="text-blue-600 hover:text-blue-800"
-                            title="Editar"
-                          >
-                            <FaEdit />
-                          </button>
-                          <button 
-                            onClick={() => handleToggleEstado(empleado.id, empleado.nombre, empleado.estado)}
-                            className={empleado.estado ? "text-red-600 hover:text-red-800" : "text-green-600 hover:text-green-800"}
-                            title={empleado.estado ? "Desactivar" : "Activar"}
-                          >
-                            {empleado.estado ? <FaBan /> : <FaUserCheck />}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {currentItems.map((empleado) => {
+                    // Procesamos el nombre completo para separarlo en nombre y apellido
+                    const { nombre, apellido } = getNombreApellido(empleado.nombre);
+                    
+                    return (
+                      <tr key={empleado.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {nombre} {apellido}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">{empleado.correo}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-2 py-1 text-sm bg-blue-100 text-blue-800 rounded">
+                            {roles[empleado.rol] || 'Rol no asignado'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">{empleado.telefono || 'N/A'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            empleado.estado 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {empleado.estado ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex space-x-2">
+                            <button 
+                              onClick={() => handleEditEmpleado(empleado.id)}
+                              className="text-blue-600 hover:text-blue-800"
+                              title="Editar"
+                            >
+                              <FaEdit />
+                            </button>
+                            <button 
+                              onClick={() => handleToggleEstado(empleado.id, empleado.nombre, empleado.estado)}
+                              className={empleado.estado ? "text-red-600 hover:text-red-800" : "text-green-600 hover:text-green-800"}
+                              title={empleado.estado ? "Desactivar" : "Activar"}
+                            >
+                              {empleado.estado ? <FaBan /> : <FaUserCheck />}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

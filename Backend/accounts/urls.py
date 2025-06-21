@@ -4,7 +4,7 @@ from accounts.controllers.usuarios_controller import UsuarioListCreate, UsuarioD
 from accounts.controllers.empleados_controller import EmpleadoDetailSimple, EmpleadoListCreate, EmpleadoDetail
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from accounts.controllers.bitacora_controller import BitacoraCreate
-from accounts.controllers.rol_controller import RolListCreate, RolDetail, RolesPorUsuario
+from accounts.controllers.rol_controller import RolListCreate, RolDetail, RolPermisos, RolesPorUsuario
 
 from accounts.controllers.plan_controller import (
     PlanListView,
@@ -34,8 +34,9 @@ urlpatterns = [
     path('bitacora/', BitacoraCreate.as_view(), name='bitacora-create'),
     
     # Roles y permisos
-    path('roles/', RolListCreate.as_view(), name='roles-list-create'),
-    path('roles/<int:pk>/', RolDetail.as_view(), name='roles-detail'),
+    path('roles/', RolListCreate.as_view(), name='rol-list-create'),
+    path('roles/<int:pk>/', RolDetail.as_view(), name='rol-detail'),
+    path('roles/<int:pk>/permisos/', RolPermisos.as_view(), name='rol-permisos'),
     path('usuarios/<int:usuario_id>/roles/', RolesPorUsuario.as_view(), name='roles-por-usuario'),
     
     # Permisos

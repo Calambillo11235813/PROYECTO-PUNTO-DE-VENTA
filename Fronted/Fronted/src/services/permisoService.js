@@ -1,127 +1,71 @@
 import apiClient from './apiClient';
 
 const permisoService = {
-  /**
-   * Obtiene todos los permisos disponibles en el sistema
-   * @returns {Promise<Array>} Lista de permisos
-   */
+  // Obtener todos los permisos
   getAllPermisos: async () => {
     try {
-      console.log('Intentando obtener permisos...');
-      const response = await apiClient.get('/accounts/permisos/');
-      console.log('✅ Permisos obtenidos:', response.data);
+      const response = await apiClient.get('accounts/permisos/');
       return response.data;
     } catch (error) {
-      console.error('❌ Error al obtener permisos:', error.response ? error.response.data : error.message);
+      console.error('Error al obtener permisos:', error);
       throw error;
     }
   },
 
-  /**
-   * Obtiene un permiso específico por su ID
-   * @param {number} permisoId - ID del permiso
-   * @returns {Promise<Object>} Datos del permiso
-   */
+  // Obtener un permiso específico por ID
   getPermisoById: async (permisoId) => {
     try {
-      console.log(`Intentando obtener permiso con ID ${permisoId}...`);
-      const response = await apiClient.get(`/accounts/permisos/${permisoId}/`);
-      console.log('✅ Permiso obtenido:', response.data);
+      const response = await apiClient.get(`accounts/permisos/${permisoId}/`);
       return response.data;
     } catch (error) {
-      console.error(`❌ Error al obtener permiso con ID ${permisoId}:`, error.response ? error.response.data : error.message);
+      console.error(`Error al obtener permiso ${permisoId}:`, error);
       throw error;
     }
   },
 
-  /**
-   * Crea un nuevo permiso en el sistema
-   * @param {Object} permisoData - Datos del permiso
-   * @param {string} permisoData.nombre - Nombre único del permiso (obligatorio)
-   * @param {string} permisoData.descripcion - Descripción del permiso (opcional)
-   * @returns {Promise<Object>} Datos del permiso creado
-   */
+  // Crear un nuevo permiso
   createPermiso: async (permisoData) => {
     try {
-      console.log('Intentando crear permiso:', permisoData);
-      const response = await apiClient.post('/accounts/permisos/', permisoData);
-      console.log('✅ Permiso creado:', response.data);
+      const response = await apiClient.post('accounts/permisos/', permisoData);
       return response.data;
     } catch (error) {
-      console.error('❌ Error al crear permiso:', error.response ? error.response.data : error.message);
+      console.error('Error al crear permiso:', error);
       throw error;
     }
   },
 
-  /**
-   * Actualiza un permiso existente
-   * @param {number} permisoId - ID del permiso a actualizar
-   * @param {Object} permisoData - Datos actualizados del permiso
-   * @returns {Promise<Object>} Datos del permiso actualizado
-   */
+  // Actualizar un permiso existente
   updatePermiso: async (permisoId, permisoData) => {
     try {
-      console.log(`Intentando actualizar permiso con ID ${permisoId}...`);
-      const response = await apiClient.put(`/accounts/permisos/${permisoId}/`, permisoData);
-      console.log('✅ Permiso actualizado:', response.data);
+      const response = await apiClient.put(`accounts/permisos/${permisoId}/`, permisoData);
       return response.data;
     } catch (error) {
-      console.error(`❌ Error al actualizar permiso con ID ${permisoId}:`, error.response ? error.response.data : error.message);
+      console.error(`Error al actualizar permiso ${permisoId}:`, error);
       throw error;
     }
   },
 
-  /**
-   * Elimina un permiso existente
-   * @param {number} permisoId - ID del permiso a eliminar
-   * @returns {Promise<Object>} Respuesta de confirmación
-   */
+  // Eliminar un permiso
   deletePermiso: async (permisoId) => {
     try {
-      console.log(`Intentando eliminar permiso con ID ${permisoId}...`);
-      const response = await apiClient.delete(`/accounts/permisos/${permisoId}/`);
-      console.log('✅ Permiso eliminado correctamente:', response.data);
+      const response = await apiClient.delete(`accounts/permisos/${permisoId}/`);
       return response.data;
     } catch (error) {
-      console.error(`❌ Error al eliminar permiso con ID ${permisoId}:`, error.response ? error.response.data : error.message);
+      console.error(`Error al eliminar permiso ${permisoId}:`, error);
       throw error;
     }
   },
 
-  /**
-   * Verifica si un empleado tiene un permiso específico
-   * @param {number} empleadoId - ID del empleado
-   * @param {string} nombrePermiso - Nombre del permiso a verificar
-   * @returns {Promise<Object>} Resultado de la verificación
-   */
-  verificarPermisoEmpleado: async (empleadoId, nombrePermiso) => {
+  // Verificar si un usuario tiene un permiso específico
+  verificarPermiso: async (usuarioId, permisoNombre) => {
     try {
-      console.log(`Verificando si el empleado ${empleadoId} tiene el permiso "${nombrePermiso}"...`);
-      const response = await apiClient.get(`/accounts/empleados/${empleadoId}/permisos/${nombrePermiso}/`);
-      console.log('✅ Verificación completada:', response.data);
-      return response.data;
+      const response = await apiClient.get(`accounts/usuarios/${usuarioId}/verificar-permiso/`, {
+        params: { permiso: permisoNombre }
+      });
+      return response.data.tiene_permiso;
     } catch (error) {
-      console.error(`❌ Error al verificar permiso ${nombrePermiso} para empleado ${empleadoId}:`, 
-        error.response ? error.response.data : error.message);
-      throw error;
-    }
-  },
-
-  /**
-   * Obtiene todos los permisos de un empleado
-   * @param {number} empleadoId - ID del empleado
-   * @returns {Promise<Object>} Lista de permisos del empleado
-   */
-  getPermisosEmpleado: async (empleadoId) => {
-    try {
-      console.log(`Obteniendo permisos del empleado ${empleadoId}...`);
-      const response = await apiClient.get(`/accounts/empleados/${empleadoId}/permisos/`);
-      console.log('✅ Permisos del empleado obtenidos:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error(`❌ Error al obtener permisos del empleado ${empleadoId}:`, 
-        error.response ? error.response.data : error.message);
-      throw error;
+      console.error(`Error al verificar permiso ${permisoNombre} para usuario ${usuarioId}:`, error);
+      return false; // Si hay un error, asumimos que no tiene el permiso
     }
   }
 };
