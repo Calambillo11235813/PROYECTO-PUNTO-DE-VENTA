@@ -53,7 +53,8 @@ INSTALLED_APPS = [
     'Ventas',
     'corsheaders',
     'drf_spectacular',
-    'payments',  
+    'payments', 
+    'Sucursales',  # Asegúrate de que esta aplicación esté incluida 
 ]
 
 
@@ -228,3 +229,33 @@ print("================================")
 
 # Configurar Stripe
 stripe.api_key = STRIPE_SECRET_KEY
+
+# Aplicacion para la bitacora
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'bitacora_format': {
+            'format': '[{asctime}] {levelname} - {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'bitacora_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOGS_DIR, 'bitacora.log'),
+            'formatter': 'bitacora_format',
+        },
+    },
+    'loggers': {
+        'bitacora': {
+            'handlers': ['bitacora_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

@@ -5,18 +5,22 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth import login
 from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from accounts.models import Usuario, Empleado, Bitacora
 from accounts.serializers import UsuarioSerializer
-from backend.permisos import requiere_permiso  # Actualizado al nuevo nombre del decorador
- 
+
+from ..utils.logger_utils import get_logger_por_usuario
+import  logging 
+logger_general = logging.getLogger('bitacora')
+
+
+
 class LoginView(APIView):
     permission_classes = [AllowAny]
-     
+
     def post(self, request):
         correo = request.data.get("correo")
         contraseña = request.data.get("password")
-
+        ip = request.META.get("REMOTE_ADDR", "IP desconocida")
         # Intentar login como Usuario
         try:
             user = Usuario.objects.get(correo=correo)
@@ -26,6 +30,8 @@ class LoginView(APIView):
 
             if not user.estado:
                 return Response({"error": "Usuario inactivo"}, status=status.HTTP_403_FORBIDDEN)
+            logger = get_logger_por_usuario(user.id)
+            logger.info(f"Usuario: {user.correo} | Acción: Inicio de sesión exitoso | IP: {ip}")
 
             # Bitácora
             Bitacora.objects.create(
@@ -59,6 +65,9 @@ class LoginView(APIView):
             if not empleado.estado:
                 return Response({"error": "Empleado inactivo"}, status=status.HTTP_403_FORBIDDEN)
 
+            logger = get_logger_por_usuario(empleado.usuario.id)  # o el id que tenga del dueño/tenant
+            logger.info(f"Empleado: {empleado.correo} | Acción: Inicio de sesión exitoso | IP: {ip}")
+
             # Login exitoso (sin token JWT)
             return Response({
                 "mensaje": "Login exitoso (empleado)",
@@ -72,4 +81,5 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Empleado.DoesNotExist:
-            return Response({"error": "Credenciales inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
+             logger_general = logging.getLogger('bitacora')
+             logger_general.warning(f"Intento de login fallido | Correo: {correo} | IP: {ip}")

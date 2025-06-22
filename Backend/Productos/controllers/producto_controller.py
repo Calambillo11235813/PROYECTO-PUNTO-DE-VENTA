@@ -1,3 +1,4 @@
+from accounts.utils.logger_utils import get_logger_por_usuario
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,19 +8,29 @@ from accounts.models import Usuario
 from accounts.serializers import UsuarioSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
+from accounts.decorators.plan_limits_decorators import check_product_limit, register_resource_usage
+
+
 class ProductoListaCrearVista(APIView):
     """
     Vista para listar todos los productos de una empresa o crear uno nuevo.
     """
 
-    def get(self, request, usuario_id):
+    def get(self, request, usuario_id, sucursal_id=None):
         """
         Obtener la lista de productos de una empresa específica (GET)
+        Si se pasa sucursal_id, filtra también por sucursal.
         """
-        productos = Producto.objects.filter(usuario_id=usuario_id)
+        if sucursal_id is not None:
+            productos = Producto.objects.filter(usuario_id=usuario_id, sucursal_id=sucursal_id)
+        else:
+            productos = Producto.objects.filter(usuario_id=usuario_id)
         serializer = ProductoSerializer(productos, many=True)
         return Response(serializer.data)
-
+    
+    
+    # @check_product_limit  # Verificar límite antes de procesar
+    # @register_resource_usage('product')  # Registrar uso después de crear exitosamente
     def post(self, request, usuario_id):
         data = request.data.copy()
         nombre_producto = data.get('nombre')
@@ -39,18 +50,22 @@ class ProductoListaCrearVista(APIView):
         producto_existente = Producto.objects.filter(nombre__iexact=nombre_producto, usuario_id=usuario_id).first()
 
         if producto_existente:
-            # Si existe, sumamos el stock
+            # Si existe, sumamos el stock pero NO incrementamos el contador
+            # porque no estamos creando un nuevo producto
             inventario = producto_existente.inventario
             stock_adicional = int(data.get('stock_inicial', 0))  # Si no viene, usa 0
 
             inventario.stock += stock_adicional
             inventario.save()
 
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Producto ya existía. Stock actualizado: {producto_existente.nombre} | Usuario: {producto_existente.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+
             serializer = ProductoSerializer(producto_existente)
             return Response({
                 "mensaje": "Producto ya existía. Stock actualizado.",
                 "producto": serializer.data
-            }, status=status.HTTP_200_OK)
+            }, status=status.HTTP_200_OK)  # Nota: esto no activará register_resource_usage
 
         # Si no existe, se crea normalmente
         data['usuario_id'] = usuario_id
@@ -61,6 +76,9 @@ class ProductoListaCrearVista(APIView):
             # Recargar el producto para asegurarnos de tener la URL de la imagen
             producto.refresh_from_db()
             
+            # Log en archivo .log
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Producto creado: {producto.nombre} | Usuario: {producto.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
             # Usar el serializador para devolver todos los datos actualizados
             serializer = ProductoSerializer(producto)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -101,6 +119,9 @@ class ProductoDetalleVista(APIView):
         serializer = ProductoSerializer(producto, data=data)
         if serializer.is_valid():
             serializer.save()
+
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Producto actualizado: {producto.nombre} | Usuario: {producto.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
             return Response(serializer.data)
     
         print("Errores de validación en PUT:", serializer.errors)
@@ -112,6 +133,10 @@ class ProductoDetalleVista(APIView):
         """
         producto = get_object_or_404(Producto, pk=pk, usuario_id=usuario_id)
         producto.delete()
+
+        logger = get_logger_por_usuario(usuario_id)
+        logger.info(f"Producto eliminado: {producto.nombre} | Usuario: {producto.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

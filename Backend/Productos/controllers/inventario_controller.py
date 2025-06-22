@@ -5,6 +5,7 @@ from Productos.models import Inventario
 from Productos.serializers import InventarioSerializer
 from django.shortcuts import get_object_or_404
 from rest_framework.permissions import AllowAny
+from accounts.decorators.plan_limits_decorators import check_product_limit, register_resource_usage
 
 class InventarioListaCrearVista(APIView):
     def get(self, request):
@@ -14,7 +15,8 @@ class InventarioListaCrearVista(APIView):
         inventarios = Inventario.objects.all()
         serializer = InventarioSerializer(inventarios, many=True)
         return Response(serializer.data)
-
+    
+    @check_product_limit  # Verificar límite de productos
     def post(self, request):
         """
         Crear nuevo inventario (POST)

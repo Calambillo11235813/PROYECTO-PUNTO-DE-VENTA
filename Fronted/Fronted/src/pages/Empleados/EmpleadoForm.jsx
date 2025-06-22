@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaSave, FaArrowLeft, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { empleadoService } from '../../services/EmpleadoService';
-import rolService from '../../services/rolService'; // Importar el servicio de roles
 
 const EmpleadoForm = () => {
   const { id } = useParams();
@@ -22,27 +21,8 @@ const EmpleadoForm = () => {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [roles, setRoles] = useState([]); // Estado para almacenar los roles disponibles
-  const usuarioId = localStorage.getItem('id'); // Obtener ID del usuario actual
+  const [showPassword, setShowPassword] = useState(false); // Estado para controlar la visibilidad de la contraseña
 
-  // Cargar los roles del usuario actual
-  useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        // Obtener todos los roles (o filtrados por usuario si la API lo soporta)
-        const rolesData = await rolService.getAllRoles();
-        setRoles(rolesData);
-      } catch (error) {
-        console.error('Error al cargar roles:', error);
-        setError('No se pudieron cargar los roles disponibles');
-      }
-    };
-
-    fetchRoles();
-  }, [usuarioId]);
-
-  // Cargar datos del empleado si estamos editando
   useEffect(() => {
     if (isEditing) {
       const fetchEmpleado = async () => {
@@ -106,9 +86,10 @@ const EmpleadoForm = () => {
         telefono: formData.telefono || "", 
         rol: formData.rol,
         direccion: formData.direccion || "",
-        fecha_contratacion: formData.fecha_contratacion || null,
-        usuario: usuarioId // Asignar el usuario actual como creador
+        fecha_contratacion: formData.fecha_contratacion || null
       };
+      
+
       
       console.log('Datos a enviar:', empleadoData);
       
@@ -237,23 +218,9 @@ const EmpleadoForm = () => {
               required
             >
               <option value="">Seleccionar rol</option>
-              {roles.length > 0 ? (
-                roles.map(rol => (
-                  <option key={rol.id} value={rol.id}>
-                    {rol.nombre_rol}
-                  </option>
-                ))
-              ) : (
-                <option disabled value="">
-                  {loading ? "Cargando roles..." : "No hay roles disponibles"}
-                </option>
-              )}
+              <option value="Cajero">Cajero</option>
+              <option value="Gestion de inventario">Gestor de Inventario</option>
             </select>
-            {roles.length === 0 && !loading && (
-              <p className="text-sm text-orange-500 mt-1">
-                No hay roles disponibles. <a href="/admin/roles" className="text-blue-600 underline">Crear roles</a> primero.
-              </p>
-            )}
           </div>
 
           <div className="mb-4">
@@ -326,7 +293,7 @@ const EmpleadoForm = () => {
           <button
             type="submit"
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            disabled={loading || roles.length === 0}
+            disabled={loading}
           >
             {loading ? (
               <>Guardando...</>

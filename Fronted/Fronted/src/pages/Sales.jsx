@@ -180,17 +180,12 @@ const VentasView = () => {
       
       // Preparar los datos del pedido con la fecha actual en formato ISO
       const pedidoData = {
-        estado: 2, 
-        fecha: new Date().toISOString(), // ¡IMPORTANTE! Asegura que la fecha esté en formato ISO
-        total: total,
-        caja_id: cajaActual.id,
+        estado: 2,
+        total: total.toFixed(2),
+        tipo_venta: 1,
         detalles_input: cartItems.map(item => ({
           producto_id: item.id,
           cantidad: item.cantidad
-        })),
-        transacciones_input: paymentMethods.map(payment => ({
-          tipo_pago_id: getTipoPagoId(payment.method),
-          monto: Number(payment.amount)
         }))
       };
 

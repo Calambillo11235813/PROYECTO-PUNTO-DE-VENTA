@@ -1,3 +1,4 @@
+from accounts.utils.logger_utils import get_logger_por_usuario
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -67,6 +68,10 @@ class PedidoListCreateAPIView(APIView):
 
                 inventario.stock -= detalle['cantidad']
                 inventario.save()
+
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Pedido creado: {pedido.id} | Usuario: {pedido.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+
 
             return Response(PedidoSerializer(pedido).data, status=status.HTTP_201_CREATED)
 
@@ -177,6 +182,10 @@ class PedidoDetailAPIView(APIView):
             
             # Eliminar el pedido (esto elimina automáticamente los detalles por CASCADE)
             pedido.delete()
+
+            logger = get_logger_por_usuario(usuario_id)
+            logger.info(f"Pedido eliminado: {pedido.id} | Usuario: {pedido.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+
             
             return Response(
                 {"message": f"Pedido #{pedido_id} eliminado correctamente y stock reestablecido."},
@@ -196,6 +205,8 @@ class PedidoDetailAPIView(APIView):
             
             if serializer.is_valid():
                 serializer.save()
+                logger = get_logger_por_usuario(usuario_id)
+                logger.info(f"Pedido actualizado: {pedido.id} | Usuario: {pedido.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             

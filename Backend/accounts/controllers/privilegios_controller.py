@@ -1,49 +1,49 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from accounts.models import Permisos
-from accounts.serializers import PermisosSerializer
+from accounts.models import Privilegio
+from accounts.serializers import PrivilegioSerializer
 from django.shortcuts import get_object_or_404
 
-class PermisosListCreate(APIView):
+class PrivilegioListCreate(APIView):
     def get(self, request):
-        permisos = Permisos.objects.all()
-        serializer = PermisosSerializer(permisos, many=True)
+        privilegios = Privilegio.objects.all()
+        serializer = PrivilegioSerializer(privilegios, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        serializer = PermisosSerializer(data=request.data)
+        serializer = PrivilegioSerializer(data=request.data)
         if serializer.is_valid():
-            permiso = serializer.save()
-            return Response(PermisosSerializer(permiso).data, status=status.HTTP_201_CREATED)
+            privilegio = serializer.save()
+            return Response(PrivilegioSerializer(privilegio).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def put(self, request, permiso_id):
+    def put(self, request, privilegio_id):
         """
-        Actualiza un permiso existente
+        Actualiza un privilegio existente
         
         Args:
             request: La solicitud HTTP
-            permiso_id: ID del permiso a actualizar
+            privilegio_id: ID del privilegio a actualizar
             
         Returns:
-            Response: El permiso actualizado o errores de validación
+            Response: El privilegio actualizado o errores de validación
         """
         try:
-            # Obtener el permiso existente
-            permiso = get_object_or_404(Permisos, id=permiso_id)
+            # Obtener el privilegio existente
+            privilegio = get_object_or_404(Privilegio, id=privilegio_id)
             
             # Validar los datos de actualización
-            serializer = PermisosSerializer(permiso, data=request.data, partial=True)
+            serializer = PrivilegioSerializer(privilegio, data=request.data, partial=True)
             
             if serializer.is_valid():
                 # Guardar los cambios
-                permiso_actualizado = serializer.save()
+                privilegio_actualizado = serializer.save()
                 
                 # Devolver respuesta exitosa
                 return Response({
-                    "mensaje": "Permiso actualizado correctamente",
-                    "permiso": PermisosSerializer(permiso_actualizado).data
+                    "mensaje": "Privilegio actualizado correctamente",
+                    "privilegio": PrivilegioSerializer(privilegio_actualizado).data
                 }, status=status.HTTP_200_OK)
             
             # Devolver errores de validación
@@ -52,5 +52,5 @@ class PermisosListCreate(APIView):
         except Exception as e:
             # Manejar cualquier error inesperado
             return Response({
-                "error": f"Error al actualizar el permiso: {str(e)}"
+                "error": f"Error al actualizar el privilegio: {str(e)}"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

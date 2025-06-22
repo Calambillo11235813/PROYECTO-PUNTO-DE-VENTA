@@ -4,7 +4,7 @@ from accounts.serializers import UsuarioSerializer
 from accounts.models import Usuario
 from Productos.models import Producto
 from cloudinary.utils import cloudinary_url
-
+from Sucursales.models import Sucursal
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
@@ -25,6 +25,10 @@ class ProductoSerializer(serializers.ModelSerializer):
     proveedor_id = serializers.PrimaryKeyRelatedField(queryset=Proveedor.objects.all(), source='proveedor', write_only=True,required=False,allow_null=True)
     imagen_url = serializers.SerializerMethodField()
     usuario_id = serializers.PrimaryKeyRelatedField( queryset=Usuario.objects.all(), source='usuario', write_only=True)
+    sucursal_id = serializers.PrimaryKeyRelatedField(
+        queryset=Sucursal.objects.all(), source='sucursal', write_only=True, required=False, allow_null=True
+    )
+    sucursal = serializers.SerializerMethodField(read_only=True)
 
     # Campos nuevos para el inventario inicial
     stock_inicial = serializers.IntegerField(write_only=True, required=False)
@@ -35,8 +39,8 @@ class ProductoSerializer(serializers.ModelSerializer):
         model = Producto
         fields = [
             'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen', 'imagen_url',
-            'categoria', 'proveedor', 'categoria_id', 'proveedor_id','usuario_id','usuario', 'stock',
-            'stock_inicial', 'cantidad_minima', 'cantidad_maxima'
+            'categoria', 'proveedor', 'categoria_id', 'proveedor_id', 'usuario_id', 'usuario', 'stock',
+            'stock_inicial', 'cantidad_minima', 'cantidad_maxima', 'sucursal_id', 'sucursal'
         ]
 
     def get_imagen_url(self, obj):
@@ -69,6 +73,13 @@ class ProductoSerializer(serializers.ModelSerializer):
 
         return producto
 
+    def get_sucursal(self, obj):
+        if obj.sucursal:
+            return {
+                "id": obj.sucursal.id,
+                "nombre": obj.sucursal.nombre
+            }
+        return None
     
 
 class InventarioSerializer(serializers.ModelSerializer):

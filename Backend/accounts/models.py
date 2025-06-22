@@ -2,8 +2,28 @@
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from Sucursales.models import Sucursal
+class Rol(models.Model):
+    nombre_rol = models.CharField(max_length=100)
+    def __str__(self):   
+        return self.nombre_rol
 
 
+class Privilegio(models.Model):
+    descripcion = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.descripcion
+
+
+class Permisos(models.Model):
+    estado = models.BooleanField(default=True)
+    rol = models.ForeignKey(Rol, on_delete=models.CASCADE, related_name="permisos")
+    privilegio = models.ForeignKey(Privilegio, on_delete=models.CASCADE, related_name="permisos")
+
+    def __str__(self):
+        return f"{self.rol} - {self.privilegio}"
+    
 class UsuarioManager(BaseUserManager):
     """Manager personalizado para el modelo Usuario"""
 
@@ -20,7 +40,6 @@ class UsuarioManager(BaseUserManager):
     def create_superuser(self, correo, nombre, contraseña=None, **extra_fields):
         """Crear un superusuario"""
         extra_fields.setdefault("is_staff", True)
-
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(correo, nombre, contraseña, **extra_fields)
 
@@ -45,29 +64,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.correo
-class Permisos(models.Model):
-    # Ahora Permisos es la tabla principal, no intermedia
-    nombre = models.CharField(max_length=100, unique=True)
-    descripcion = models.TextField(blank=True, null=True)
-    
-    def __str__(self):
-        return self.nombre
-    
-    class Meta:
-        verbose_name = "Permiso"
-        verbose_name_plural = "Permisos"
 
-
-class Rol(models.Model):
-    nombre_rol = models.CharField(max_length=100)
-    permisos = models.ManyToManyField(Permisos, related_name="roles", blank=True)
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='emplea')
-    def __str__(self):
-        return self.nombre_rol
-        
-    def tiene_permiso(self, permiso_nombre):
-        """Verifica si el rol tiene un permiso específico por nombre"""
-        return self.permisos.filter(nombre=permiso_nombre).exists()
 
 class Bitacora(models.Model):
     ip = models.GenericIPAddressField()
@@ -81,7 +78,7 @@ class Bitacora(models.Model):
     
 
 class Empleado(models.Model):
-    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='roles_creados')
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='empleados')  # Dueño/administrador
     nombre = models.CharField(max_length=100)
     correo = models.EmailField(unique=True)
     password = models.CharField(max_length=128)  
@@ -90,9 +87,15 @@ class Empleado(models.Model):
     estado = models.BooleanField(default=True)
     fecha_contratacion = models.DateField(null=True, blank=True)
     rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True)
-    
+    sucursal = models.ForeignKey(
+        Sucursal,
+        on_delete=models.CASCADE,
+        related_name='productos',
+        null=True,  # Para permitir migración gradual
+        blank=True
+    )
     def __str__(self):
-        return self.nombre  # Corregido: usar self.nombre en lugar de self.nombredos
+        return self.nombre
 
 
 class Plan(models.Model):

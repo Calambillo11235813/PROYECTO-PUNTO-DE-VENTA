@@ -3,6 +3,7 @@
 from django.db import models
 from cloudinary.models import CloudinaryField
 from accounts.models import Usuario
+from Sucursales.models import Sucursal
 # Create your models here.
 
 class Categoria(models.Model):
@@ -27,6 +28,13 @@ class Producto(models.Model):
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE,null=True , blank=True)
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE,null=True , blank=True)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='productos') 
+    sucursal = models.ForeignKey(
+        Sucursal,
+        on_delete=models.CASCADE,
+        related_name='productos',
+        null=True,  # Para permitir migración gradual
+        blank=True
+    )
     def __str__(self):
         
         return self.nombre

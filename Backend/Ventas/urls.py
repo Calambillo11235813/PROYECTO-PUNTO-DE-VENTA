@@ -8,8 +8,12 @@ from Ventas.controllers.pedido_controller import PedidoListCreateAPIView, Pedido
 from Ventas.controllers.tipo_pago_controller import (TipoPagoListCreateAPIView, TipoPagoRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.caja_controller import AbrirCajaAPIView, CerrarCajaAPIView, CajaActualAPIView, CajaTransaccionesEfectivoAPIView
 from Ventas.controllers.movimiento_controller import MovimientoEfectivoAPIView
-
-
+from Ventas.controllers.reporte_controller import (
+    ReporteCajaView, 
+    ReporteVentasView, 
+    ReporteClientesView, 
+    ReporteMovimientosView
+)
 
 urlpatterns = [
     # Tipos de venta (globales)
@@ -42,4 +46,10 @@ urlpatterns = [
     
     # Movimientos de efectivo en caja
     path('caja/<int:caja_id>/movimientos/', MovimientoEfectivoAPIView.as_view(), name='movimientos-caja'),
+    
+    # NUEVOS ENDPOINTS DE REPORTES
+    path('reportes/ventas/usuario/<int:usuario_id>/', ReporteVentasView.as_view(), name='reporte-ventas'),
+    path('reportes/caja/usuario/<int:usuario_id>/', ReporteCajaView.as_view(), name='reporte-caja'),
+    path('reportes/clientes/usuario/<int:usuario_id>/', ReporteClientesView.as_view(), name='reporte-clientes'),
+    path('reportes/movimientos/usuario/<int:usuario_id>/', ReporteMovimientosView.as_view(), name='reporte-movimientos'),
 ]
