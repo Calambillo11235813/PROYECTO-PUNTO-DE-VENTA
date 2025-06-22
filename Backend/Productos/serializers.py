@@ -2,8 +2,11 @@ from rest_framework import serializers
 from .models import Producto, Categoria, Proveedor, Inventario
 from accounts.serializers import UsuarioSerializer
 from accounts.models import Usuario
+from accounts.serializers import UsuarioSerializer
+from accounts.models import Usuario
 from Productos.models import Producto
 from cloudinary.utils import cloudinary_url
+from Sucursales.models import Sucursal
 
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,11 +22,18 @@ class ProductoSerializer(serializers.ModelSerializer):
     stock = serializers.IntegerField(source='inventario.stock', read_only=True)
     categoria = CategoriaSerializer(read_only=True)
     
+    
     proveedor = ProveedorSerializer(read_only=True)
+    usuario = UsuarioSerializer(read_only=True)
     usuario = UsuarioSerializer(read_only=True)
     categoria_id = serializers.PrimaryKeyRelatedField(queryset=Categoria.objects.all(), source='categoria', write_only=True,required=False,allow_null=True)
     proveedor_id = serializers.PrimaryKeyRelatedField(queryset=Proveedor.objects.all(), source='proveedor', write_only=True,required=False,allow_null=True)
     imagen_url = serializers.SerializerMethodField()
+    usuario_id = serializers.PrimaryKeyRelatedField( queryset=Usuario.objects.all(), source='usuario', write_only=True)
+    sucursal_id = serializers.PrimaryKeyRelatedField(
+        queryset=Sucursal.objects.all(), source='sucursal', write_only=True, required=False, allow_null=True
+    )
+    sucursal = serializers.SerializerMethodField(read_only=True)
     usuario_id = serializers.PrimaryKeyRelatedField( queryset=Usuario.objects.all(), source='usuario', write_only=True)
 
     # Campos nuevos para el inventario inicial
@@ -35,12 +45,22 @@ class ProductoSerializer(serializers.ModelSerializer):
         model = Producto
         fields = [
             'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen', 'imagen_url',
+            'categoria', 'proveedor', 'categoria_id', 'proveedor_id', 'usuario_id', 'usuario', 'stock',
+            'stock_inicial', 'cantidad_minima', 'cantidad_maxima', 'sucursal_id', 'sucursal'
+        ]
+
+            'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen', 'imagen_url',
             'categoria', 'proveedor', 'categoria_id', 'proveedor_id','usuario_id','usuario', 'stock',
             'stock_inicial', 'cantidad_minima', 'cantidad_maxima'
         ]
 
     def get_imagen_url(self, obj):
         if obj.imagen:
+            try:
+                return obj.imagen.url
+            except Exception as e:
+                print(f"Error al obtener URL de imagen: {e}")
+                return None
             try:
                 return obj.imagen.url
             except Exception as e:
@@ -69,6 +89,13 @@ class ProductoSerializer(serializers.ModelSerializer):
 
         return producto
 
+    def get_sucursal(self, obj):
+        if obj.sucursal:
+            return {
+                "id": obj.sucursal.id,
+                "nombre": obj.sucursal.nombre
+            }
+        return None
     
 
 class InventarioSerializer(serializers.ModelSerializer):

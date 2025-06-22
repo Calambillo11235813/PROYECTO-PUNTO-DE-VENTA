@@ -7,17 +7,19 @@ from accounts.services.plan_limits_service import PlanLimitsService
 def check_product_limit(view_func):
     """Decorador que verifica el límite de productos antes de procesar la vista"""
     @wraps(view_func)
-    def _wrapped_view(self, request, usuario_id, *args, **kwargs):
+    def wrapped_view(self, request, usuario_id=None, *args, **kwargs):
         try:
-            PlanLimitsService.check_product_limit(usuario_id)
+            # Usar usuario_id del parámetro si está disponible, sino del request.user
+            user_id = usuario_id if usuario_id else request.user.id
+            PlanLimitsService.check_product_limit(user_id)
+            return view_func(self, request, usuario_id, *args, **kwargs)
         except PermissionDenied as e:
-            # Asegúrate de que el mensaje sea claro y útil
-            raise PermissionDenied(
-                "Has alcanzado el límite de productos disponibles en tu plan actual. "
-                "Para continuar agregando productos, considera actualizar a un plan superior."
+            return Response(
+                {"error": "Has alcanzado el límite de productos disponibles en tu plan actual. "
+                         "Para continuar agregando productos, considera actualizar a un plan superior."},
+                status=status.HTTP_403_FORBIDDEN
             )
-        return view_func(self, request, usuario_id, *args, **kwargs)
-    return _wrapped_view
+    return wrapped_view
 
 def check_employee_limit(view_func):
     """Decorador que verifica el límite de empleados antes de procesar la vista"""

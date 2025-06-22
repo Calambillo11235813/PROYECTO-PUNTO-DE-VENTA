@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from accounts.models import Usuario,Rol, Privilegio,Bitacora,Empleado,Permisos
 from .models import Plan, Suscripcion, HistorialSuscripcion
+from Sucursales.models import Sucursal
 
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
@@ -39,6 +40,16 @@ class EmpleadoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleado
         fields = ['id', 'usuario', 'nombre', 'correo', 'password','telefono', 'direccion', 'estado', 'fecha_contratacion', 'rol']
+    sucursal = serializers.PrimaryKeyRelatedField(
+        queryset=Sucursal.objects.all(), required=False, allow_null=True
+    )
+
+    class Meta:
+        model = Empleado
+        fields = [
+            'id', 'usuario', 'nombre', 'correo', 'password', 'telefono',
+            'direccion', 'estado', 'fecha_contratacion', 'rol', 'sucursal'
+        ]
         extra_kwargs = {
             'rol': {'required': False},
             'password': {'write_only': True}  # evita que se muestre en el GET

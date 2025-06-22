@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_spectacular',
     'payments',  
+    'payments', 
+    'Sucursales',  # Asegúrate de que esta aplicación esté incluida 
 ]
 
 

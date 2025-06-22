@@ -2,7 +2,7 @@ from accounts.utils.logger_utils import get_logger_por_usuario
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-#from rest_framework.permissions import IsAuthenticated
+# from rest_framework.permissions import IsAuthenticated
 from accounts.models import Empleado, Rol
 from accounts.serializers import EmpleadoSerializer
 from django.contrib.auth.hashers import make_password
@@ -11,14 +11,17 @@ from django.shortcuts import get_object_or_404
 from accounts.decorators.plan_limits_decorators import check_employee_limit, register_resource_usage
 
 class EmpleadoListCreate(APIView):
-    def get(self, request, usuario_id):
-        empleados = Empleado.objects.filter(usuario_id=usuario_id)
+    def get(self, request, usuario_id, sucursal_id=None):
+        if sucursal_id is not None:
+            empleados = Empleado.objects.filter(usuario_id=usuario_id, sucursal_id=sucursal_id)
+        else:
+            empleados = Empleado.objects.filter(usuario_id=usuario_id)
         serializer = EmpleadoSerializer(empleados, many=True)
         return Response(serializer.data)
 
     # Añade los decoradores aquí
-    @check_employee_limit
-    @register_resource_usage('employee')
+    # @check_employee_limit
+    # @register_resource_usage('employee')
     def post(self, request, usuario_id):
         # Extraer el nombre del rol desde el JSON
         rol_nombre = request.data.get('rol', None)
@@ -29,9 +32,13 @@ class EmpleadoListCreate(APIView):
                 return Response({"error": "Rol no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             rol = None
-        
+
         password = request.data.get("password")
         password_encriptada = make_password(password) if password else None
+
+        # Obtener sucursal_id del request (puede venir como "sucursal" o "sucursal_id")
+        sucursal_id = request.data.get("sucursal") or request.data.get("sucursal_id")
+
         # Construimos manualmente el diccionario limpio
         data = {
             "usuario": usuario_id,
@@ -42,11 +49,12 @@ class EmpleadoListCreate(APIView):
             "fecha_contratacion": request.data.get("fecha_contratacion"),
             "rol": rol.id if rol else None,
             "password": password_encriptada,
+            "sucursal": sucursal_id
         }
         serializer = EmpleadoSerializer(data=data)
         if serializer.is_valid():
             empleado = serializer.save()
-             # Registrar la acción en la bitácora (archivo .log)
+            # Registrar la acción en la bitácora (archivo .log)
             logger = get_logger_por_usuario(usuario_id)
             logger.info(f"Empleado creado: {empleado.nombre} | Usuario: {empleado.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
             return Response(EmpleadoSerializer(empleado).data, status=status.HTTP_201_CREATED)
@@ -71,6 +79,9 @@ class EmpleadoDetail(APIView):
         password = request.data.get("password")
         password_encriptada = make_password(password) if password else empleado.password
 
+        # Obtener sucursal_id del request (puede venir como "sucursal" o "sucursal_id")
+        sucursal_id = request.data.get("sucursal") or request.data.get("sucursal_id") or (empleado.sucursal.id if empleado.sucursal else None)
+
         data = {
             "usuario": usuario_id,
             "nombre": request.data.get("nombre", empleado.nombre),
@@ -80,7 +91,8 @@ class EmpleadoDetail(APIView):
             "fecha_contratacion": request.data.get("fecha_contratacion", empleado.fecha_contratacion),
             "estado": request.data.get("estado", empleado.estado),
             "rol": rol.id if rol else (empleado.rol.id if empleado.rol else None),
-            "password": password_encriptada
+            "password": password_encriptada,
+            "sucursal": sucursal_id
         }
 
         serializer = EmpleadoSerializer(empleado, data=data)
@@ -123,6 +135,9 @@ class EmpleadoDetailSimple(APIView):
         password = request.data.get("password")
         password_encriptada = make_password(password) if password else empleado.password
 
+        # Obtener sucursal_id del request (puede venir como "sucursal" o "sucursal_id")
+        sucursal_id = request.data.get("sucursal") or request.data.get("sucursal_id") or (empleado.sucursal.id if empleado.sucursal else None)
+
         data = {
             "usuario": empleado.usuario.id,  # Mantiene el usuario actual
             "nombre": request.data.get("nombre", empleado.nombre),
@@ -132,7 +147,8 @@ class EmpleadoDetailSimple(APIView):
             "fecha_contratacion": request.data.get("fecha_contratacion", empleado.fecha_contratacion),
             "estado": request.data.get("estado", empleado.estado),
             "rol": rol.id if rol else (empleado.rol.id if empleado.rol else None),
-            "password": password_encriptada
+            "password": password_encriptada,
+            "sucursal": sucursal_id
         }
 
         serializer = EmpleadoSerializer(empleado, data=data)
