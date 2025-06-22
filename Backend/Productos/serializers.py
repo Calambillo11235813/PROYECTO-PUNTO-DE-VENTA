@@ -49,11 +49,6 @@ class ProductoSerializer(serializers.ModelSerializer):
             'stock_inicial', 'cantidad_minima', 'cantidad_maxima', 'sucursal_id', 'sucursal'
         ]
 
-            'id', 'nombre', 'precio_compra', 'precio_venta', 'descripcion', 'imagen', 'imagen_url',
-            'categoria', 'proveedor', 'categoria_id', 'proveedor_id','usuario_id','usuario', 'stock',
-            'stock_inicial', 'cantidad_minima', 'cantidad_maxima'
-        ]
-
     def get_imagen_url(self, obj):
         if obj.imagen:
             try:
