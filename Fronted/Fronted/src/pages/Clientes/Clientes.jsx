@@ -91,9 +91,9 @@ const Clientes = () => {
   };
 
   return (
-    <div className="p-6 bg-white dark:bg-white-800 rounded-lg shadow-md">
+    <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="p-6 bg-white dark:bg-white-800 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray">Gestión de Clientes</h2>
+        <h2 className="text-2xl font-bold title-icon dark:text-gray">Gestión de Clientes</h2>
         <button
           onClick={openCreateModal}
           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center"

@@ -206,7 +206,7 @@ const CajaManager = () => {
     
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="rounded-lg p-6 w-full max-w-md">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-800">Apertura de Caja</h2>
             <button 
@@ -425,7 +425,7 @@ const CajaManager = () => {
     
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div style={{ backgroundColor: "var(--bg-tertiary)" }}className=" rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pt-1 z-10">
             <h2 className="text-lg sm:text-xl font-bold text-gray-800">Cierre de Caja</h2>
             <button 
@@ -679,7 +679,7 @@ const CajaManager = () => {
     
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div style={{ backgroundColor: "var(--bg-tertiary)" }} className=" rounded-lg p-6 w-full max-w-md">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-800">
               {movimientoData.tipo === 'ingreso' ? 'Registrar Ingreso' : 'Registrar Retiro'}
@@ -789,8 +789,8 @@ const CajaManager = () => {
     <div className="w-full min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-4 sm:p-6">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center">
-            <Wallet className="h-8 w-8 mr-2 text-green-600" />
+          <h1 className="text-3xl font-bold title-icon flex items-center">
+            <Wallet className="h-8 w-8 mr-2 icon-accent" />
             Administración de Caja
           </h1>
           <p className="text-gray-600 mt-2">
@@ -808,7 +808,7 @@ const CajaManager = () => {
           <>
             {cajaActual ? (
               // Estado: Caja abierta
-              <div className="bg-white shadow-md rounded-lg overflow-hidden">
+              <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="shadow-md rounded-lg overflow-hidden">
                 <div className="p-6 border-b">
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
                     <div>
@@ -952,9 +952,9 @@ const CajaManager = () => {
               </div>
             ) : (
               // Estado: No hay caja abierta
-              <div className="bg-white shadow-md rounded-lg p-8 text-center">
+              <div style={{ backgroundColor: "var(--bg-tertiary)" }}className=" shadow-md rounded-lg p-8 text-center">
                 <div className="flex justify-center mb-4">
-                  <Wallet className="h-16 w-16 text-gray-400" />
+                  <Wallet className="h-16 w-16 icon-accent" />
                 </div>
                 <h2 className="text-xl font-semibold mb-2 text-gray-800">
                   No hay una caja abierta actualmente

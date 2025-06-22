@@ -1,4 +1,5 @@
-import apiClient from './apiClient';
+import api from './apiClient';
+import { publicApi } from './apiClient';
 
 const planService = {
   /**
@@ -9,32 +10,17 @@ const planService = {
     try {
       console.log('🔍 Obteniendo todos los planes...');
       
-      // Crear una instancia de apiClient sin autenticación para endpoints públicos
-      const publicApiClient = apiClient.create ? apiClient.create() : apiClient;
-      
-      // Hacer la petición sin headers de autenticación
-      const response = await fetch('http://127.0.0.1:8000/accounts/planes/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // No incluir Authorization header para endpoints públicos
-        },
-      });
+      // Usar publicApi para endpoints públicos
+      const response = await publicApi.get('/accounts/planes/');
 
-      if (!response.ok) {
-        // Si aún falla, intentar con autenticación si está disponible
-        if (response.status === 401 && planService.isAuthenticated()) {
-          console.log('🔄 Reintentando con autenticación...');
-          return await planService.getAllPlansAuthenticated();
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (!response.data) {
+        throw new Error('Error al obtener planes');
       }
 
-      const data = await response.json();
-      console.log('✅ Planes obtenidos exitosamente:', data);
+      console.log('✅ Planes obtenidos exitosamente:', response.data);
       
       // Formatear datos para mejor uso en UI
-      const planesFormateados = data.map(plan => ({
+      const planesFormateados = response.data.map(plan => ({
         ...plan,
         precio_formateado: `Bs. ${parseFloat(plan.precio).toFixed(2)}`,
         caracteristicas_formateadas: plan.caracteristicas ? JSON.parse(plan.caracteristicas) : [],
@@ -47,7 +33,7 @@ const planService = {
       console.error('❌ Error al obtener planes:', error.message);
       
       // Si es un error de autenticación, intentar obtener planes básicos
-      if (error.message.includes('401')) {
+      if (error.response?.status === 401) {
         console.log('🔄 Intentando obtener planes básicos...');
         return await planService.getBasicPlans();
       }
@@ -61,7 +47,7 @@ const planService = {
    */
   getAllPlansAuthenticated: async () => {
     try {
-      const response = await apiClient.get('/accounts/planes/');
+      const response = await api.get('/accounts/planes/');
       console.log('✅ Planes autenticados obtenidos:', response.data);
       
       return response.data.map(plan => ({
@@ -161,7 +147,6 @@ const planService = {
    */
   getUserSubscription: async () => {
     try {
-      // Validar autenticación antes de intentar obtener la suscripción
       if (!planService.isAuthenticated()) {
         console.log('ℹ️ Usuario no autenticado, no se puede obtener suscripción');
         return null;
@@ -169,20 +154,37 @@ const planService = {
 
       const userId = localStorage.getItem('id');
       console.log(`🔍 Obteniendo suscripción del usuario ${userId}...`);
-      const response = await apiClient.get(`/accounts/usuarios/${userId}/suscripcion/`);
+      const response = await api.get(`/accounts/usuarios/${userId}/suscripcion/`);
       console.log('✅ Suscripción obtenida exitosamente:', response.data);
       return response.data;
     } catch (error) {
+      // Mejorar el logging para depuración
+      console.error('❌ Error al obtener suscripción:', error.message);
+      
+      // Manejar específicamente error 401
+      if (error.response?.status === 401) {
+        console.log('⚠️ Token expirado o inválido');
+        try {
+          // Intentar renovar el token si está disponible un servicio de renovación
+          const authService = await import('./authService').then(m => m.default);
+          await authService.refreshToken();
+          // Reintentar después de renovar token
+          const userId = localStorage.getItem('id');
+          const newResponse = await api.get(`/accounts/usuarios/${userId}/suscripcion/`);
+          return newResponse.data;
+        } catch (refreshError) {
+          console.log('No se pudo renovar el token:', refreshError.message);
+          return null;
+        }
+      }
+      
       if (error.response?.status === 404) {
         console.log('ℹ️ Usuario no tiene suscripción activa');
         return null;
       }
-      if (error.response?.status === 401) {
-        console.log('ℹ️ No autorizado para obtener suscripción');
-        return null;
-      }
-      console.error('❌ Error al obtener suscripción:', error.response?.data || error.message);
-      throw error;
+      
+      // Para otros errores
+      return null;
     }
   },
 
@@ -200,7 +202,7 @@ const planService = {
 
       const userId = localStorage.getItem('id');
       console.log(`🔍 Verificando límites del usuario ${userId}...`);
-      const response = await apiClient.get(`/accounts/usuarios/${userId}/limites/`);
+      const response = await api.get(`/accounts/usuarios/${userId}/limites/`);
       console.log('✅ Límites obtenidos exitosamente:', response.data);
       
       // Normalizar estructura para el frontend
@@ -234,7 +236,7 @@ const planService = {
       }
       
       // Verificar token con el backend
-      const response = await apiClient.get('/accounts/verify-token/');
+      const response = await api.get('/accounts/verify-token/');
       return response.status === 200;
     } catch (error) {
       console.error('Error verificando autenticación:', error);
@@ -272,7 +274,7 @@ const planService = {
       }
 
       // Realizar la petición
-      const response = await apiClient.post(`/accounts/usuarios/${userId}/suscripcion/`, suscripcionData);
+      const response = await api.post(`/accounts/usuarios/${userId}/suscripcion/`, suscripcionData);
       console.log('✅ Suscripción creada exitosamente:', response.data);
       
       return response.data;
@@ -320,7 +322,7 @@ const planService = {
       }
 
       console.log('🔄 Actualizando suscripción...', updateData);
-      const response = await apiClient.put(`/accounts/usuarios/${userId}/suscripcion/`, updateData);
+      const response = await api.put(`/accounts/usuarios/${userId}/suscripcion/`, updateData);
       console.log('✅ Suscripción actualizada exitosamente:', response.data);
       return response.data;
     } catch (error) {
@@ -351,53 +353,22 @@ const planService = {
       const isSuccess = Math.random() > 0.1;
       
       if (isSuccess) {
-        const transactionId = `TXN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('✅ Pago procesado exitosamente:', transactionId);
+        // Simular respuesta exitosa
         return {
           success: true,
-          transaction_id: transactionId,
-          message: 'Pago procesado exitosamente',
+          transaction_id: `tx_${Math.random().toString(36).substring(2, 10)}`,
           amount: paymentData.amount,
-          method: paymentData.method
+          currency: paymentData.currency || 'usd',
+          status: 'completed',
+          timestamp: new Date().toISOString()
         };
       } else {
-        throw new Error('Error en el procesamiento del pago');
+        // Simular error de pago
+        throw new Error('El pago fue rechazado. Por favor, intente con otro método de pago.');
       }
     } catch (error) {
-      console.error('❌ Error al procesar pago:', error.message);
+      console.error('❌ Error al procesar pago:', error);
       throw error;
-    }
-  },
-
-  /**
-   * Validar si el usuario puede acceder a una funcionalidad
-   * @param {string} feature - Nombre de la funcionalidad
-   * @returns {Promise<boolean>} - Puede acceder o no
-   */
-  canAccessFeature: async (feature) => {
-    try {
-      const limits = await planService.getUserLimits();
-      if (!limits) return false;
-      return limits.funcionalidades[feature] || false;
-    } catch (error) {
-      console.error('❌ Error al verificar acceso a funcionalidad:', error.message);
-      return false;
-    }
-  },
-
-  /**
-   * Verificar si puede agregar más recursos de un tipo específico
-   * @param {string} resourceType - Tipo de recurso (productos, empleados, etc.)
-   * @returns {Promise<boolean>} - Puede agregar o no
-   */
-  canAddResource: async (resourceType) => {
-    try {
-      const limits = await planService.getUserLimits();
-      if (!limits) return false;
-      return limits.limites[resourceType]?.puede_agregar || false;
-    } catch (error) {
-      console.error('❌ Error al verificar límite de recurso:', error.message);
-      return false;
     }
   }
 };

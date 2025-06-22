@@ -124,7 +124,7 @@ const Empleados = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-6 title-icon">
         <h1 className="text-2xl font-bold">Gestión de Empleados</h1>
         <button
           onClick={handleCreateEmpleado}
@@ -155,8 +155,8 @@ const Empleados = () => {
 
       {/* Tabla de empleados */}
       {loading ? (
-        <div className="text-center py-10">
-          <div className="spinner"></div>
+        <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="text-center py-10">
+          <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="spinner"></div>
           <p className="mt-2">Cargando empleados...</p>
         </div>
       ) : (
@@ -167,7 +167,7 @@ const Empleados = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-full bg-white rounded-lg overflow-hidden">
+              <table style={{ backgroundColor: "var(--bg-tertiary)" }}className="min-w-full bg-white rounded-lg overflow-hidden">
                 <thead className="bg-gray-100">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

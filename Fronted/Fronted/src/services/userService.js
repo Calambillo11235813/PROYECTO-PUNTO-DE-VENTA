@@ -1,26 +1,4 @@
-import axios from 'axios';
-
-const API_URL = 'http://127.0.0.1:8000/accounts/';
-
-// Crear una instancia de axios con configuración base
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Interceptor para añadir el token de autenticación a las solicitudes
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+import api from './apiClient';
 
 const userService = {
   // Obtener todos los usuarios
@@ -29,7 +7,7 @@ const userService = {
       console.log('Intentando obtener usuarios...');
       console.log('Token actual:', localStorage.getItem('access_token'));
       
-      const response = await apiClient.get('usuarios/');
+      const response = await api.get('/accounts/usuarios/');
       console.log('Usuarios obtenidos:', response.data);
       return response.data;
     } catch (error) {
@@ -41,7 +19,7 @@ const userService = {
           const authService = await import('./authService').then(module => module.default);
           await authService.refreshToken();
           
-          const newResponse = await apiClient.get('usuarios/');
+          const newResponse = await api.get('/accounts/usuarios/');
           return newResponse.data;
         } catch (refreshError) {
           console.error('No se pudo renovar el token:', refreshError);
@@ -60,7 +38,7 @@ const userService = {
    */
   getUserById: async (userId) => {
     try {
-      const response = await apiClient.get(`usuarios/${userId}/`);
+      const response = await api.get(`/accounts/usuarios/${userId}/`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener usuario:', error);
@@ -103,7 +81,7 @@ const userService = {
         contraseña: userData.password || '12345678'
       };
 
-      const response = await apiClient.post('usuarios/', formattedData);
+      const response = await api.post('/accounts/usuarios/', formattedData);
       return response.data;
     } catch (error) {
       console.error('Error al crear usuario:', error);
@@ -128,7 +106,7 @@ const userService = {
         delete dataToSend.password;
       }
 
-      const response = await apiClient.put(`usuarios/${userId}/`, dataToSend);
+      const response = await api.put(`usuarios/${userId}/`, dataToSend);
       
       const currentUser = JSON.parse(localStorage.getItem('user_data') || '{}');
       if (currentUser.id === userId) {
@@ -162,7 +140,7 @@ const userService = {
   // Eliminar un usuario
   deleteUser: async (id) => {
     try {
-      await apiClient.delete(`usuarios/${id}/`);
+      await api.delete(`usuarios/${id}/`);
       return true;
     } catch (error) {
       console.error(`Error al eliminar usuario ${id}:`, error);

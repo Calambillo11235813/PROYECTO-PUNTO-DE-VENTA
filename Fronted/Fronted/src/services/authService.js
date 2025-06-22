@@ -1,38 +1,12 @@
-import axios from 'axios';
+import api, { publicApi } from './apiClient';
 import empleadoService from './EmpleadoService';
-
-// URL base de la API (ajústala según tu configuración)
-const API_URL = 'http://127.0.0.1:8000/accounts/';
-
-// Crea una instancia de axios con configuración base
-const apiClient = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Interceptor para añadir el token de autenticación a las solicitudes
-apiClient.interceptors.request.use(
-  (config) => {
-    // Excluir rutas de autenticación
-    if (!config.url.includes('login') && !config.url.includes('usuarios')) {
-      const token = localStorage.getItem('access_token');
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-      }
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
 
 // Servicio de autenticación
 const authService = {
   // Probar conexión con la API 
   testConnection: async () => {
     try {
-      // await apiClient.get('');
+      await publicApi.get('/accounts/');
       console.log('Conexión exitosa');
       return true;
     } catch (error) {
@@ -46,20 +20,12 @@ const authService = {
     }
   },
     
-  // Utilizando destructuring de parámetros para mayor claridad
   register: async ({ nombre, correo, password, nombre_empresa, direccion, nit_empresa, role_id = 1 }) => {
     try {
-      console.log('Intentando registro con:', {
-        nombre,
-        correo,
-        password,
-        nombre_empresa,
-        direccion,
-        nit_empresa,
-        role_id
-      });
+      console.log('Intentando registro con:', { nombre, correo, password, nombre_empresa, direccion, nit_empresa, role_id });
       
-      const response = await apiClient.post('usuarios/', {
+      // Usamos publicApi para registro (no requiere autenticación)
+      const response = await publicApi.post('/accounts/usuarios/', {
         nombre,
         correo,
         password,
@@ -72,9 +38,7 @@ const authService = {
       return response.data;
     } catch (error) {
       console.error('Error en registro:', error);
-      const errorMessage =
-        error.response?.data?.error ||
-        'Error al conectar con el servidor';
+      const errorMessage = error.response?.data?.error || 'Error al conectar con el servidor';
       throw new Error(errorMessage);
     }
   },
@@ -87,8 +51,8 @@ const authService = {
       // Elimina cualquier token previo para asegurar una solicitud limpia
       localStorage.removeItem('access_token');
       
-      // Asegúrate de enviar exactamente lo que espera el backend
-      const response = await apiClient.post('login/', { 
+      // Usar publicApi para login (no tiene autenticación previa)
+      const response = await publicApi.post('/accounts/login/', { 
         correo: correo,
         password: contrasena
       });
@@ -98,17 +62,14 @@ const authService = {
       // Guardar tokens
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
-      
-      // Determinar el tipo de usuario y guardar datos apropiados
-      console.log(response); 
 
-
+      // Resto del código igual...
       if (response.data.tipo === "empleado") {
         localStorage.setItem('user_data', JSON.stringify(response.data.empleado));
         localStorage.setItem('empleado_id', response.data.empleado.id);
         console.log('Empleado ID:', response.data.empleado.id);
-        const a =  await empleadoService.getEmpleadoById(response.data.empleado.id)
-         console.log('Empleado:', a);
+        const a = await empleadoService.getEmpleadoById(response.data.empleado.id);
+        console.log('Empleado:', a);
         localStorage.setItem('id', a.usuario);
 
         console.log('ID de usuario 222:', a.usuario);
@@ -123,27 +84,15 @@ const authService = {
         localStorage.setItem('id', response.data.usuario.id);
         localStorage.setItem('user_type', 'usuario');
         
-        // No guardar "undefined" como string, simplemente no guardar nada si es undefined
         if (response.data.usuario.rol) {
           localStorage.setItem('rol', response.data.usuario.rol);
         }
-        // O alternativamente, establecer un valor específico para superadmin
-        // localStorage.setItem('rol', response.data.usuario.rol || 'superadmin');
-        
-        console.log('desde el else', response.data.usuario.id);
       }
-      console.log('Datos del usuario guardados:', localStorage.getItem('id'));
-      console.log(localStorage);
       
       return response.data;
     } catch (error) {
       console.error('Error completo:', error);
-      console.error('Datos de error:', error.response?.data);
-      console.error('Estado:', error.response?.status);
-      
-      const errorMessage = 
-        error.response?.data?.error || 
-        'Error al conectar con el servidor';
+      const errorMessage = error.response?.data?.error || 'Error al conectar con el servidor';
       throw new Error(errorMessage);
     }
   },
@@ -151,11 +100,6 @@ const authService = {
   // Cerrar sesión
   logout: () => {
     localStorage.clear();
-    localStorage.removeItem('id');
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user_data');
-    localStorage.removeItem('empresa_data');
   },
   
   // Verificar si el usuario está autenticado
@@ -175,7 +119,8 @@ const authService = {
     if (!refreshToken) throw new Error('No hay token de refresco disponible');
     
     try {
-      const response = await apiClient.post('token/refresh/', {
+      // Usamos publicApi porque el token access ya expiró
+      const response = await publicApi.post('/accounts/token/refresh/', {
         refresh: refreshToken
       });
       
@@ -184,7 +129,7 @@ const authService = {
     } catch (error) {
       // Si el token de refresco también expiró, cerrar sesión
       authService.logout();
-      throw new Error('Sesión expirada, por favor inicie sesión nuevamente' + error);
+      throw new Error('Sesión expirada, por favor inicie sesión nuevamente');
     }
   },
 };

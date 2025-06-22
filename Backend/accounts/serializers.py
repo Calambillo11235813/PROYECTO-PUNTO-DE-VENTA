@@ -37,6 +37,9 @@ class BitacoraSerializer(serializers.ModelSerializer):
         fields = ['id', 'ip', 'fecha', 'hora', 'accion', 'usuario']
 
 class EmpleadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Empleado
+        fields = ['id', 'usuario', 'nombre', 'correo', 'password','telefono', 'direccion', 'estado', 'fecha_contratacion', 'rol']
     sucursal = serializers.PrimaryKeyRelatedField(
         queryset=Sucursal.objects.all(), required=False, allow_null=True
     )

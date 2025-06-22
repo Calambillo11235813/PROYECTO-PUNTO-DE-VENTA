@@ -20,6 +20,7 @@ import PaymentForm from '../components/Stripe/PaymentForm';
 import planService from '../services/planService';
 import paymentService from '../services/paymentService';
 import PlanCard from '../components/HomeHeader/Planes/PlanCard';
+import useTheme from '../hooks/useTheme'; // Importar el hook de tema
 
 const PlanManager = () => {
   // Estados existentes
@@ -37,6 +38,9 @@ const PlanManager = () => {
   const [clientSecret, setClientSecret] = useState(null);
   const [paymentError, setPaymentError] = useState(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+
+  // Obtener la paleta de colores
+  const { palette } = useTheme();
 
   // Cargar datos al montar el componente
   useEffect(() => {
@@ -187,50 +191,80 @@ const PlanManager = () => {
   if (loading) {
     return (
       <div className="w-full h-96 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--accent-color)' }}></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+    <div 
+      className="rounded-lg shadow-md overflow-hidden"
+      style={{ backgroundColor: 'var(--bg-tertiary)' }}
+    >
       {/* Header con información del plan actual */}
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2 flex items-center">
-          <SparklesIcon className="h-6 w-6 text-green-500 mr-2" />
+      <div 
+        className="p-6 border-b border-gray-200"
+        style={{ borderColor: 'rgba(128, 128, 128, 0.2)' }}
+      >
+        <h1 
+          className="text-2xl font-bold mb-2 flex items-center"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          <SparklesIcon className="h-6 w-6 mr-2" style={{ color: 'var(--accent-color)' }} />
           Mi Plan
         </h1>
-        <p className="text-gray-600">
+        <p style={{ color: 'var(--text-secondary)' }}>
           Administra tu suscripción y visualiza tu uso actual
         </p>
       </div>
 
       {/* Panel de plan actual */}
       {currentPlan ? (
-        <div className={`p-6 ${isSubscriptionActive ? 'bg-green-50' : 'bg-red-50'} border-b border-gray-200`}>
+        <div 
+          className={`p-6 border-b border-gray-200`}
+          style={{ 
+            backgroundColor: isSubscriptionActive ? 'rgba(0, 128, 0, 0.05)' : 'rgba(255, 0, 0, 0.05)',
+            borderColor: 'rgba(128, 128, 128, 0.2)'
+          }}
+        >
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-3">
               {isSubscriptionActive ? (
-                <CheckCircleIcon className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" />
+                <CheckCircleIcon 
+                  className="h-6 w-6 flex-shrink-0 mt-1" 
+                  style={{ color: 'var(--accent-color)' }} 
+                />
               ) : (
-                <ExclamationTriangleIcon className="h-6 w-6 text-red-600 flex-shrink-0 mt-1" />
+                <ExclamationTriangleIcon 
+                  className="h-6 w-6 flex-shrink-0 mt-1" 
+                  style={{ color: '#ef4444' }} 
+                />
               )}
               
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">
+                <h2 
+                  className="text-lg font-semibold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
                   Plan {currentPlan.plan_nombre}
                 </h2>
-                <p className="text-sm text-gray-600 mb-1">
+                <p 
+                  className="text-sm mb-1"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   {isSubscriptionActive ? (
                     <span className="flex items-center">
-                      <ClockIcon className="h-4 w-4 mr-1 text-green-600" />
+                      <ClockIcon className="h-4 w-4 mr-1" style={{ color: 'var(--accent-color)' }} />
                       {daysUntilExpiry} días restantes
                     </span>
                   ) : (
-                    <span className="text-red-600 font-medium">Plan expirado</span>
+                    <span style={{ color: '#ef4444' }}>Plan expirado</span>
                   )}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p 
+                  className="text-sm"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Monto: Bs. {parseFloat(currentPlan.monto_pagado).toFixed(2)} •
                   Renovación: {new Date(currentPlan.fecha_expiracion).toLocaleDateString()}
                 </p>
@@ -238,7 +272,8 @@ const PlanManager = () => {
             </div>
             
             <button 
-              className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center"
+              className="text-sm font-medium flex items-center"
+              style={{ color: 'var(--accent-color)' }}
               onClick={() => setShowLimits(!showLimits)}
             >
               <ChartBarIcon className="h-4 w-4 mr-1" />
@@ -248,12 +283,21 @@ const PlanManager = () => {
 
           {/* Panel de límites y uso */}
           {showLimits && userLimits && (
-            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
+            <div 
+              className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t"
+              style={{ borderColor: 'rgba(128, 128, 128, 0.2)' }}
+            >
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">
+                <div 
+                  className="text-2xl font-bold"
+                  style={{ color: 'var(--text-primary)' }}
+                >
                   {userLimits.limites?.productos?.utilizados || 0}
                 </div>
-                <div className="text-xs text-gray-600">
+                <div 
+                  className="text-xs"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   de {userLimits.limites?.productos?.maximo === 0 ? '∞' : userLimits.limites?.productos?.maximo || 0} productos
                 </div>
               </div>
@@ -285,14 +329,29 @@ const PlanManager = () => {
           )}
         </div>
       ) : (
-        <div className="p-6 bg-yellow-50 border-b border-gray-200">
+        <div 
+          className="p-6 border-b border-gray-200"
+          style={{ 
+            backgroundColor: 'rgba(234, 179, 8, 0.05)',
+            borderColor: 'rgba(128, 128, 128, 0.2)'
+          }}
+        >
           <div className="flex items-center space-x-3">
-            <ExclamationTriangleIcon className="h-6 w-6 text-yellow-600" />
+            <ExclamationTriangleIcon 
+              className="h-6 w-6" 
+              style={{ color: '#f59e0b' }} 
+            />
             <div>
-              <h2 className="text-lg font-semibold text-gray-800">
+              <h2 
+                className="text-lg font-semibold"
+                style={{ color: 'var(--text-primary)' }}
+              >
                 Sin plan activo
               </h2>
-              <p className="text-sm text-gray-600">
+              <p 
+                className="text-sm"
+                style={{ color: 'var(--text-secondary)' }}
+              >
                 No tienes ningún plan actualmente. Selecciona un plan para comenzar.
               </p>
             </div>
@@ -303,12 +362,16 @@ const PlanManager = () => {
       {/* Planes disponibles */}
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">
+          <h2 
+            className="text-xl font-semibold"
+            style={{ color: 'var(--text-primary)' }}
+          >
             {currentPlan ? 'Cambiar de plan' : 'Planes disponibles'}
           </h2>
           <button 
             onClick={loadPlanData}
-            className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center"
+            className="text-sm font-medium flex items-center"
+            style={{ color: 'var(--accent-color)' }}
           >
             <ArrowPathIcon className="h-4 w-4 mr-1" />
             Actualizar
@@ -331,25 +394,37 @@ const PlanManager = () => {
       </div>
 
       {/* Información adicional */}
-      <div className="p-6 bg-gray-50 border-t border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">
+      <div 
+        className="p-6 border-t border-gray-200"
+        style={{ 
+          backgroundColor: 'rgba(128, 128, 128, 0.05)',
+          borderColor: 'rgba(128, 128, 128, 0.2)'
+        }}
+      >
+        <h3 
+          className="text-lg font-semibold mb-3"
+          style={{ color: 'var(--text-primary)' }}
+        >
           Información importante
         </h3>
         <ul className="space-y-2">
           <li className="flex items-start">
-            <ChevronRightIcon className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-            <span className="text-gray-700">
+            <ChevronRightIcon 
+              className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" 
+              style={{ color: 'var(--accent-color)' }} 
+            />
+            <span style={{ color: 'var(--text-secondary)' }}>
               El cambio de plan se aplicará inmediatamente después del pago.
             </span>
           </li>
           <li className="flex items-start">
-            <ChevronRightIcon className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+            <ChevronRightIcon className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
             <span className="text-gray-700">
               Al actualizar a un plan superior, se aplicará un crédito proporcional al tiempo restante de tu plan actual.
             </span>
           </li>
           <li className="flex items-start">
-            <ChevronRightIcon className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+            <ChevronRightIcon className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
             <span className="text-gray-700">
               Si cambias a un plan inferior, los datos que excedan los nuevos límites no se eliminarán, pero no podrás crear nuevos hasta que estés por debajo del límite.
             </span>
@@ -360,16 +435,25 @@ const PlanManager = () => {
       {/* ✅ MODAL REDISEÑADO CON PAGO POR TARJETA */}
       {upgradeModalOpen && selectedPlan && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[95vh] overflow-y-auto">
+          <div 
+            className="rounded-2xl max-w-2xl w-full max-h-[95vh] overflow-y-auto"
+            style={{ backgroundColor: 'var(--bg-tertiary)' }}
+          >
             
             {/* ✅ HEADER MEJORADO */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-                  <CreditCardIcon className="h-6 w-6 text-green-600 mr-2" />
+                <h2 
+                  className="text-2xl font-bold flex items-center"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <CreditCardIcon 
+                    className="h-6 w-6 mr-2" 
+                    style={{ color: 'var(--accent-color)' }} 
+                  />
                   {paymentStep === 'confirmation' ? 'Confirmar cambio de plan' : 'Completar Pago'}
                 </h2>
-                <p className="text-gray-600 mt-1">
+                <p style={{ color: 'var(--text-secondary)' }}>
                   Plan {selectedPlan.nombre} - Bs. {parseFloat(selectedPlan.precio).toFixed(2)}/año
                 </p>
               </div>
@@ -558,10 +642,17 @@ const PlanManager = () => {
             </div>
 
             {/* ✅ FOOTER CON VALIDACIONES MEJORADAS */}
-            <div className="flex gap-3 p-6 border-t border-gray-200">
+            <div 
+              className="flex gap-3 p-6 border-t border-gray-200"
+              style={{ borderColor: 'rgba(128, 128, 128, 0.2)' }}
+            >
               <button
                 onClick={paymentStep === 'confirmation' ? handleCloseModal : () => setPaymentStep('confirmation')}
-                className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="flex-1 py-3 px-4 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                style={{ 
+                  color: 'var(--text-secondary)',
+                  borderColor: 'rgba(128, 128, 128, 0.3)'
+                }}
                 disabled={paymentLoading && paymentStep === 'confirmation'}
               >
                 {paymentStep === 'confirmation' ? 'Cancelar' : 'Atrás'}
@@ -571,7 +662,11 @@ const PlanManager = () => {
                 <button
                   onClick={createPaymentIntent}
                   disabled={paymentLoading}
-                  className="flex-1 py-3 px-4 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ 
+                    backgroundColor: 'var(--accent-color)',
+                    color: '#ffffff'
+                  }}
                 >
                   {paymentLoading ? (
                     <>
@@ -590,7 +685,11 @@ const PlanManager = () => {
                   type="submit"
                   form="payment-form"
                   disabled={!clientSecret || paymentLoading}
-                  className="flex-1 py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg font-medium hover:from-green-600 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 py-3 px-4 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ 
+                    background: `linear-gradient(to right, var(--accent-color), ${adjustColor('--accent-color', -20)})`,
+                    color: '#ffffff'
+                  }}
                 >
                   {paymentLoading ? (
                     <>
@@ -612,5 +711,12 @@ const PlanManager = () => {
     </div>
   );
 };
+
+// Función helper para ajustar un color (aclarar/oscurecer)
+function adjustColor(cssVar, amount) {
+  // Esta función simulada devuelve un color más oscuro para el gradiente
+  // En una implementación real, extraería el color y lo ajustaría matemáticamente
+  return `color-mix(in srgb, var(${cssVar}) ${100 + amount}%, black)`;
+}
 
 export default PlanManager;

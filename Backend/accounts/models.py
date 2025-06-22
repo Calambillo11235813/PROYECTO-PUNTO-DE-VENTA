@@ -89,6 +89,7 @@ class Empleado(models.Model):
     estado = models.BooleanField(default=True)
     fecha_contratacion = models.DateField(null=True, blank=True)
     rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True)
+    
     sucursal = models.ForeignKey(
         Sucursal,
         on_delete=models.CASCADE,

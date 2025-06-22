@@ -17,7 +17,15 @@ class ClienteListCreateAPIView(APIView):
         Lista todos los clientes asociados al usuario especificado
         """
         try:
+            sucursal_id = request.query_params.get('sucursal_id')
+            
+            # Filtrar por usuario
             clientes = Cliente.objects.filter(usuario_id=usuario_id)
+            
+            # Filtrar por sucursal si se proporciona
+            if sucursal_id:
+                clientes = clientes.filter(sucursal_id=sucursal_id)
+            
             serializer = ClienteSerializer(clientes, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -34,15 +42,16 @@ class ClienteListCreateAPIView(APIView):
             data = request.data.copy()
             data['usuario'] = usuario_id
             
-            # Verificar si ya existe un cliente con el mismo nombre o cédula
-            if data.get('cedula_identidad'):
+            # Verificar si ya existe un cliente con el mismo nombre o cédula en la misma sucursal
+            if data.get('cedula_identidad') and data.get('sucursal'):
                 cliente_existente = Cliente.objects.filter(
                     usuario_id=usuario_id, 
-                    cedula_identidad=data['cedula_identidad']
+                    cedula_identidad=data['cedula_identidad'],
+                    sucursal_id=data['sucursal']
                 ).first()
                 if cliente_existente:
                     return Response(
-                        {"error": f"Ya existe un cliente con la cédula {data['cedula_identidad']}"},
+                        {"error": f"Ya existe un cliente con la cédula {data['cedula_identidad']} en esta sucursal"},
                         status=status.HTTP_400_BAD_REQUEST
                     )
             

@@ -14,6 +14,7 @@ class Cliente(models.Model):
     direccion = models.TextField(blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='clientes')
+    sucursal = models.ForeignKey('Sucursales.Sucursal', on_delete=models.CASCADE, related_name='clientes', null=True, blank=True)
     
     def __str__(self):
         if self.cedula_identidad:
@@ -35,6 +36,7 @@ class Caja(models.Model):
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     empleado = models.ForeignKey(Empleado, on_delete=models.SET_NULL, null=True, blank=True)
+    sucursal = models.ForeignKey('Sucursales.Sucursal', on_delete=models.CASCADE, related_name='cajas', null=True, blank=True)
     fecha_apertura = models.DateTimeField(auto_now_add=True)
     fecha_cierre = models.DateTimeField(null=True, blank=True)
 
@@ -69,6 +71,7 @@ class MovimientoEfectivo(models.Model):
 
 class Pedido(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    sucursal = models.ForeignKey('Sucursales.Sucursal', on_delete=models.CASCADE, related_name='pedidos', null=True, blank=True)
     fecha = models.DateField(auto_now_add=True)
     estado = models.ForeignKey(Estado, on_delete=models.CASCADE,null=True, blank=True)  
     caja = models.ForeignKey(Caja, on_delete=models.PROTECT, null=True, blank=True)

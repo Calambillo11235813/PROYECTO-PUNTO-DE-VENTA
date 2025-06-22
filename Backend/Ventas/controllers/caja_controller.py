@@ -15,9 +15,19 @@ class AbrirCajaAPIView(APIView):
     POST: Abre una nueva caja si el usuario no tiene una ya abierta.
     """
     def post(self, request, usuario_id):
-        cajas_abiertas = Caja.objects.filter(usuario_id=usuario_id, estado='abierta')
+        sucursal_id = request.data.get('sucursal')
+        
+        # Verificar si ya hay caja abierta para este usuario en esta sucursal
+        filtros = {'usuario_id': usuario_id, 'estado': 'abierta'}
+        if sucursal_id:
+            filtros['sucursal_id'] = sucursal_id
+            
+        cajas_abiertas = Caja.objects.filter(**filtros)
         if cajas_abiertas.exists():
-            return Response({"error": "Ya hay una caja abierta para este usuario."}, status=status.HTTP_400_BAD_REQUEST)
+            mensaje = f"Ya hay una caja abierta para este usuario"
+            if sucursal_id:
+                mensaje += f" en la sucursal {sucursal_id}"
+            return Response({"error": mensaje}, status=status.HTTP_400_BAD_REQUEST)
 
         data = request.data.copy()
         data['usuario'] = usuario_id
@@ -25,7 +35,7 @@ class AbrirCajaAPIView(APIView):
         if serializer.is_valid():
             caja = serializer.save()
             logger = get_logger_por_usuario(usuario_id)
-            logger.info(f"Caja abierta: {caja.id} | Usuario: {caja.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+            logger.info(f"Caja abierta: {caja.id} | Usuario: {caja.usuario.correo} | Sucursal: {caja.sucursal_id if caja.sucursal else 'Sin sucursal'} | IP: {request.META.get('REMOTE_ADDR')}")
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -35,7 +45,20 @@ class CerrarCajaAPIView(APIView):
     PATCH: Cierra la caja abierta del usuario, calcula totales y monto final.
     """
     def patch(self, request, usuario_id):
-        caja = get_object_or_404(Caja, usuario_id=usuario_id, estado='abierta')
+        sucursal_id = request.query_params.get('sucursal_id')
+        
+        # Buscar caja abierta con filtros
+        filtros = {'usuario_id': usuario_id, 'estado': 'abierta'}
+        if sucursal_id:
+            filtros['sucursal_id'] = sucursal_id
+            
+        try:
+            caja = Caja.objects.get(**filtros)
+        except Caja.DoesNotExist:
+            mensaje = f"No hay caja abierta para este usuario"
+            if sucursal_id:
+                mensaje += f" en la sucursal {sucursal_id}"
+            return Response({"error": mensaje}, status=status.HTTP_404_NOT_FOUND)
 
         # Fecha de cierre (ahora)
         caja.fecha_cierre = timezone.now()
@@ -87,7 +110,7 @@ class CerrarCajaAPIView(APIView):
         caja.save()
 
         logger = get_logger_por_usuario(usuario_id)
-        logger.info(f"Caja cerrada: {caja.id} | Usuario: {caja.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+        logger.info(f"Caja cerrada: {caja.id} | Usuario: {caja.usuario.correo} | Sucursal: {caja.sucursal_id if caja.sucursal else 'Sin sucursal'} | IP: {request.META.get('REMOTE_ADDR')}")
 
         return Response(CajaSerializer(caja).data, status=status.HTTP_200_OK)
 
@@ -98,7 +121,13 @@ class CajaActualAPIView(APIView):
     """
     def get(self, request, usuario_id):
         try:
-            caja = Caja.objects.get(usuario_id=usuario_id, estado='abierta')
+            sucursal_id = request.query_params.get('sucursal_id')
+            
+            filtros = {'usuario_id': usuario_id, 'estado': 'abierta'}
+            if sucursal_id:
+                filtros['sucursal_id'] = sucursal_id
+                
+            caja = Caja.objects.get(**filtros)
 
             # Calcular totales de ventas por tipo de pago
             ventas = Pedido.objects.filter(caja=caja)
@@ -133,12 +162,15 @@ class CajaActualAPIView(APIView):
             data['movimientos_efectivo'] = MovimientoEfectivoSerializer(movimientos, many=True).data
 
             logger = get_logger_por_usuario(usuario_id)
-            logger.info(f"Consulta caja abierta: {caja.id} | Usuario: {caja.usuario.correo} | IP: {request.META.get('REMOTE_ADDR')}")
+            logger.info(f"Consulta caja abierta: {caja.id} | Usuario: {caja.usuario.correo} | Sucursal: {caja.sucursal_id if caja.sucursal else 'Sin sucursal'} | IP: {request.META.get('REMOTE_ADDR')}")
 
             return Response(data)
 
         except Caja.DoesNotExist:
-            return Response({"error": "No hay caja abierta actualmente para este usuario."}, status=404)
+            mensaje = f"No hay caja abierta actualmente para este usuario"
+            if sucursal_id:
+                mensaje += f" en la sucursal {sucursal_id}"
+            return Response({"error": mensaje}, status=404)
 
 class CajaTransaccionesEfectivoAPIView(APIView):
     """

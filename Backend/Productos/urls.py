@@ -5,6 +5,7 @@ from Productos.controllers.inventario_controller import (InventarioListaCrearVis
 from Productos.controllers.reporte_controller import ReporteProductosView  # Nueva importación
 
 urlpatterns = [
+    path('crear/usuario/<int:usuario_id>/', ProductoListaCrearVista.as_view(), name='producto-lista-crear'),
     # Productos por usuario
     path('crear/usuario/<int:usuario_id>/', ProductoListaCrearVista.as_view(), name='producto-lista-crear'),
     # Productos por usuario y sucursal (ruta explícita)

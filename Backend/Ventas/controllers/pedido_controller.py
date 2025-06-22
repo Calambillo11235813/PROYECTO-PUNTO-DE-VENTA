@@ -3,7 +3,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from Productos.models import Inventario, Producto
-from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta
 from Ventas.models import Pedido, DetallePedido, Estado, TipoVenta, Caja
 from Ventas.serializers import PedidoSerializer
 from django.db import transaction
@@ -13,7 +12,15 @@ from decimal import Decimal
 
 class PedidoListCreateAPIView(APIView):
     def get(self, request, usuario_id):
+        sucursal_id = request.query_params.get('sucursal_id')
+        
+        # Filtrar por usuario
         pedidos = Pedido.objects.filter(usuario_id=usuario_id)
+        
+        # Filtrar por sucursal si se proporciona
+        if sucursal_id:
+            pedidos = pedidos.filter(sucursal_id=sucursal_id)
+            
         serializer = PedidoSerializer(pedidos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -21,15 +28,24 @@ class PedidoListCreateAPIView(APIView):
     def post(self, request, usuario_id):
         data = request.data.copy()
         data['usuario'] = usuario_id
+        
+        sucursal_id = data.get('sucursal')
 
-        # Validar que exista caja abierta para este usuario
-        caja_abierta = Caja.objects.filter(usuario_id=usuario_id, estado='abierta').first()
+        # Validar que exista caja abierta para este usuario en esta sucursal
+        filtros_caja = {'usuario_id': usuario_id, 'estado': 'abierta'}
+        if sucursal_id:
+            filtros_caja['sucursal_id'] = sucursal_id
+            
+        caja_abierta = Caja.objects.filter(**filtros_caja).first()
         if not caja_abierta:
+            mensaje = f"No hay caja abierta para este usuario"
+            if sucursal_id:
+                mensaje += f" en la sucursal {sucursal_id}"
             return Response(
-                {"error": "No hay caja abierta para este usuario. No se puede registrar la venta."},
+                {"error": f"{mensaje}. No se puede registrar la venta."},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        # Asociar la venta a la caja abierta
+            
         data['caja'] = caja_abierta.id
 
         detalles_data = data.get('detalles_input', [])

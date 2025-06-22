@@ -13,7 +13,7 @@ class EstadoSerializer(serializers.ModelSerializer):
 class ClienteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cliente
-        fields = ['id', 'nombre', 'cedula_identidad', 'telefono', 'direccion', 'email', 'usuario']
+        fields = ['id', 'nombre', 'cedula_identidad', 'telefono', 'direccion', 'email', 'usuario', 'sucursal']
         read_only_fields = ['id']
 
 class TipoVentaSerializer(serializers.ModelSerializer):
@@ -49,8 +49,7 @@ class CajaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Caja
         fields = '__all__'
-        read_only_fields = ['fecha_apertura', 'fecha_cierre', 'estado', 'total_efectivo', 'total_qr', 'total_tarjeta', 'monto_final'
-        , 'total_movimiento_efectivo'          ]
+        read_only_fields = ['fecha_apertura', 'fecha_cierre', 'estado', 'total_efectivo', 'total_qr', 'total_tarjeta', 'monto_final', 'total_movimiento_efectivo']
 
 class MovimientoEfectivoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -66,11 +65,10 @@ class PedidoSerializer(serializers.ModelSerializer):
     transacciones = TransaccionSerializer(many=True, read_only=True)
     transacciones_input = TransaccionSerializer(many=True, write_only=True, required=False)
 
-    # Ahora caja NO es read_only para poder recibirla en creación
     class Meta:
         model = Pedido
         fields = [
-            'id', 'fecha', 'estado', 'total', 'usuario', 
+            'id', 'fecha', 'estado', 'total', 'usuario', 'sucursal',
             'tipo_venta', 'caja', 'detalles', 'detalles_input', 
             'transacciones', 'transacciones_input'
         ]
