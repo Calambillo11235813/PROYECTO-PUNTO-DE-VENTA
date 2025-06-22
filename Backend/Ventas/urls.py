@@ -2,6 +2,18 @@ from django.urls import path
 from Ventas.controllers.tipo_venta_controller import (TipoVentaListCreateAPIView, TipoVentaRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.estado_controller import (EstadoListCreateAPIView, EstadoRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.pedido_controller import PedidoListCreateAPIView
+from Ventas.controllers.pedido_controller import PedidoListCreateAPIView, PedidoDetailAPIView
+from Ventas.controllers.tipo_pago_controller import (TipoPagoListCreateAPIView, TipoPagoRetrieveUpdateDestroyAPIView)
+from Ventas.controllers.caja_controller import AbrirCajaAPIView, CerrarCajaAPIView, CajaActualAPIView, CajaTransaccionesEfectivoAPIView
+from Ventas.controllers.movimiento_controller import MovimientoEfectivoAPIView
+from Ventas.controllers.reporte_controller import (
+    ReporteCajaView, 
+    ReporteVentasView, 
+    ReporteClientesView, 
+    ReporteMovimientosView
+)
+from Ventas.controllers.facturacion_controller import FacturarPedidoAPIView, VerificarEstadoFacturaAPIView,TestSIATConnectionAPIView
+
 
 urlpatterns = [
     # Tipos de venta (globales)
@@ -14,4 +26,37 @@ urlpatterns = [
 
     # Pedidos por usuario
     path('pedidos/usuario/<int:usuario_id>/', PedidoListCreateAPIView.as_view(), name='pedido-lista-crear'),
+    path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/', PedidoDetailAPIView.as_view(), name='pedido-detail'),
+
+    # Clientes por usuario
+    path('clientes/usuario/<int:usuario_id>/', ClienteListCreateAPIView.as_view(), name='cliente-lista-crear'),
+    path('clientes/usuario/<int:usuario_id>/<int:cliente_id>/', ClienteDetailAPIView.as_view(), name='cliente-detail'),
+   
+    # Tipos de pago   
+    path('tipo-pago/', TipoPagoListCreateAPIView.as_view(), name='tipo-pago-list-create'),
+    path('tipo-pago/<int:pk>/', TipoPagoRetrieveUpdateDestroyAPIView.as_view(), name='tipo-pago-detail'),
+
+    # Caja
+    path('caja/abrir/<int:usuario_id>/', AbrirCajaAPIView.as_view(), name='abrir-caja'),
+    path('caja/cerrar/<int:usuario_id>/', CerrarCajaAPIView.as_view(), name='cerrar-caja'),
+    path('caja/actual/<int:usuario_id>/', CajaActualAPIView.as_view(), name='caja-actual'),
+    
+    # Transacciones en efectivo por caja
+    path('caja/<int:caja_id>/transacciones/efectivo/', CajaTransaccionesEfectivoAPIView.as_view(), name='transacciones-efectivo-caja'),
+    
+    # Movimientos de efectivo en caja
+    path('caja/<int:caja_id>/movimientos/', MovimientoEfectivoAPIView.as_view(), name='movimientos-caja'),
+    
+    # NUEVOS ENDPOINTS DE REPORTES
+    path('reportes/ventas/usuario/<int:usuario_id>/', ReporteVentasView.as_view(), name='reporte-ventas'),
+    path('reportes/caja/usuario/<int:usuario_id>/', ReporteCajaView.as_view(), name='reporte-caja'),
+    path('reportes/clientes/usuario/<int:usuario_id>/', ReporteClientesView.as_view(), name='reporte-clientes'),
+    path('reportes/movimientos/usuario/<int:usuario_id>/', ReporteMovimientosView.as_view(), name='reporte-movimientos'),
+
+    # Facturación electrónica
+    path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/facturar/', FacturarPedidoAPIView.as_view(), name='facturar-pedido'),
+    path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/estado-factura/', VerificarEstadoFacturaAPIView.as_view(), name='verificar-estado-factura'),
+
+      # ✅ AGREGAR ESTA LÍNEA
+    path('test-siat-connection/<int:usuario_id>/', TestSIATConnectionAPIView.as_view(), name='test-siat-connection'),
 ]

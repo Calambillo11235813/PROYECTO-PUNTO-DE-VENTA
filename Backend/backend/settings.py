@@ -193,3 +193,68 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Configuración de Stripe - VERSIÓN SEGURA (SIN CLAVES HARDCODEADAS)
+print("=== CARGANDO CLAVES DE STRIPE ===")
+
+# Cargar desde variables de entorno únicamente
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')
+
+# Verificar que las claves estén disponibles
+if not STRIPE_SECRET_KEY:
+    raise ValueError("⚠️ STRIPE_SECRET_KEY no encontrada en variables de entorno. Verifica tu archivo .env")
+
+if not STRIPE_PUBLISHABLE_KEY:
+    raise ValueError("⚠️ STRIPE_PUBLISHABLE_KEY no encontrada en variables de entorno. Verifica tu archivo .env")
+
+print(f"✅ STRIPE_SECRET_KEY cargada desde .env: {STRIPE_SECRET_KEY[:30]}... (Longitud: {len(STRIPE_SECRET_KEY)})")
+print(f"✅ STRIPE_PUBLISHABLE_KEY cargada desde .env: {STRIPE_PUBLISHABLE_KEY[:30]}... (Longitud: {len(STRIPE_PUBLISHABLE_KEY)})")
+print("================================")
+
+# Configurar Stripe
+stripe.api_key = STRIPE_SECRET_KEY
+
+# Aplicacion para la bitacora
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'bitacora_format': {
+            'format': '[{asctime}] {levelname} - {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'bitacora_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOGS_DIR, 'bitacora.log'),
+            'formatter': 'bitacora_format',
+        },
+    },
+    'loggers': {
+        'bitacora': {
+            'handlers': ['bitacora_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+# Configuración SIAT API
+SIAT_API = {
+    'BASE_URL': 'http://127.0.0.1:8001',
+    'USERNAME': '12345678',  # NIT del emisor
+    'PASSWORD': 'tu_clave',  # Clave del emisor
+    'CODIGO_SISTEMA': 'ABC123456',  # Código de tu sistema
+    'CODIGO_AMBIENTE': '2',  # 1=Producción, 2=Pruebas
+    'CODIGO_ESTABLECIMIENTO': '0',
+    'CODIGO_PUNTO_VENTA': '0',
+    'TIMEOUT': 30,
+}

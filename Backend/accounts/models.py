@@ -57,6 +57,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     plan = models.CharField(max_length=50, blank=True, null=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=True)
+    razon_social = models.CharField(max_length=200, blank=True, null=True)  # Razón social de la empresa
+    codigo_sistema = models.CharField(max_length=50, blank=True, null=True)  # Código del sistema asignado por SIAT
+    clave_siat = models.CharField(max_length=100, blank=True, null=True)  # Clave para SIAT
+    codigo_ambiente = models.CharField(max_length=2, default='2')  # 1=Producción, 2=Pruebas
+    municipio = models.CharField(max_length=100, blank=True, null=True)
+    telefono_empresa = models.CharField(max_length=20, blank=True, null=True)
     USERNAME_FIELD = 'correo'
     REQUIRED_FIELDS = ['nombre']
    
@@ -66,6 +72,9 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.correo
 
+    # ✅ AGREGAR ESTOS CAMPOS PARA SIAT
+  
+    
 
 class Bitacora(models.Model):
     ip = models.GenericIPAddressField()
