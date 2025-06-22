@@ -2,9 +2,7 @@ from rest_framework import serializers
 from accounts.models import Usuario,Rol, Privilegio,Bitacora
 
 class UsuarioSerializer(serializers.ModelSerializer):
-    role_id = serializers.PrimaryKeyRelatedField(
-         queryset=Rol.objects.all(), source='rol', write_only=True,required=False,allow_null=True
-     )
+    
     class Meta:
         model = Usuario
         fields = [

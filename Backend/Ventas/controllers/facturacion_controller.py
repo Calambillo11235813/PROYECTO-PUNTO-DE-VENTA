@@ -15,7 +15,7 @@ class FacturarPedidoAPIView(APIView):
     POST: Envía un pedido al SIAT para facturación electrónica
     """
     permission_classes = [AllowAny]  # ✅ AGREGAR ESTA LÍNEA
-    
+    authentication_classes = []  # ✅ AGREGAR ESTA LÍNEA
     def post(self, request, usuario_id, pedido_id):
         try:
             print(f"🎯 Iniciando facturación de pedido {pedido_id} para usuario {usuario_id}")
@@ -92,7 +92,7 @@ class VerificarEstadoFacturaAPIView(APIView):
     GET: Verifica el estado de una factura en el SIAT
     """
     permission_classes = [AllowAny]  # ✅ AGREGAR ESTA LÍNEA
-    
+    authentication_classes = []
     def get(self, request, usuario_id, pedido_id):
         try:
             usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -161,7 +161,7 @@ class TestSIATConnectionAPIView(APIView):
     GET: Prueba la conexión con el SIAT
     """
     permission_classes = [AllowAny]  # ✅ AGREGAR ESTA LÍNEA
-    
+    authentication_classes = []
     def get(self, request, usuario_id):
         try:
             print(f"🧪 Probando conexión SIAT para usuario {usuario_id}")
