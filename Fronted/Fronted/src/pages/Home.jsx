@@ -14,7 +14,7 @@ const Home = () => {
             </h1>
             <p className="text-xl text-gray-700 leading-relaxed max-w-md">
               El sistema contable y de facturación electrónica más fácil de usar en Bolivia.<br />
-              Emite comprobantes electrónicos requeridos desde cualquier lugar del país.
+              Emite comprobantes electrónicos requeridos desde cualquier lugar del país. Mundo
             </p>
           </div>
 
