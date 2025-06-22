@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv # type: ignore
 import os
+import stripe
 
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
