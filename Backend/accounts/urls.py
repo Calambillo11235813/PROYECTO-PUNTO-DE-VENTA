@@ -32,6 +32,7 @@ urlpatterns = [
     path('roles/', RolListCreate.as_view(), name='roles-list-create'),
     
     path('empleados/<int:usuario_id>/', EmpleadoListCreate.as_view(), name='empleados-list-create'),
+    path('empleados/<int:usuario_id>/sucursal/<int:sucursal_id>/', EmpleadoListCreate.as_view(), name='empleados-list-create-sucursal'),
     path('empleado/<int:usuario_id>/<int:pk>/', EmpleadoDetail.as_view(), name='empleado-detail'),
     path('empleadosimple/<int:pk>/', EmpleadoDetailSimple.as_view(), name='empleado-detail-simple'),
     

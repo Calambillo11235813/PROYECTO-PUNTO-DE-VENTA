@@ -3,6 +3,8 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from Sucursales.models import Sucursal
+
+
 class Rol(models.Model):
     nombre_rol = models.CharField(max_length=100)
     def __str__(self):   
@@ -90,7 +92,7 @@ class Empleado(models.Model):
     sucursal = models.ForeignKey(
         Sucursal,
         on_delete=models.CASCADE,
-        related_name='productos',
+        related_name='empleados',
         null=True,  # Para permitir migración gradual
         blank=True
     )
