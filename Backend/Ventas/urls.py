@@ -1,8 +1,6 @@
 from django.urls import path
-from Ventas.controllers.pedido_controller import (PedidoListCreateAPIView, PedidoDetailAPIView)
-from Ventas.controllers.estado_controller import (EstadoListCreateAPIView, EstadoRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.tipo_venta_controller import (TipoVentaListCreateAPIView, TipoVentaRetrieveUpdateDestroyAPIView)
-from Ventas.controllers.cliente_controller import (ClienteListCreateAPIView, ClienteDetailAPIView)
+from Ventas.controllers.estado_controller import (EstadoListCreateAPIView, EstadoRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.pedido_controller import PedidoListCreateAPIView
 from Ventas.controllers.pedido_controller import PedidoListCreateAPIView, PedidoDetailAPIView
 from Ventas.controllers.tipo_pago_controller import (TipoPagoListCreateAPIView, TipoPagoRetrieveUpdateDestroyAPIView)
@@ -14,6 +12,8 @@ from Ventas.controllers.reporte_controller import (
     ReporteClientesView, 
     ReporteMovimientosView
 )
+from Ventas.controllers.facturacion_controller import FacturarPedidoAPIView, VerificarEstadoFacturaAPIView,TestSIATConnectionAPIView
+
 
 urlpatterns = [
     # Tipos de venta (globales)
@@ -29,8 +29,6 @@ urlpatterns = [
     path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/', PedidoDetailAPIView.as_view(), name='pedido-detail'),
 
     # Clientes por usuario
-    path('clientes/usuario/<int:usuario_id>/', ClienteListCreateAPIView.as_view(), name='cliente-lista-crear'),
-    path('clientes/usuario/<int:usuario_id>/<int:cliente_id>/', ClienteDetailAPIView.as_view(), name='cliente-detail'),
    
     # Tipos de pago   
     path('tipo-pago/', TipoPagoListCreateAPIView.as_view(), name='tipo-pago-list-create'),
@@ -52,4 +50,10 @@ urlpatterns = [
     path('reportes/caja/usuario/<int:usuario_id>/', ReporteCajaView.as_view(), name='reporte-caja'),
     path('reportes/clientes/usuario/<int:usuario_id>/', ReporteClientesView.as_view(), name='reporte-clientes'),
     path('reportes/movimientos/usuario/<int:usuario_id>/', ReporteMovimientosView.as_view(), name='reporte-movimientos'),
+
+    # Facturación electrónica
+    path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/facturar/', FacturarPedidoAPIView.as_view(), name='facturar-pedido'),
+    path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/estado-factura/', VerificarEstadoFacturaAPIView.as_view(), name='verificar-estado-factura'),
+      # ✅ AGREGAR ESTA LÍNEA
+    path('test-siat-connection/<int:usuario_id>/', TestSIATConnectionAPIView.as_view(), name='test-siat-connection'),
 ]
