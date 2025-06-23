@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { productoService } from "../../services/productoService";
-import { FaEdit, FaTrash, FaPlus, FaFilter, FaTags, FaTimes } from "react-icons/fa";
+import { FaEdit, FaTrash, FaPlus, FaFilter, FaTags, FaTimes, FaStore } from "react-icons/fa";
 import cocacolaImg from '../../assets/img/Cocacola.jpg'; // Imagen por defecto
 import ProductForm from "./ProductForm";
 import DeleteConfirmation from "./DeleteConfirmation";
-import CategorySelector from "./CategorySelector"; // Importamos el nuevo componente
+import CategorySelector from "./CategorySelector"; 
+import sucursalService from '../../services/SucursalService';
 
 const Inventario = () => {
   const [loading, setLoading] = useState(true);
@@ -18,13 +19,62 @@ const Inventario = () => {
   const [currentProduct, setCurrentProduct] = useState(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  
+  // Nuevos estados para sucursales
+  const [showSucursalSelector, setShowSucursalSelector] = useState(false);
+  const [sucursales, setSucursales] = useState([]);
+  const [selectedSucursal, setSelectedSucursal] = useState(null);
+  const [loadingSucursales, setLoadingSucursales] = useState(false);
+
+  // Obtener el ID del usuario y la sucursal actual del localStorage
+  const userId = localStorage.getItem('id');
+  const currentSucursalId = localStorage.getItem('sucursal_actual_id');
+
+  const fetchSucursales = async () => {
+    try {
+      setLoadingSucursales(true);
+      const data = await sucursalService.getSucursalesByUsuario(userId);
+      setSucursales(data);
+      
+      // Establecer la sucursal seleccionada basada en localStorage
+      if (currentSucursalId) {
+        const current = data.find(suc => suc.id == currentSucursalId);
+        if (current) {
+          setSelectedSucursal(current);
+        }
+      }
+    } catch (error) {
+      console.error("Error al cargar sucursales:", error);
+    } finally {
+      setLoadingSucursales(false);
+    }
+  };
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const fetchedData = await productoService.getAllProducts();
-      setProducts(fetchedData);
-      applyFilters(fetchedData, selectedCategory);
+      
+      // Si hay una sucursal seleccionada, obtener productos específicos de esa sucursal
+      if (selectedSucursal) {
+        console.log(`🔍 Buscando productos específicos para la sucursal: ${selectedSucursal.id}`);
+        const fetchedData = await productoService.getProductosBySucursal(userId, selectedSucursal.id);
+        console.log('📋 Productos obtenidos para la sucursal:', fetchedData);
+        setProducts(fetchedData);
+        applyFilters(fetchedData, selectedCategory);
+      } else if (currentSucursalId) {
+        // Usar la sucursal actual del localStorage
+        console.log(`🔍 Usando sucursal actual del localStorage: ${currentSucursalId}`);
+        const fetchedData = await productoService.getProductosBySucursal(userId, currentSucursalId);
+        console.log('📋 Productos obtenidos para la sucursal actual:', fetchedData);
+        setProducts(fetchedData);
+        applyFilters(fetchedData, selectedCategory);
+      } else {
+        // Cargar todos los productos (comportamiento original)
+        console.log('🔍 Cargando todos los productos (sin filtro de sucursal)');
+        const fetchedData = await productoService.getAllProducts();
+        setProducts(fetchedData);
+        applyFilters(fetchedData, selectedCategory);
+      }
     } catch (error) {
       console.error("Error al cargar productos:", error);
     } finally {
@@ -45,12 +95,16 @@ const Inventario = () => {
   };
 
   useEffect(() => {
+    fetchSucursales();
+  }, [userId]);
+
+  useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [selectedSucursal, currentSucursalId]);
 
   useEffect(() => {
     applyFilters(products, selectedCategory);
-  }, [selectedCategory]);
+  }, [selectedCategory, products]);
 
   const handleProductSaved = () => {
     // Refrescar la lista de productos
@@ -101,13 +155,30 @@ const Inventario = () => {
     setSelectedCategory(category);
     setShowCategoryModal(false);
   };
+  
+  // Nuevo manejador para seleccionar sucursal
+  const handleSucursalChange = (sucursal) => {
+    setSelectedSucursal(sucursal);
+    localStorage.setItem('sucursal_actual_id', sucursal.id);
+    localStorage.setItem('sucursal_actual_nombre', sucursal.nombre);
+    setShowSucursalSelector(false);
+  };
 
   return (
-    <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="p-6  dark:bg-white-800 rounded-lg shadow-md">
+    <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="p-6 dark:bg-white-800 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">
         
         <h2 className="text-2xl font-bold title-icon dark:text-gray">Inventario</h2>
         <div className="flex space-x-2">
+          {/* Indicador de sucursal actual */}
+          <button 
+            onClick={() => setShowSucursalSelector(true)}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
+          >
+            <FaStore className="mr-2" /> 
+            {selectedSucursal ? selectedSucursal.nombre : "Seleccionar Sucursal"}
+          </button>
+          
           {selectedCategory && (
             <div className="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg flex items-center">
               <span className="mr-1">Filtrando por:</span>
@@ -144,13 +215,18 @@ const Inventario = () => {
           <div className="w-10 h-10 mt-4 border-4 border-gray-300 border-t-green-600 rounded-full animate-spin"></div>
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="text-center text-gray-600 dark:text-gray-300 text-lg">
-          {selectedCategory 
-            ? `No hay productos en la categoría "${selectedCategory.nombre}".`
+        <div className="text-center text-gray-600 dark:text-gray-300 text-lg py-8">
+          {selectedSucursal 
+            ? `No hay productos en la sucursal "${selectedSucursal.nombre}"`
             : "No hay productos disponibles."}
+          
+          {selectedCategory && 
+            <div>con la categoría "{selectedCategory.nombre}".</div>
+          }
         </div>
       ) : (
         <div className="overflow-x-auto">
+          {/* Tabla existente */}
           <table className="min-w-full border border-gray-200 dark:border-gray-600 text-center">
             <thead className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
               <tr>
@@ -229,7 +305,55 @@ const Inventario = () => {
         </div>
       )}
 
-      {/* Componente modular para añadir/editar producto */}
+      {/* Modal de selección de sucursal */}
+      {showSucursalSelector && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Seleccionar Sucursal</h3>
+              <button 
+                onClick={() => setShowSucursalSelector(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {loadingSucursales ? (
+              <div className="flex justify-center py-8">
+                <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : (
+              <div className="max-h-96 overflow-y-auto">
+                {sucursales.map(sucursal => (
+                  <button
+                    key={sucursal.id}
+                    onClick={() => handleSucursalChange(sucursal)}
+                    className={`w-full text-left p-4 rounded mb-2 flex items-center ${
+                      selectedSucursal && selectedSucursal.id === sucursal.id
+                        ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                        : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-200'
+                    }`}
+                  >
+                    <FaStore className="mr-3 text-blue-600" />
+                    <div>
+                      <div className="font-medium">{sucursal.nombre}</div>
+                      <div className="text-sm text-gray-500">{sucursal.direccion}</div>
+                    </div>
+                    {selectedSucursal && selectedSucursal.id === sucursal.id && (
+                      <span className="ml-auto bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">
+                        Actual
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Componentes modales existentes */}
       <ProductForm
         isOpen={showModal}
         onClose={() => setShowModal(false)}
@@ -238,7 +362,6 @@ const Inventario = () => {
         onProductSaved={handleProductSaved}
       />
 
-      {/* Componente modular para confirmar eliminación */}
       <DeleteConfirmation
         isOpen={deleteConfirmModal}
         onClose={() => setDeleteConfirmModal(false)}
@@ -247,7 +370,6 @@ const Inventario = () => {
         isDeleting={deleting}
       />
 
-      {/* Nuevo componente para seleccionar categorías */}
       <CategorySelector
         isOpen={showCategoryModal}
         onClose={() => setShowCategoryModal(false)}

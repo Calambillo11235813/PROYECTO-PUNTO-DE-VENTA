@@ -139,7 +139,26 @@ export const empleadoService = {
       console.error(`Error al cambiar el estado del empleado con ID ${empleadoId}:`, error);
       throw error;
     }
-  }
+  },
+
+  /**
+   * Obtener empleados por sucursal específica
+   * @param {number} userId - ID del usuario (dueño/admin)
+   * @param {number} sucursalId - ID de la sucursal
+   * @returns {Promise<Array>} - Lista de empleados de la sucursal
+   */
+  getEmpleadosBySucursal: async (userId, sucursalId) => {
+    try {
+      console.log(`🔍 Obteniendo empleados del usuario ${userId} en la sucursal ${sucursalId}...`);
+      const response = await apiClient.get(`/accounts/empleados/${userId}/sucursal/${sucursalId}/`);
+      console.log('✅ Empleados por sucursal obtenidos:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error al obtener empleados por sucursal:', 
+        error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
 };
 
 export default empleadoService;

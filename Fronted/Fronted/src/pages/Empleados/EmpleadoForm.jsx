@@ -94,7 +94,7 @@ const EmpleadoForm = () => {
       
       // Datos adaptados al formato esperado por la API
       const empleadoData = {
-        nombre: `${formData.nombre} ${formData.apellido}`.trim(), // Combinar nombre y apellido
+        nombre: `${formData.nombre} ${formData.apellido}`.trim(),
         correo: formData.email,
         password: formData.contraseña,
         telefono: formData.telefono || "", 

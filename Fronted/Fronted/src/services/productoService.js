@@ -157,4 +157,22 @@ export const productoService = {
       throw error;
     }
   },
+
+  /**
+   * Obtiene los productos de una sucursal específica
+   * @param {number} userId - ID del usuario
+   * @param {number} sucursalId - ID de la sucursal
+   * @returns {Promise<Array>} - Lista de productos de la sucursal
+   */
+  getProductosBySucursal: async (userId, sucursalId) => {
+    try {
+      console.log(`🔍 Obteniendo productos del usuario ${userId} en la sucursal ${sucursalId}...`);
+      const response = await api.get(`/productos/crear/usuario/${userId}/sucursal/${sucursalId}/`);
+      console.log('✅ Productos por sucursal obtenidos:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error al obtener productos por sucursal:', error.response ? error.response.data : error.message);
+      throw error;
+    }
+  }
 };
