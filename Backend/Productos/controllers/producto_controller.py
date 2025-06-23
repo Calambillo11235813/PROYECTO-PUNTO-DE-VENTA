@@ -16,19 +16,22 @@ class ProductoListaCrearVista(APIView):
     Vista para listar todos los productos de una empresa o crear uno nuevo.
     """
 
-    def get(self, request, empresa_id):
+    def get(self, request, usuario_id, sucursal_id=None):
         """
         Obtener la lista de productos de una empresa específica (GET)
         Si se pasa sucursal_id, filtra también por sucursal.
         """
-        productos = Producto.objects.filter(empresa_id=empresa_id)
+        if sucursal_id is not None:
+            productos = Producto.objects.filter(usuario_id=usuario_id, sucursal_id=sucursal_id)
+        else:
+            productos = Producto.objects.filter(usuario_id=usuario_id)
         serializer = ProductoSerializer(productos, many=True)
         return Response(serializer.data)
-
-    def post(self, request, empresa_id):
-        """
-        Crear un nuevo producto asociado a una empresa específica (POST)
-        """
+    
+    
+    # @check_product_limit  # Verificar límite antes de procesar
+    # @register_resource_usage('product')  # Registrar uso después de crear exitosamente
+    def post(self, request, usuario_id):
         data = request.data.copy()
         nombre_producto = data.get('nombre')
         

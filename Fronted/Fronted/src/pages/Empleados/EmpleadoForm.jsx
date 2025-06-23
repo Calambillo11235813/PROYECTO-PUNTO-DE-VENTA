@@ -29,6 +29,7 @@ const EmpleadoForm = () => {
         try {
           setLoading(true);
           const data = await empleadoService.getEmpleadoById(id);
+          console.log('📥 Datos del empleado recibidos:', data);
           
           // Separar el nombre completo en nombre y apellido
           const nombreCompleto = data.nombre || '';
@@ -38,6 +39,15 @@ const EmpleadoForm = () => {
           let primerNombre = nombrePartes[0] || '';
           let apellido = nombrePartes.slice(1).join(' ');
           
+          // Extraer el ID de sucursal, si existe
+          let sucursalId = null;
+          if (data.sucursal) {
+            sucursalId = typeof data.sucursal === 'object' ? 
+              data.sucursal.id : 
+              data.sucursal;
+            console.log('✅ ID de sucursal encontrado en datos del empleado:', sucursalId);
+          }
+          
           setFormData({
             nombre: primerNombre,
             apellido: apellido,
@@ -46,7 +56,8 @@ const EmpleadoForm = () => {
             rol: data.rol || '',
             direccion: data.direccion || '',
             fecha_contratacion: data.fecha_contratacion ? data.fecha_contratacion.split('T')[0] : '',
-            contraseña: '' // Mantener contraseña en blanco al editar
+            contraseña: '',  // Mantener contraseña en blanco al editar
+            sucursal_id: sucursalId // Guardar el ID de sucursal
           });
         } catch (error) {
           console.error('Error al cargar datos del empleado:', error);
@@ -78,6 +89,9 @@ const EmpleadoForm = () => {
     try {
       setLoading(true);
       
+      // Obtener el ID de la sucursal actual
+      const sucursalId = localStorage.getItem('sucursal_actual_id');
+      
       // Datos adaptados al formato esperado por la API
       const empleadoData = {
         nombre: `${formData.nombre} ${formData.apellido}`.trim(), // Combinar nombre y apellido
@@ -86,22 +100,30 @@ const EmpleadoForm = () => {
         telefono: formData.telefono || "", 
         rol: formData.rol,
         direccion: formData.direccion || "",
-        fecha_contratacion: formData.fecha_contratacion || null
+        fecha_contratacion: formData.fecha_contratacion || null,
+        sucursal: sucursalId ? parseInt(sucursalId) : null
       };
       
-
+      if (sucursalId) {
+        console.log('✅ ID de sucursal incluido en formulario:', sucursalId);
+      } else {
+        console.warn('⚠️ No se encontró ID de sucursal para asociar al empleado');
+      }
       
-      console.log('Datos a enviar:', empleadoData);
+      console.log('📋 Datos completos del empleado a enviar:', empleadoData);
       
       if (isEditing) {
         if (!empleadoData.password) {
           delete empleadoData.password;
         }
         
-        await empleadoService.updateEmpleado(id, empleadoData);
+        const resultado = await empleadoService.updateEmpleado(id, empleadoData);
+        console.log('✅ Empleado actualizado con éxito:', resultado);
         alert('Empleado actualizado con éxito');
       } else {
-        await empleadoService.createEmpleado(empleadoData);
+        const resultado = await empleadoService.createEmpleado(empleadoData);
+        console.log('✅ Empleado creado con éxito:', resultado);
+        console.log('📊 Sucursal del empleado:', resultado.sucursal || 'No asignada');
         alert('Empleado creado con éxito');
       }
       navigate('/admin/empleados');

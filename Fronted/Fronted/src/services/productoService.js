@@ -25,6 +25,7 @@ export const productoService = {
   createProduct: async (formData) => {
     console.log('Entrando a createProduct() con FormData');
     const id = localStorage.getItem('id');
+    const sucursal_id = localStorage.getItem('sucursal_actual_id');
     
     try {
       // Verificar el contenido del FormData
@@ -32,6 +33,22 @@ export const productoService = {
       console.log('Contenido del FormData:');
       for (let pair of formData.entries()) {
         console.log(pair[0] + ': ' + (pair[0] === 'imagen' ? 'Archivo: ' + pair[1].name : pair[1]));
+      }
+      
+      // Añadir el ID de la sucursal al formData (verificar primero si ya existe)
+      if (sucursal_id && !formData.has('sucursal_id')) {
+        formData.append('sucursal_id', sucursal_id);
+        console.log('✅ ID de sucursal añadido al FormData:', sucursal_id);
+      } else if (formData.has('sucursal_id')) {
+        console.log('✅ FormData ya contiene sucursal_id:', formData.get('sucursal_id'));
+      } else {
+        console.warn('⚠️ No se encontró ID de sucursal en localStorage');
+      }
+      
+      // Verificar nuevamente el formData después de añadir sucursal_id
+      console.log('FormData actualizado con sucursal_id:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
       }
       
       // Configuración especial para enviar FormData con archivos
@@ -45,6 +62,16 @@ export const productoService = {
       const response = await api.post(`productos/crear/usuario/${id}/`, formData, config);
       
       console.log('✅ Producto creado con éxito:', response.data);
+      
+      // Verificar la estructura de la respuesta para la sucursal
+      if (response.data.sucursal) {
+        console.log('✅ Sucursal del producto creado:', response.data.sucursal.id);
+      } else if (response.data.sucursal_id) {
+        console.log('✅ Sucursal del producto creado:', response.data.sucursal_id);
+      } else {
+        console.warn('⚠️ No se encontró información de sucursal en la respuesta');
+      }
+      
       // Asegurarse de que el stock se refleje correctamente
       if (response.data && !response.data.stock && formData.get('stock_inicial')) {
         response.data.stock = parseInt(formData.get('stock_inicial'));

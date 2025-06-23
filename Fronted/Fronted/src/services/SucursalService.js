@@ -47,8 +47,29 @@ const sucursalService = {
   createSucursal: async (sucursalData) => {
     try {
       console.log('Creando nueva sucursal:', sucursalData);
-      const response = await apiClient.post('/sucursales/sucursales/', sucursalData);
+      
+      // Asegurarse de que los campos vacíos se envíen como null
+      const dataToSend = {
+        ...sucursalData,
+        // Convertir campos vacíos a null
+        telefono: sucursalData.telefono || null,
+        email: sucursalData.email || null,
+        horario: sucursalData.horario || null
+      };
+      
+      const response = await apiClient.post('/sucursales/sucursales/', dataToSend);
       console.log('✅ Sucursal creada correctamente:', response.data);
+      
+      // Verificar si es la primera sucursal y actualizarla automáticamente como actual
+      const userId = localStorage.getItem('id');
+      const sucursales = await sucursalService.getSucursalesByUsuario(userId);
+      
+      if (sucursales.length === 1) {
+        localStorage.setItem('sucursal_actual_id', response.data.id);
+        localStorage.setItem('sucursal_actual_nombre', response.data.nombre);
+        console.log('✅ Primera sucursal establecida como actual:', response.data.id);
+      }
+      
       return response.data;
     } catch (error) {
       console.error('❌ Error al crear sucursal:', error.response ? error.response.data : error.message);

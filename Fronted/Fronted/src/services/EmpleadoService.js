@@ -42,14 +42,30 @@ export const empleadoService = {
   createEmpleado: async (empleadoData) => {
     try {
       const id = localStorage.getItem('id');
+      const sucursalId = localStorage.getItem('sucursal_actual_id');
+      
       if (!id) {
         throw new Error('No se encontró ID de usuario');
       }
       
+      // Agregar el ID de la sucursal si está disponible
+      if (sucursalId) {
+        empleadoData.sucursal = parseInt(sucursalId);
+        console.log('✅ ID de sucursal añadido al empleado:', sucursalId);
+      } else {
+        console.warn('⚠️ No se encontró ID de sucursal en localStorage');
+      }
+      
+      console.log('📤 Datos del empleado a enviar:', empleadoData);
+      
       const response = await apiClient.post(`/accounts/empleados/${id}/`, empleadoData);
+      console.log('📥 Respuesta del servidor:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error al crear empleado:', error);
+      console.error('❌ Error al crear empleado:', error);
+      if (error.response) {
+        console.error('Detalles del error:', error.response.data);
+      }
       throw error;
     }
   },
@@ -58,15 +74,29 @@ export const empleadoService = {
   updateEmpleado: async (empleadoId, empleadoData) => {
     try {
       const usuarioId = localStorage.getItem('id');
+      const sucursalId = localStorage.getItem('sucursal_actual_id');
+      
       if (!usuarioId) {
         throw new Error('No se encontró ID de usuario');
       }
       
+      // Agregar el ID de la sucursal si está disponible y no existe ya
+      if (sucursalId && !empleadoData.sucursal) {
+        empleadoData.sucursal = parseInt(sucursalId);
+        console.log('✅ ID de sucursal añadido al empleado para actualización:', sucursalId);
+      }
+      
+      console.log('📤 Datos de actualización de empleado:', empleadoData);
+      
       // URL específica para actualización
       const response = await apiClient.put(`/accounts/empleado/${usuarioId}/${empleadoId}/`, empleadoData);
+      console.log('📥 Respuesta del servidor (actualización):', response.data);
       return response.data;
     } catch (error) {
-      console.error(`Error al actualizar el empleado con ID ${empleadoId}:`, error);
+      console.error(`❌ Error al actualizar el empleado con ID ${empleadoId}:`, error);
+      if (error.response) {
+        console.error('Detalles del error:', error.response.data);
+      }
       throw error;
     }
   },
