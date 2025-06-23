@@ -20,10 +20,69 @@ const authService = {
     }
   },
     
-  register: async ({ nombre, correo, password, nombre_empresa, direccion, nit_empresa, role_id = 1 }) => {
+  register: async ({ 
+    nombre, 
+    correo, 
+    password, 
+    nombre_empresa, 
+    direccion, 
+    nit_empresa, 
+    razon_social,
+    municipio,
+    telefono_empresa,
+    clave_siat,
+    role_id = 1 
+  }) => {
     try {
-      console.log('Intentando registro con:', { nombre, correo, password, nombre_empresa, direccion, nit_empresa, role_id });
+      console.log('Intentando registro con:', { 
+        nombre, 
+        correo, 
+        password, 
+        nombre_empresa, 
+        direccion, 
+        nit_empresa,
+        razon_social,
+        municipio,
+        telefono_empresa,
+        clave_siat,
+        role_id 
+      });
       
+      // Validar campos requeridos
+      const requiredFields = {
+        nombre,
+        correo,
+        password,
+        nombre_empresa,
+        direccion,
+        nit_empresa,
+        razon_social,
+        municipio,
+        telefono_empresa,
+        clave_siat
+      };
+
+      const missingFields = Object.entries(requiredFields)
+        .filter(([key, value]) => !value || value.trim() === '')
+        .map(([key]) => key);
+
+      if (missingFields.length > 0) {
+        throw new Error(`Campos requeridos faltantes: ${missingFields.join(', ')}`);
+      }
+
+      // Validaciones adicionales
+      if (!/^\d{7,15}$/.test(nit_empresa.replace(/\s/g, ''))) {
+        throw new Error('NIT debe tener entre 7 y 15 dígitos');
+      }
+
+      if (!/^\d{7,15}$/.test(telefono_empresa.replace(/\s/g, ''))) {
+        throw new Error('Teléfono debe tener entre 7 y 15 dígitos');
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+        throw new Error('Formato de correo electrónico inválido');
+      }
+
       // Usamos publicApi para registro (no requiere autenticación)
       const response = await publicApi.post('/accounts/usuarios/', {
         nombre,
@@ -32,13 +91,33 @@ const authService = {
         nombre_empresa,
         direccion,
         nit_empresa,
+        razon_social,
+        municipio,
+        telefono_empresa,
+        clave_siat,
+        // Campos estáticos según tu modelo
+        codigo_sistema: 'SYS100', 
+        codigo_ambiente: '2', // 2=Pruebas por defecto
       });
       
       console.log('Registro exitoso:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error en registro:', error);
-      const errorMessage = error.response?.data?.error || 'Error al conectar con el servidor';
+      
+      // Manejar errores específicos del backend
+      if (error.response?.status === 400) {
+        const backendError = error.response.data;
+        if (typeof backendError === 'object') {
+          // Si son errores de validación de campos
+          const fieldErrors = Object.entries(backendError)
+            .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+            .join('; ');
+          throw new Error(`Errores de validación: ${fieldErrors}`);
+        }
+      }
+      
+      const errorMessage = error.response?.data?.error || error.message || 'Error al conectar con el servidor';
       throw new Error(errorMessage);
     }
   },
@@ -63,26 +142,42 @@ const authService = {
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
 
-      // Resto del código igual...
+      // Gestión de datos de usuario y empleado
       if (response.data.tipo === "empleado") {
         localStorage.setItem('user_data', JSON.stringify(response.data.empleado));
         localStorage.setItem('empleado_id', response.data.empleado.id);
         console.log('Empleado ID:', response.data.empleado.id);
-        const a = await empleadoService.getEmpleadoById(response.data.empleado.id);
-        console.log('Empleado:', a);
-        localStorage.setItem('id', a.usuario);
-
-        console.log('ID de usuario 222:', a.usuario);
+        
+        const empleadoData = await empleadoService.getEmpleadoById(response.data.empleado.id);
+        console.log('Empleado:', empleadoData);
+        
+        localStorage.setItem('id', empleadoData.usuario);
         localStorage.setItem('usuario_id', response.data.empleado.usuario);
         localStorage.setItem('user_type', 'empleado');
-
-        localStorage.setItem('rol',response.data.empleado.rol);
+        localStorage.setItem('rol', response.data.empleado.rol);
+        
+        console.log('ID de usuario:', empleadoData.usuario);
         console.log('Rol:', response.data.empleado.rol);
     
       } else {
+        // Guardar datos completos del usuario
         localStorage.setItem('user_data', JSON.stringify(response.data.usuario));
         localStorage.setItem('id', response.data.usuario.id);
         localStorage.setItem('user_type', 'usuario');
+        
+        // Guardar información adicional del usuario (campos actualizados)
+        localStorage.setItem('nombre_empresa', response.data.usuario.nombre_empresa || '');
+        localStorage.setItem('nit_empresa', response.data.usuario.nit_empresa || '');
+        localStorage.setItem('razon_social', response.data.usuario.razon_social || '');
+        localStorage.setItem('municipio', response.data.usuario.municipio || '');
+        localStorage.setItem('telefono_empresa', response.data.usuario.telefono_empresa || '');
+        localStorage.setItem('clave_siat', response.data.usuario.clave_siat || '');
+        localStorage.setItem('codigo_sistema', response.data.usuario.codigo_sistema || '');
+        localStorage.setItem('codigo_ambiente', response.data.usuario.codigo_ambiente || '2');
+        
+        // Información del plan (string independiente de la tabla Plan)
+        localStorage.setItem('plan', response.data.usuario.plan || '');
+        localStorage.setItem('fecha_expiracion', response.data.usuario.fecha_expiracion || '');
         
         if (response.data.usuario.rol) {
           localStorage.setItem('rol', response.data.usuario.rol);
@@ -111,6 +206,103 @@ const authService = {
   getCurrentUser: () => {
     const userData = localStorage.getItem('user_data');
     return userData ? JSON.parse(userData) : null;
+  },
+
+  // Obtener información completa del usuario incluyendo plan y empresa
+  getCurrentUserComplete: () => {
+    const userData = authService.getCurrentUser();
+    if (!userData) return null;
+
+    return {
+      ...userData,
+      empresa: {
+        nombre_empresa: localStorage.getItem('nombre_empresa'),
+        nit_empresa: localStorage.getItem('nit_empresa'),
+        razon_social: localStorage.getItem('razon_social'),
+        municipio: localStorage.getItem('municipio'),
+        telefono_empresa: localStorage.getItem('telefono_empresa'),
+      },
+      siat: {
+        clave_siat: localStorage.getItem('clave_siat'),
+        codigo_sistema: localStorage.getItem('codigo_sistema'),
+        codigo_ambiente: localStorage.getItem('codigo_ambiente'),
+      },
+      plan: {
+        nombre: localStorage.getItem('plan'),
+        fecha_expiracion: localStorage.getItem('fecha_expiracion'),
+      }
+    };
+  },
+
+  // Obtener información de la empresa
+  getCompanyInfo: () => {
+    return {
+      nombre_empresa: localStorage.getItem('nombre_empresa') || '',
+      nit_empresa: localStorage.getItem('nit_empresa') || '',
+      razon_social: localStorage.getItem('razon_social') || '',
+      municipio: localStorage.getItem('municipio') || '',
+      telefono_empresa: localStorage.getItem('telefono_empresa') || '',
+      direccion: authService.getCurrentUser()?.direccion || '',
+    };
+  },
+
+  // Obtener información SIAT
+  getSiatInfo: () => {
+    return {
+      clave_siat: localStorage.getItem('clave_siat') || '',
+      codigo_sistema: localStorage.getItem('codigo_sistema') || '',
+      codigo_ambiente: localStorage.getItem('codigo_ambiente') || '2',
+    };
+  },
+
+  // Obtener información del plan actual
+  getPlanInfo: () => {
+    return {
+      nombre: localStorage.getItem('plan') || '',
+      fecha_expiracion: localStorage.getItem('fecha_expiracion') || '',
+    };
+  },
+
+  // Verificar si el plan está activo
+  isPlanActive: () => {
+    const fechaExpiracion = localStorage.getItem('fecha_expiracion');
+    if (!fechaExpiracion) return false;
+    
+    const fechaExp = new Date(fechaExpiracion);
+    const fechaActual = new Date();
+    
+    return fechaExp > fechaActual;
+  },
+
+  // Actualizar información del usuario en localStorage
+  updateUserInfo: (userData) => {
+    localStorage.setItem('user_data', JSON.stringify(userData));
+    
+    // Actualizar campos específicos si están presentes
+    if (userData.nombre_empresa !== undefined) {
+      localStorage.setItem('nombre_empresa', userData.nombre_empresa || '');
+    }
+    if (userData.nit_empresa !== undefined) {
+      localStorage.setItem('nit_empresa', userData.nit_empresa || '');
+    }
+    if (userData.razon_social !== undefined) {
+      localStorage.setItem('razon_social', userData.razon_social || '');
+    }
+    if (userData.municipio !== undefined) {
+      localStorage.setItem('municipio', userData.municipio || '');
+    }
+    if (userData.telefono_empresa !== undefined) {
+      localStorage.setItem('telefono_empresa', userData.telefono_empresa || '');
+    }
+    if (userData.clave_siat !== undefined) {
+      localStorage.setItem('clave_siat', userData.clave_siat || '');
+    }
+    if (userData.plan !== undefined) {
+      localStorage.setItem('plan', userData.plan || '');
+    }
+    if (userData.fecha_expiracion !== undefined) {
+      localStorage.setItem('fecha_expiracion', userData.fecha_expiracion || '');
+    }
   },
   
   // Refrescar el token cuando expire
