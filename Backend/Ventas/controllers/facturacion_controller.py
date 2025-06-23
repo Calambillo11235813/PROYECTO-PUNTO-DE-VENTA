@@ -125,6 +125,7 @@ class VerificarEstadoFacturaAPIView(APIView):
                     'cuf': pedido.cuf,
                     'codigo_recepcion': pedido.codigo_recepcion,
                     'empresa': usuario.razon_social or usuario.nombre_empresa,
+                    'nit': usuario.nit_empresa,
                     'mensaje': f'Estado de factura: {estado}',
                     'fecha_emision': resultado.get('fechaEmision'),
                     'cuis': resultado.get('cuis')
@@ -139,6 +140,7 @@ class VerificarEstadoFacturaAPIView(APIView):
                     'transaccion_exitosa': False,
                     'cuf': pedido.cuf,
                     'empresa': usuario.razon_social or usuario.nombre_empresa,
+                    'nit': usuario.nit_empresa,
                     'mensaje': f'Estado de factura: {estado}',
                     'error_detalle': resultado.get('error', 'Sin detalles')
                 }, status=status.HTTP_200_OK)
@@ -147,7 +149,8 @@ class VerificarEstadoFacturaAPIView(APIView):
                 return Response({
                     'success': False,
                     'error': resultado.get('error', 'Error desconocido al verificar estado'),
-                    'empresa': usuario.razon_social or usuario.nombre_empresa
+                    'empresa': usuario.razon_social or usuario.nombre_empresa,
+                    'nit': usuario.nit_empresa
                 }, status=status.HTTP_400_BAD_REQUEST)
                 
         except Exception as e:
