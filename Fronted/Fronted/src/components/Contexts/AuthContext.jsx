@@ -54,14 +54,24 @@ export const AuthProvider = ({ children }) => {
     return localStorage.getItem('user_type') === 'empleado';
   };
 
+  // Modificar la función getUserRole
   const getUserRole = () => {
     const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+    const storedRole = localStorage.getItem('rol');
+    const userType = localStorage.getItem('user_type');
     
-    if (localStorage.getItem('user_type') === 'empleado') {
-      return userData.rol; // Para empleados, devolvemos el nombre del rol
-    } else {
-      return userData.rol?.id || 1; // Para usuarios, devolvemos el id del rol
+    // Si es usuario principal (no empleado), devolver 'admin'
+    if (userType === 'usuario') {
+      return 'admin';
     }
+    
+    // Para empleados, devolver su rol específico
+    if (localStorage.getItem('user_type') === 'empleado') {
+      return userData.rol || storedRole; 
+    }
+    
+    // Valor por defecto
+    return storedRole || 'undefined';
   };
 
   return (

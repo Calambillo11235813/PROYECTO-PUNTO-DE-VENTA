@@ -4,10 +4,11 @@ import { useAuth } from '../Contexts/AuthContext';
 // Importar el servicio de sucursales
 import sucursalService from '../../services/SucursalService';
 
-// Definimos las rutas permitidas por rol (sin cambios)
+// Definimos las rutas permitidas por rol (con el cambio necesario)
 const rolePermissions = {
   'undefined': ['*'], // Superusuario - acceso a todo como string
   undefined: ['*'],   // También manejamos el caso de undefined real
+  'admin': ['*'],     // AÑADIDO: Explicitamente dar acceso completo al rol 'admin'
   Supervisor: [
     '/admin',
     '/admin/inventario',
@@ -215,20 +216,41 @@ export const AdminRoute = () => {
   
   // Verificar si el usuario tiene acceso a la ruta actual
   const hasAccess = () => {
-    // Si el rol es "undefined" (como string) o es null/undefined, considerarlo superadmin
-    if (!userRole || userRole === 'undefined') {
+    // Obtener el rol directamente del localStorage para evitar problemas de sincronización
+    const userRole = localStorage.getItem('rol');
+    console.log("Verificando acceso para rol:", userRole);
+
+    // Si no hay información de rol, denegar acceso
+    if (!userRole) {
+      console.log("No se encontró información de rol");
+      return false;
+    }
+
+    // Permitir acceso completo a administradores
+    if (userRole.toLowerCase() === 'admin') {
+      console.log("Acceso permitido: rol admin");
+      return true;
+    }
+
+    // Acceso basado en el mapa de permisos
+    const allowedRoutes = rolePermissions[userRole] || [];
+    
+    // Verificar si tiene permiso para todas las rutas
+    if (allowedRoutes.includes('*')) {
+      console.log(`Rol ${userRole} tiene acceso completo`);
       return true;
     }
     
-    const allowedPaths = rolePermissions[userRole] || [];
+    // Verificar acceso a la ruta específica
+    const hasRouteAccess = allowedRoutes.some(route => {
+      // Verificar acceso exacto o a subrutas
+      if (currentPath === route) return true;
+      if (currentPath.startsWith(route + '/')) return true;
+      return false;
+    });
     
-    // Si tiene acceso a todas las rutas
-    if (allowedPaths.includes('*')) {
-      return true;
-    }
-    
-    // Verificar si la ruta actual está en las rutas permitidas o si es una subruta
-    return allowedPaths.some(path => currentPath === path || currentPath.startsWith(`${path}/`));
+    console.log(`Usuario con rol ${userRole} ${hasRouteAccess ? 'TIENE' : 'NO tiene'} acceso a ${currentPath}`);
+    return hasRouteAccess;
   };
   
   if (hasAccess()) {
@@ -246,6 +268,21 @@ export const AdminRoute = () => {
       case 'Gestion de inventario':
         return <Navigate to="/admin/inventario" replace />;
       default:
+        // Dentro del componente AdminRoute, antes de redireccionar por falta de acceso
+        if (!hasAccess()) {
+          console.log("==========================================");
+          console.log("DIAGNÓSTICO DE ACCESO DENEGADO");
+          console.log("------------------------------------------");
+          console.log("Ruta solicitada:", currentPath);
+          console.log("Rol en localStorage:", localStorage.getItem('rol'));
+          console.log("Tipo de usuario:", localStorage.getItem('user_type'));
+          console.log("Datos de usuario:", JSON.parse(localStorage.getItem('user_data') || '{}'));
+          console.log("Permisos disponibles para este rol:", rolePermissions[localStorage.getItem('rol')] || []);
+          console.log("==========================================");
+          
+          return <Navigate to="/acceso-denegado" replace />;
+        }
+        
         return <Navigate to="/acceso-denegado" replace />;
     }
   }

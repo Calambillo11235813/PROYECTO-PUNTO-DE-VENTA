@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import {
@@ -19,7 +19,7 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaUndoAlt,
-  FaBuilding  // Añadir este icono
+  FaBuilding
 } from "react-icons/fa";
 import authService from "../services/authService";
 import useTheme from "../hooks/useTheme";
@@ -28,22 +28,26 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
   const navigate = useNavigate();
-  const userRole = localStorage.getItem("rol");
   
-  // Incluir resetPalette en las funciones extraídas del hook
   const { 
     palette, 
     handleColorChange, 
     savePalette, 
-    resetPalette,  // Añadida esta función
+    resetPalette,
     colorNames 
   } = useTheme();
+
+  useEffect(() => {
+    if (localStorage.getItem('user_type') === 'usuario') {
+      localStorage.setItem('rol', 'admin');
+      console.log('Sidebar: Forzando rol admin para usuario principal');
+    }
+  }, []);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
 
-  // Función para alternar la visibilidad de la paleta de colores
   const togglePalette = () => {
     setIsPaletteOpen(!isPaletteOpen);
   };
@@ -56,7 +60,6 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
     navigate("/login");
   };
 
-  // Definición unificada de elementos del menú
   const menuItems = [
     { 
       id: "Dashboard", 
@@ -64,95 +67,112 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       text: "Dashboard", 
       path: "/admin", 
       exact: true,
-      allowedRoles: [undefined, 'Supervisor'] 
+      allowedRoles: ['admin', undefined, 'Supervisor'] 
     },
     { 
       id: "Caja", 
       icon: <FaCashRegister />, 
       text: "Administrar Caja", 
       path: "/admin/caja",
-      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Ventas", 
       icon: <FaShoppingCart />, 
       text: "Punto de Venta", 
       path: "/admin/ventas",
-      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Pedidos", 
       icon: <FaShoppingBag />, 
       text: "Lista de ventas", 
       path: "/admin/Lista_ventas",
-      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Inventario", 
       icon: <FaBoxOpen />, 
       text: "Inventario", 
       path: "/admin/inventario",
-      allowedRoles: [undefined, 'Supervisor', 'Gestion de inventario']
+      allowedRoles: ['admin', undefined, 'Supervisor', 'Gestion de inventario']
     },
     { 
       id: "Clientes", 
       icon: <FaUsers />, 
       text: "Clientes", 
       path: "/admin/clientes",
-      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Empleados", 
       icon: <FaUserTie />, 
       text: "Empleados", 
       path: "/admin/empleados",
-      allowedRoles: [undefined, 'Supervisor'] 
+      allowedRoles: ['admin', undefined, 'Supervisor'] 
     },
     { 
       id: "Facturacion", 
       icon: <FaFileInvoiceDollar />, 
       text: "Facturación", 
       path: "/admin/facturacion",
-      allowedRoles: [undefined, 'Supervisor']
+      allowedRoles: ['admin', undefined, 'Supervisor']
     },
     { 
       id: "Reportes", 
       icon: <FaChartBar />, 
       text: "Reportes", 
       path: "/admin/reportes",
-      allowedRoles: [undefined, 'Supervisor'] 
+      allowedRoles: ['admin', undefined, 'Supervisor'] 
     },
     { 
       id: "Sucursales", 
       icon: <FaBuilding />, 
       text: "Sucursales", 
       path: "/admin/sucursales",
-      allowedRoles: [undefined, 'Supervisor'] 
+      allowedRoles: ['admin', undefined, 'Supervisor'] 
     },
     { 
       id: "Configuracion", 
       icon: <FaCog />, 
       text: "Configuración", 
       path: "/admin/configuracion",
-      allowedRoles: [undefined, 'Supervisor']
+      allowedRoles: ['admin', undefined, 'Supervisor']
     },
     { 
       id: "MiPlan", 
       icon: <FaStar className="h-5 w-5" />,
       text: "Mi Plan", 
       path: "/admin/mi-plan",
-      allowedRoles: [undefined, 'Supervisor'] 
+      allowedRoles: ['admin', undefined, 'Supervisor'] 
     },
   ];
 
-  // Memoizar el filtrado de elementos para evitar recálculos innecesarios
+  const getUserRole = () => {
+    const role = localStorage.getItem('rol');
+    const userType = localStorage.getItem('user_type');
+    
+    if (userType === 'usuario') {
+      return 'admin';
+    }
+    
+    return role || 'undefined';
+  };
+
   const filteredMenuItems = useMemo(() => {
+    const role = getUserRole();
+    console.log('Sidebar - Filtrando menú para rol:', role);
+    
+    if (role === 'admin' || localStorage.getItem('user_type') === 'usuario') {
+      console.log('Mostrando menú completo para administrador');
+      return menuItems;
+    }
+    
     return menuItems.filter(item => {
       if (!item.allowedRoles) return true;
-      if (!userRole) return true;
-      return item.allowedRoles.includes(userRole);
+      return item.allowedRoles.includes(role);
     });
-  }, [userRole, menuItems]);
+  }, []);
 
   return (
     <div
@@ -249,7 +269,6 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
                   Guardar Paleta
                 </button>
                 
-                {/* Nuevo botón para restablecer a valores predeterminados */}
                 <button
                   onClick={resetPalette}
                   className="w-full border border-gray-400 hover:bg-gray-100 py-1 px-2 rounded text-sm flex items-center justify-center gap-1"
@@ -295,7 +314,6 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
   );
 };
 
-// Validación de propiedades
 Sidebar.propTypes = {
   darkMode: PropTypes.bool,
   toggleDarkMode: PropTypes.func.isRequired,
@@ -306,15 +324,3 @@ Sidebar.defaultProps = {
 };
 
 export default Sidebar;
-
-// Eliminar la entrada de colorNames relacionada con --bg-report-section
-const colorNames = {
-  "--bg-primary": "Color de fondo",
-  "--bg-secondary": "Color de sidebar",
-  "--bg-tertiary": "Color de objetos",
-  // Eliminar esta línea: "--bg-report-section": "Color de secciones en reportes",
-  "--text-primary": "Color de letra títulos",
-  "--text-secondary": "Color de letra en general",
-  "--accent-color": "Color de iconos",
-  "--header-bg": "Color del navbar",
-};
