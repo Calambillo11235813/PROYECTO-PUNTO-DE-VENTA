@@ -20,6 +20,20 @@ export const pedidoService = {
       throw error;
     }
   },
+
+
+  getPedidosBySucursal: async (userId, sucursalId) => {
+  try {
+    console.log(`🔍 Obteniendo pedidos del usuario ${userId} en la sucursal ${sucursalId}...`);
+    const response = await apiClient.get(`/ventas/pedidos/usuario/${userId}/?sucursal_id=${sucursalId}`);
+    console.log('✅ Pedidos por sucursal obtenidos:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error al obtener pedidos por sucursal:', 
+      error.response ? error.response.data : error.message);
+    throw error;
+  }
+},
   
   createPedido: async (pedidoData) => {
     console.log('Entrando a createPedido()');

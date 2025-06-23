@@ -17,7 +17,15 @@ class ClienteListCreateAPIView(APIView):
         Lista todos los clientes asociados al usuario especificado
         """
         try:
+            sucursal_id = request.query_params.get('sucursal_id')
+            
+            # Filtrar por usuario
             clientes = Cliente.objects.filter(usuario_id=usuario_id)
+            
+            # Filtrar por sucursal si se proporciona
+            if sucursal_id:
+                clientes = clientes.filter(sucursal_id=sucursal_id)
+            
             serializer = ClienteSerializer(clientes, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
@@ -34,15 +42,16 @@ class ClienteListCreateAPIView(APIView):
             data = request.data.copy()
             data['usuario'] = usuario_id
             
-            # Verificar si ya existe un cliente con el mismo nombre o cédula
-            if data.get('cedula_identidad'):
+            # Verificar si ya existe un cliente con el mismo nombre o cédula en la misma sucursal
+            if data.get('cedula_identidad') and data.get('sucursal'):
                 cliente_existente = Cliente.objects.filter(
                     usuario_id=usuario_id, 
-                    cedula_identidad=data['cedula_identidad']
+                    cedula_identidad=data['cedula_identidad'],
+                    sucursal_id=data['sucursal']
                 ).first()
                 if cliente_existente:
                     return Response(
-                        {"error": f"Ya existe un cliente con la cédula {data['cedula_identidad']}"},
+                        {"error": f"Ya existe un cliente con la cédula {data['cedula_identidad']} en esta sucursal"},
                         status=status.HTTP_400_BAD_REQUEST
                     )
             
@@ -176,5 +185,36 @@ class ClienteDetailAPIView(APIView):
         except Exception as e:
             return Response(
                 {"error": f"Error al eliminar cliente: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+# Nueva vista para obtener clientes por sucursal específica
+class ClientesBySucursalAPIView(APIView):
+    """
+    Vista para listar clientes filtrados por sucursal específica
+    """
+    permission_classes = [AllowAny]
+    
+    def get(self, request, usuario_id, sucursal_id):
+        """
+        Lista todos los clientes asociados al usuario y la sucursal especificada
+        """
+        try:
+            # Filtrar clientes por usuario y sucursal
+            clientes = Cliente.objects.filter(
+                usuario_id=usuario_id,
+                sucursal_id=sucursal_id
+            )
+            
+            # Registrar en el log para debugging
+            print(f"Buscando clientes para usuario {usuario_id} en sucursal {sucursal_id}")
+            print(f"Encontrados {clientes.count()} clientes")
+            
+            serializer = ClienteSerializer(clientes, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"Error al obtener clientes por sucursal: {str(e)}")
+            return Response(
+                {"error": f"Error al obtener clientes de la sucursal: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

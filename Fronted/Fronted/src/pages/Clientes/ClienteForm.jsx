@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaUser } from 'react-icons/fa';
+import { FaUser, FaStore } from 'react-icons/fa';
 import clienteService from '../../services/clienteService';
 
 const ClienteForm = ({ 
@@ -7,7 +7,8 @@ const ClienteForm = ({
   onClose, 
   editMode = false, 
   currentCliente = null, 
-  onClienteSaved
+  onClienteSaved,
+  selectedSucursal = null
 }) => {
   const [formCliente, setFormCliente] = useState({
     nombre: "",
@@ -15,6 +16,7 @@ const ClienteForm = ({
     telefono: "",
     direccion: "",
     email: "",
+    sucursal: null,
   });
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -28,21 +30,29 @@ const ClienteForm = ({
           telefono: currentCliente.telefono || "",
           direccion: currentCliente.direccion || "",
           email: currentCliente.email || "",
+          sucursal: currentCliente.sucursal || null,
         });
       } else {
         // Resetear el formulario si estamos creando un nuevo cliente
+        const sucursalId = selectedSucursal?.id || localStorage.getItem('sucursal_actual_id') || null;
+        
         setFormCliente({
           nombre: "",
           cedula_identidad: "",
           telefono: "",
           direccion: "",
           email: "",
+          sucursal: sucursalId ? parseInt(sucursalId) : null,
         });
+        
+        if (sucursalId) {
+          console.log(`📋 Inicializando formulario con sucursal ID: ${sucursalId}`);
+        }
       }
       // Limpiar errores
       setErrors({});
     }
-  }, [isOpen, editMode, currentCliente]);
+  }, [isOpen, editMode, currentCliente, selectedSucursal]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -89,12 +99,24 @@ const ClienteForm = ({
     setSubmitting(true);
     
     try {
+      // Asegurar que se envíe la sucursal
+      const sucursalId = formCliente.sucursal || 
+                         selectedSucursal?.id || 
+                         localStorage.getItem('sucursal_actual_id');
+      
+      const dataToSubmit = {
+        ...formCliente,
+        sucursal: sucursalId ? parseInt(sucursalId) : null
+      };
+      
+      console.log(`📤 Enviando formulario con datos:`, dataToSubmit);
+      
       if (editMode) {
         // Actualizar cliente existente
-        await clienteService.updateCliente(currentCliente.id, formCliente);
+        await clienteService.updateCliente(currentCliente.id, dataToSubmit);
       } else {
         // Crear nuevo cliente
-        await clienteService.createCliente(formCliente);
+        await clienteService.createCliente(dataToSubmit);
       }
       
       // Notificar al componente padre que se ha guardado un cliente
@@ -127,6 +149,19 @@ const ClienteForm = ({
             ✕
           </button>
         </div>
+        
+        {/* Mostrar información de la sucursal */}
+        {(selectedSucursal || localStorage.getItem('sucursal_actual_nombre')) && (
+          <div className="mb-4 p-2 bg-purple-50 border border-purple-200 rounded flex items-center">
+            <FaStore className="text-purple-500 mr-2" />
+            <div>
+              <p className="text-xs text-purple-700">Cliente será registrado en la sucursal:</p>
+              <p className="font-medium text-purple-800">
+                {selectedSucursal?.nombre || localStorage.getItem('sucursal_actual_nombre')}
+              </p>
+            </div>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">

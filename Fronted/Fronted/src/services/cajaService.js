@@ -48,7 +48,24 @@ export const cajaService = {
       throw error;
     }
   },
-  
+
+  getCajasBySucursal: async (userId, sucursalId, estado = null) => {
+  try {
+    let url = `/ventas/caja/actual/${userId}/?sucursal_id=${sucursalId}`;
+    if (estado) {
+      url += `&estado=${estado}`;
+    }
+    console.log(`🔍 Obteniendo cajas del usuario ${userId} en la sucursal ${sucursalId}...`);
+    const response = await apiClient.get(url);
+    console.log('✅ Cajas por sucursal obtenidas:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error al obtener cajas por sucursal:', 
+      error.response ? error.response.data : error.message);
+    throw error;
+  }
+},
+
   /**
    * Cierra la caja actualmente abierta para el usuario
    * @returns {Promise<Object>} - Datos del cierre de caja
