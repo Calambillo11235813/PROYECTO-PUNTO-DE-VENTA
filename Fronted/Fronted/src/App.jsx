@@ -37,10 +37,13 @@ import Clientes from './pages/Clientes/Clientes';
 import CajaManager from './pages/CajaManager';
 import PlanManager from "./pages/PlanManager";
 import Vistareportes from './pages/Reportes/Vistareportes'; // Importamos el componente de reportes
+import SucursalesManager from './pages/SucursalesManager';
+
 
 // Componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
 import EmpleadoForm from './pages/Empleados/EmpleadoForm';
+import FirstBranchSetup from './pages/FirstBranchSetup';
 
 // Componente para acceso denegado
 const AccesoDenegado = () => (
@@ -96,6 +99,11 @@ function App() {
             {/* Ruta de acceso denegado */}
             <Route path="/acceso-denegado" element={<AccesoDenegado />} />
 
+            {/* ¡IMPORTANTE! Ruta para primera sucursal - DEBE IR ANTES de las rutas admin */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/primera-sucursal" element={<FirstBranchSetup />} />
+            </Route>
+
             {/* Rutas protegidas - solo para administradores */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AdminRoute />}>
@@ -113,6 +121,7 @@ function App() {
                   <Route path="clientes" element={<Clientes />} />
                   <Route path="caja" element={<CajaManager />} />
                   <Route path="mi-plan" element={<PlanManager />} />
+                  <Route path="sucursales" element={<SucursalesManager />} />
                 </Route>
               </Route>
             </Route>

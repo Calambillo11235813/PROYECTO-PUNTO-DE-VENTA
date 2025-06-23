@@ -18,7 +18,8 @@ import {
   FaPalette,
   FaChevronDown,
   FaChevronUp,
-  FaUndoAlt  // Añadido icono para restablecer
+  FaUndoAlt,
+  FaBuilding  // Añadir este icono
 } from "react-icons/fa";
 import authService from "../services/authService";
 import useTheme from "../hooks/useTheme";
@@ -119,6 +120,13 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       icon: <FaChartBar />, 
       text: "Reportes", 
       path: "/admin/reportes",
+      allowedRoles: [undefined, 'Supervisor'] 
+    },
+    { 
+      id: "Sucursales", 
+      icon: <FaBuilding />, 
+      text: "Sucursales", 
+      path: "/admin/sucursales",
       allowedRoles: [undefined, 'Supervisor'] 
     },
     { 
