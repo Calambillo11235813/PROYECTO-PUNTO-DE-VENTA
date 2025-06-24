@@ -44,9 +44,9 @@ class BaseReporteView(APIView):
 
 class ReporteVentasView(BaseReporteView):
     """
-    GET: Genera reportes de ventas para un usuario
+    GET: Genera reportes de ventas para un usuario, filtrado por sucursal
     """
-    def get(self, request, usuario_id):
+    def get(self, request, usuario_id, sucursal_id=None):
         try:
             # Verificar que el usuario existe
             usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -56,11 +56,16 @@ class ReporteVentasView(BaseReporteView):
             if error:
                 return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
                 
-            tipo_reporte = request.query_params.get('tipo', 'general')  # general, productos, clientes
+            tipo_reporte = request.query_params.get('tipo', 'general')
             
-            # Base query - get sales for the user within date range
+            # Base query - get sales for the user
             ventas = Pedido.objects.filter(usuario_id=usuario_id)
             
+            # Filtrar por sucursal si se proporciona
+            if sucursal_id:
+                ventas = ventas.filter(sucursal_id=sucursal_id)
+            
+            # Filtrar por fechas
             if fecha_inicio:
                 ventas = ventas.filter(fecha__gte=fecha_inicio)
             if fecha_fin:
@@ -68,7 +73,7 @@ class ReporteVentasView(BaseReporteView):
                 
             if not ventas.exists():
                 return Response({
-                    "message": "No se encontraron ventas para el período especificado",
+                    "message": f"No se encontraron ventas para el período especificado{' en la sucursal seleccionada' if sucursal_id else ''}",
                     "data": []
                 }, status=status.HTTP_200_OK)
             
@@ -119,11 +124,24 @@ class ReporteVentasView(BaseReporteView):
                             metodos_pago_totales[tipo_pago] = 0
                         metodos_pago_totales[tipo_pago] += float(transaccion.monto)
                 
-                return Response({
+                # Añadir información de sucursal al resultado
+                sucursal_info = None
+                if sucursal_id:
+                    from Sucursales.models import Sucursal
+                    sucursal = Sucursal.objects.filter(id=sucursal_id).first()
+                    if sucursal:
+                        sucursal_info = {
+                            'id': sucursal.id,
+                            'nombre': sucursal.nombre
+                        }
+                
+                # Modificar la respuesta para incluir datos de sucursal
+                response_data = {
                     'tipo_reporte': 'ventas_general',
                     'fecha_generacion': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else 'No especificada',
                     'fecha_fin': fecha_fin.strftime('%Y-%m-%d') if fecha_fin else 'No especificada',
+                    'sucursal': sucursal_info,
                     'resumen': {
                         'total_ventas_bs': float(total_ventas),
                         'cantidad_ventas': ventas.count(),
@@ -132,7 +150,9 @@ class ReporteVentasView(BaseReporteView):
                         'ventas_por_metodo_pago': metodos_pago_totales
                     },
                     'ventas': ventas_data
-                })
+                }
+                
+                return Response(response_data)
                 
             elif tipo_reporte == 'productos':
                 # Report of products sold
@@ -204,7 +224,7 @@ class ReporteCajaView(BaseReporteView):
     """
     GET: Genera reportes detallados de cajas para un usuario
     """
-    def get(self, request, usuario_id):
+    def get(self, request, usuario_id, sucursal_id=None):
         try:
             # Verificar que el usuario existe
             usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -217,9 +237,14 @@ class ReporteCajaView(BaseReporteView):
             caja_id = request.query_params.get('caja_id')
             tipo_reporte = request.query_params.get('tipo', 'resumen')  # resumen, detallado
             
-            # Base query - get cash registers for the user within date range
+            # Base query - get cash registers for the user
             cajas = Caja.objects.filter(usuario_id=usuario_id)
             
+            # Filtrar por sucursal si se proporciona
+            if sucursal_id:
+                cajas = cajas.filter(sucursal_id=sucursal_id)
+                
+            # Filtrar por fechas
             if fecha_inicio:
                 cajas = cajas.filter(fecha_apertura__gte=fecha_inicio)
             if fecha_fin:
@@ -313,7 +338,7 @@ class ReporteClientesView(BaseReporteView):
     """
     GET: Genera reportes de clientes para un usuario
     """
-    def get(self, request, usuario_id):
+    def get(self, request, usuario_id, sucursal_id=None):
         try:
             # Verificar que el usuario existe
             usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -329,52 +354,143 @@ class ReporteClientesView(BaseReporteView):
             # Base query - get all customers for the user
             clientes = Cliente.objects.filter(usuario_id=usuario_id)
             
-            # Aplicar filtro de búsqueda si existe
-            if search_term:
-                clientes = clientes.filter(
-                    Q(nombre__icontains=search_term) |
-                    Q(cedula_identidad__icontains=search_term) |
-                    Q(telefono__icontains=search_term) |
-                    Q(email__icontains=search_term)
-                )
+            # Filtrar por sucursal si se proporciona
+            if sucursal_id:
+                print(f"Filtrando clientes por sucursal: {sucursal_id}")
+                clientes = clientes.filter(sucursal_id=sucursal_id)
+                print(f"Clientes encontrados: {clientes.count()}")
             
-            if not clientes.exists():
+            # Resto del método igual que antes...
+            if tipo_reporte == 'general':
+                # Reporte general de clientes
+                clientes_data = []
+                
+                # Imprimir campos disponibles en Pedido para debug
+                from django.db import models
+                print("Campos de Pedido:", [f.name for f in Pedido._meta.get_fields()])
+                
+                for cliente in clientes:
+                    # CORRECCIÓN: Obtener ventas del cliente usando el ID del cliente
+                    # Asumiendo que el campo en Pedido puede ser 'cliente_id' en lugar de 'cliente'
+                    try:
+                        # Intentar encontrar la relación correcta
+                        # Primero verificamos si hay un campo específico para cliente
+                        if hasattr(Pedido, 'cliente'):
+                            ventas = Pedido.objects.filter(cliente=cliente)
+                        elif hasattr(Pedido, 'cliente_id'):
+                            ventas = Pedido.objects.filter(cliente_id=cliente.id)
+                        # O puede que la relación esté definida en un campo diferente o a través de otra tabla
+                        else:
+                            # Si no podemos encontrar una relación directa, intenta buscar en detalles
+                            # Esto depende de tu estructura exacta de modelos
+                            from django.db.models import Q
+                            # Busca referencias al cliente en detalles o en otros campos
+                            ventas = Pedido.objects.filter(
+                                Q(detalles__cliente_id=cliente.id) |
+                                Q(usuario_id=usuario_id)  # Filtro fallback
+                            ).distinct()
+                            
+                        total_ventas_cliente = sum(float(venta.total) for venta in ventas)
+                        cantidad_pedidos = ventas.count()
+                    except Exception as e:
+                        print(f"Error al obtener ventas del cliente {cliente.id}: {e}")
+                        # En caso de error, usamos valores predeterminados
+                        total_ventas_cliente = 0
+                        cantidad_pedidos = 0
+                    
+                    clientes_data.append({
+                        'id': cliente.id,
+                        'nombre': cliente.nombre,
+                        'telefono': cliente.telefono,
+                        'email': cliente.email,
+                        'direccion': cliente.direccion,
+                        'total_ventas': total_ventas_cliente,
+                        'cantidad_pedidos': cantidad_pedidos,
+                        'sucursal_id': cliente.sucursal_id if hasattr(cliente, 'sucursal_id') else None
+                    })
+                
+                # Incluir información de sucursal en la respuesta
+                sucursal_info = None
+                if sucursal_id:
+                    from Sucursales.models import Sucursal
+                    sucursal = Sucursal.objects.filter(id=sucursal_id).first()
+                    if sucursal:
+                        sucursal_info = {
+                            'id': sucursal.id,
+                            'nombre': sucursal.nombre
+                        }
+                
                 return Response({
-                    "message": "No se encontraron clientes registrados",
-                    "data": []
-                }, status=status.HTTP_200_OK)
-            
-            # Generate basic report - solo información básica de clientes
-            clientes_data = []
-            
-            for cliente in clientes:
-                clientes_data.append({
-                    'id': cliente.id,
-                    'nombre': cliente.nombre,
-                    'cedula_identidad': getattr(cliente, 'cedula_identidad', None),
-                    'telefono': getattr(cliente, 'telefono', None),
-                    'email': getattr(cliente, 'email', None),
-                    'direccion': getattr(cliente, 'direccion', None)
+                    'tipo_reporte': 'clientes_general',
+                    'fecha_generacion': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else 'No especificada',
+                    'fecha_fin': fecha_fin.strftime('%Y-%m-%d') if fecha_fin else 'No especificada',
+                    'total_clientes': clientes.count(),
+                    'clientes': clientes_data,
+                    'sucursal': sucursal_info
+                })
+                
+            elif tipo_reporte == 'frecuencia':
+                # Reporte de frecuencia de compra
+                query = Pedido.objects.filter(usuario_id=usuario_id)
+                
+                # Filtrar por sucursal si corresponde
+                if sucursal_id:
+                    query = query.filter(sucursal_id=sucursal_id)
+                
+                # Filtrar por fechas si se especifican
+                if fecha_inicio:
+                    query = query.filter(fecha__gte=fecha_inicio)
+                if fecha_fin:
+                    query = query.filter(fecha__lte=fecha_fin)
+                
+                frecuencia_compra = (
+                    query
+                    .annotate(dia=F('fecha__date'))
+                    .values('dia')
+                    .annotate(total_ventas=Sum('total'), cantidad_pedidos=Count('id'))
+                    .order_by('dia')
+                )
+                
+                frecuencia_data = []
+                for dia_data in frecuencia_compra:
+                    frecuencia_data.append({
+                        'fecha': dia_data['dia'].strftime('%Y-%m-%d'),
+                        'total_ventas': float(dia_data['total_ventas']),
+                        'cantidad_pedidos': dia_data['cantidad_pedidos']
+                    })
+                
+                # Incluir información de sucursal en la respuesta
+                sucursal_info = None
+                if sucursal_id:
+                    from Sucursales.models import Sucursal
+                    sucursal = Sucursal.objects.filter(id=sucursal_id).first()
+                    if sucursal:
+                        sucursal_info = {
+                            'id': sucursal.id,
+                            'nombre': sucursal.nombre
+                        }
+                
+                return Response({
+                    'tipo_reporte': 'clientes_frecuencia',
+                    'fecha_generacion': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else 'No especificada',
+                    'fecha_fin': fecha_fin.strftime('%Y-%m-%d') if fecha_fin else 'No especificada',
+                    'total_dias_reportados': len(frecuencia_data),
+                    'frecuencia_compra': frecuencia_data,
+                    'sucursal': sucursal_info
                 })
             
-            # Ordenar clientes por nombre
-            clientes_data_ordenados = sorted(
-                clientes_data, 
-                key=lambda x: x['nombre']
-            )
-            
-            return Response({
-                'tipo_reporte': 'clientes_general',
-                'fecha_generacion': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else 'No especificada',
-                'fecha_fin': fecha_fin.strftime('%Y-%m-%d') if fecha_fin else 'No especificada',
-                'resumen': {
-                    'total_clientes': clientes.count(),
-                },
-                'clientes': clientes_data_ordenados
-            })
-            
+            else:
+                return Response({
+                    'error': 'Tipo de reporte no válido',
+                    'tipos_disponibles': ['general', 'frecuencia']
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
         except Exception as e:
+            print(f"Error en ReporteClientesView: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return Response({
                 'error': f'Error interno del servidor: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -384,7 +500,7 @@ class ReporteMovimientosView(BaseReporteView):
     """
     GET: Genera reportes de movimientos de caja para un usuario
     """
-    def get(self, request, usuario_id):
+    def get(self, request, usuario_id, sucursal_id=None):
         try:
             # Verificar que el usuario existe
             usuario = get_object_or_404(Usuario, id=usuario_id)
@@ -396,79 +512,242 @@ class ReporteMovimientosView(BaseReporteView):
                 
             caja_id = request.query_params.get('caja_id')
             
-            # Base query - get all cash movements within date range
+            # Base query - get all cash movements
             movimientos = MovimientoEfectivo.objects.filter(caja__usuario_id=usuario_id)
             
+            # Filtrar por sucursal si se proporciona
+            if sucursal_id:
+                movimientos = movimientos.filter(caja__sucursal_id=sucursal_id)
+            
+            # Filtrar por fechas
             if fecha_inicio:
                 movimientos = movimientos.filter(fecha__gte=fecha_inicio)
             if fecha_fin:
                 movimientos = movimientos.filter(fecha__lte=fecha_fin)
-                
-            if caja_id and caja_id.isdigit():
-                movimientos = movimientos.filter(caja_id=int(caja_id))
                 
             if not movimientos.exists():
                 return Response({
                     "message": "No se encontraron movimientos para el período especificado",
                     "data": []
                 }, status=status.HTTP_200_OK)
-                
-            # Group movements by cash register
-            movimientos_por_caja = {}
-            total_ingresos = 0
-            total_retiros = 0
             
+            # Obtener detalles de los movimientos
+            movimientos_data = []
             for movimiento in movimientos:
-                caja_id = movimiento.caja.id
-                
-                if caja_id not in movimientos_por_caja:
-                    movimientos_por_caja[caja_id] = {
-                        'caja_id': caja_id,
-                        'fecha_apertura': movimiento.caja.fecha_apertura.strftime('%Y-%m-%d %H:%M'),
-                        'estado_caja': movimiento.caja.estado,
-                        'total_ingresos': 0,
-                        'total_retiros': 0,
-                        'movimientos': []
-                    }
-                    
-                # Add movement to its cash register
-                movimientos_por_caja[caja_id]['movimientos'].append({
+                detalles = {
                     'id': movimiento.id,
-                    'tipo': movimiento.tipo,
-                    'monto': float(movimiento.monto),
                     'fecha': movimiento.fecha.strftime('%Y-%m-%d %H:%M'),
-                    'descripcion': movimiento.descripcion
-                })
+                    'tipo': 'Apertura' if movimiento.tipo == 'apertura' else 'Cierre' if movimiento.tipo == 'cierre' else 'Transacción',
+                    'monto': float(movimiento.monto),
+                    'descripcion': movimiento.descripcion if movimiento.descripcion else '',
+                    'usuario': usuario.nombre if usuario else 'N/A',
+                    'sucursal': movimiento.caja.sucursal.nombre if movimiento.caja and movimiento.caja.sucursal else 'N/A',
+                    'caja_id': movimiento.caja.id if movimiento.caja else None
+                }
                 
-                # Update totals
-                if movimiento.tipo == 'ingreso':
-                    movimientos_por_caja[caja_id]['total_ingresos'] += float(movimiento.monto)
-                    total_ingresos += float(movimiento.monto)
-                else:
-                    movimientos_por_caja[caja_id]['total_retiros'] += float(movimiento.monto)
-                    total_retiros += float(movimiento.monto)
+                movimientos_data.append(detalles)
             
-            # Calculate net movement for each cash register
-            for caja_id in movimientos_por_caja:
-                movimientos_por_caja[caja_id]['balance_neto'] = (
-                    movimientos_por_caja[caja_id]['total_ingresos'] - movimientos_por_caja[caja_id]['total_retiros']
-                )
-                    
             return Response({
                 'tipo_reporte': 'movimientos_caja',
                 'fecha_generacion': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d') if fecha_inicio else 'No especificada',
                 'fecha_fin': fecha_fin.strftime('%Y-%m-%d') if fecha_fin else 'No especificada',
-                'resumen': {
-                    'total_movimientos': movimientos.count(),
-                    'total_ingresos': total_ingresos,
-                    'total_retiros': total_retiros,
-                    'balance_neto': total_ingresos - total_retiros
-                },
-                'cajas': list(movimientos_por_caja.values())
+                'total_movimientos': movimientos.count(),
+                'movimientos': movimientos_data
             })
-            
+                
         except Exception as e:
             return Response({
                 'error': f'Error interno del servidor: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ReporteProductosView(BaseReporteView):
+    """
+    GET: Genera reportes de productos para un usuario, filtrados por sucursal
+    """
+    def get(self, request, usuario_id, sucursal_id=None):
+        try:
+            # Verificar que el usuario existe
+            usuario = get_object_or_404(Usuario, id=usuario_id)
+            
+            # Parse parameters
+            fecha_inicio, fecha_fin, error = self.parse_date_params(request)
+            if error:
+                return Response({"error": error}, status=status.HTTP_400_BAD_REQUEST)
+                
+            tipo_reporte = request.query_params.get('tipo', 'inventario')  # inventario, agotados, etc.
+            categoria_id = request.query_params.get('categoria_id')
+            
+            print(f"Generando reporte de productos tipo '{tipo_reporte}' para usuario {usuario_id}")
+            if sucursal_id:
+                print(f"Filtrando por sucursal: {sucursal_id}")
+            
+            # Obtener productos base - USANDO EL FILTRO DIRECTO por sucursal_id si está disponible
+            if sucursal_id is not None:
+                productos_query = Producto.objects.filter(usuario_id=usuario_id, sucursal_id=sucursal_id)
+                print(f"Productos encontrados por filtro directo: {productos_query.count()}")
+            else:
+                productos_query = Producto.objects.filter(usuario_id=usuario_id)
+                print(f"Productos encontrados (sin filtro sucursal): {productos_query.count()}")
+            
+            # Filtrar por categoría si se especifica
+            if categoria_id and categoria_id.isdigit():
+                productos_query = productos_query.filter(categoria_id=int(categoria_id))
+                print(f"Productos filtrados por categoría {categoria_id}: {productos_query.count()}")
+            
+            # Si no hay productos, devolver respuesta vacía
+            if not productos_query.exists():
+                return Response({
+                    'tipo_reporte': tipo_reporte,
+                    'fecha_generacion': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'total_productos': 0,
+                    'categoria_filtro': None,
+                    'categoria_info': None,
+                    'productos': [],
+                    'sucursal': None
+                }, status=status.HTTP_200_OK)
+            
+            # Procesar según el tipo de reporte
+            if tipo_reporte == 'inventario':
+                productos_data = []
+                
+                for producto in productos_query:
+                    # Obtener información de inventario
+                    try:
+                        # Si existe relación con inventario
+                        if hasattr(producto, 'inventario'):
+                            stock_actual = producto.inventario.stock if producto.inventario else 0
+                        else:
+                            # Intenta buscar el inventario manualmente
+                            try:
+                                inventario = Inventario.objects.get(producto=producto)
+                                stock_actual = inventario.stock
+                            except Inventario.DoesNotExist:
+                                stock_actual = 0
+                    except Exception as e:
+                        print(f"Error al obtener stock del producto {producto.id}: {e}")
+                        stock_actual = 0
+                    
+                    # Añadir información del producto
+                    productos_data.append({
+                        'id': producto.id,
+                        'nombre': producto.nombre,
+                        'codigo': producto.codigo if hasattr(producto, 'codigo') else None,
+                        'descripcion': producto.descripcion,
+                        'precio_compra': str(producto.precio_compra),
+                        'precio_venta': str(producto.precio_venta),
+                        'stock_actual': stock_actual,
+                        'categoria': producto.categoria.nombre if producto.categoria else 'Sin categoría',
+                        'categoria_id': producto.categoria.id if producto.categoria else None,
+                        'sucursal_id': producto.sucursal_id,  # Incluir ID de sucursal para filtrado en frontend
+                    })
+                
+                # Incluir información de sucursal en la respuesta
+                sucursal_info = None
+                if sucursal_id:
+                    from Sucursales.models import Sucursal
+                    sucursal = Sucursal.objects.filter(id=sucursal_id).first()
+                    if sucursal:
+                        sucursal_info = {
+                            'id': sucursal.id,
+                            'nombre': sucursal.nombre
+                        }
+                
+                # Generar respuesta
+                response_data = {
+                    'tipo_reporte': 'inventario',
+                    'fecha_generacion': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'total_productos': len(productos_data),
+                    'categoria_filtro': None,
+                    'categoria_info': None,
+                    'productos': productos_data,
+                    'sucursal': sucursal_info
+                }
+                
+                # Añadir información de categoría si se filtró
+                if categoria_id and categoria_id.isdigit():
+                    from Productos.models import Categoria
+                    try:
+                        categoria = Categoria.objects.get(id=int(categoria_id))
+                        response_data['categoria_filtro'] = categoria.nombre
+                        response_data['categoria_info'] = {
+                            'id': categoria.id,
+                            'nombre': categoria.nombre
+                        }
+                    except Categoria.DoesNotExist:
+                        pass
+                        
+                return Response(response_data)
+                
+            elif tipo_reporte == 'agotados':
+                # Reporte de productos agotados o con poco stock
+                threshold = int(request.query_params.get('threshold', 5))  # Umbral para productos con poco stock
+                
+                productos_data = []
+                
+                for producto in productos_query:
+                    # Verificar stock
+                    try:
+                        # Si existe relación con inventario
+                        if hasattr(producto, 'inventario'):
+                            stock_actual = producto.inventario.stock if producto.inventario else 0
+                        else:
+                            # Intenta buscar el inventario manualmente
+                            try:
+                                inventario = Inventario.objects.get(producto=producto)
+                                stock_actual = inventario.stock
+                            except Inventario.DoesNotExist:
+                                stock_actual = 0
+                    except Exception as e:
+                        print(f"Error al obtener stock del producto {producto.id}: {e}")
+                        stock_actual = 0
+                    
+                    # Solo incluir productos con stock bajo el umbral
+                    if stock_actual <= threshold:
+                        productos_data.append({
+                            'id': producto.id,
+                            'nombre': producto.nombre,
+                            'codigo': producto.codigo if hasattr(producto, 'codigo') else None,
+                            'precio_compra': str(producto.precio_compra),
+                            'precio_venta': str(producto.precio_venta),
+                            'stock_actual': stock_actual,
+                            'categoria': producto.categoria.nombre if producto.categoria else 'Sin categoría',
+                            'sucursal_id': producto.sucursal_id,
+                        })
+                
+                # Incluir información de sucursal en la respuesta
+                sucursal_info = None
+                if sucursal_id:
+                    from Sucursales.models import Sucursal
+                    sucursal = Sucursal.objects.filter(id=sucursal_id).first()
+                    if sucursal:
+                        sucursal_info = {
+                            'id': sucursal.id,
+                            'nombre': sucursal.nombre
+                        }
+                
+                return Response({
+                    'tipo_reporte': 'agotados',
+                    'fecha_generacion': timezone.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'threshold': threshold,
+                    'total_productos': len(productos_data),
+                    'productos': sorted(productos_data, key=lambda x: x['stock_actual']),
+                    'sucursal': sucursal_info
+                })
+                
+            else:
+                return Response({
+                    'error': 'Tipo de reporte no válido',
+                    'tipos_disponibles': ['inventario', 'agotados']
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except Exception as e:
+            print(f"Error en ReporteProductosView: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response({
+                'error': f'Error interno del servidor: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

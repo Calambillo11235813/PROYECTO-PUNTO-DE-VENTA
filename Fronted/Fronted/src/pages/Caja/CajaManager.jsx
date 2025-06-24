@@ -6,9 +6,9 @@ import { Wallet, LogIn, LogOut, Store } from 'lucide-react';
 // Servicios
 import { movimientoService } from '../../services/movimientoService';
 import { cajaService } from '../../services/cajaService';
-import { empleadoService } from '../../services/EmpleadoService';
+import empleadoService from '../../services/EmpleadoService';
 import { pedidoService } from '../../services/pedidoService';
-import sucursalService from '../../services/SucursalService'; // Importar el export default
+import sucursalService from '../../services/SucursalService';
 
 // Componentes
 import AperturaModal from './AperturaModal';
@@ -35,15 +35,24 @@ const CajaManager = () => {
     monto: "",
     descripcion: ""
   });
-  // Nuevo estado para sucursal actual
+  // Estado para sucursal actual
   const [sucursalActual, setSucursalActual] = useState(null);
 
   // Cargar datos de la caja actual y la sucursal al iniciar
   useEffect(() => {
     const cargarDatosIniciales = async () => {
       await cargarSucursalActual();
+      
+      // Cargar empleados específicos de la sucursal seleccionada
+      const sucursalId = localStorage.getItem('sucursal_actual_id');
+      if (sucursalId) {
+        await fetchEmpleados(sucursalId);
+      } else {
+        // Si no hay sucursal, cargar empleados generales
+        await fetchEmpleados();
+      }
+      
       await checkCajaStatus();
-      await fetchEmpleados();
     };
     
     cargarDatosIniciales();
@@ -63,6 +72,14 @@ const CajaManager = () => {
   const handleSucursalChanged = async () => {
     console.log("🔄 Cambio de sucursal detectado en CajaManager, actualizando...");
     await cargarSucursalActual();
+    
+    // Cargar empleados específicos de la nueva sucursal
+    const sucursalId = localStorage.getItem('sucursal_actual_id');
+    if (sucursalId) {
+      console.log(`🔄 Actualizando empleados para sucursal ${sucursalId}`);
+      await fetchEmpleados(sucursalId);
+    }
+    
     await checkCajaStatus();
   };
   
@@ -139,21 +156,43 @@ const CajaManager = () => {
     }
   };
 
-  const fetchEmpleados = async () => {
+  const fetchEmpleados = async (sucursalId = null) => {
     try {
       setLoadingEmpleados(true);
-      const data = await empleadoService.getAllEmpleados();
-      // Filtrar empleados activos Y con rol "Cajero"
-      const empleadosCajeros = Array.isArray(data) 
-        ? data.filter(emp => emp.estado !== false && emp.rol === 2) 
+      
+      let empleadosList = [];
+      const userId = localStorage.getItem('id');
+      
+      // Si tenemos sucursal, cargar empleados específicos de esa sucursal
+      if (sucursalId) {
+        console.log(`🔍 Cargando empleados de la sucursal ${sucursalId}...`);
+        try {
+          empleadosList = await empleadoService.getEmpleadosBySucursal(userId, sucursalId);
+          console.log(`✅ ${empleadosList.length} empleados encontrados para la sucursal ${sucursalId}`);
+        } catch (error) {
+          console.error(`❌ Error al cargar empleados de sucursal ${sucursalId}:`, error);
+          empleadosList = [];
+        }
+      } else {
+        // Si no hay sucursal seleccionada, cargar todos los empleados
+        empleadosList = await empleadoService.getAllEmpleados();
+        console.log(`✅ ${empleadosList.length} empleados cargados (sin filtro de sucursal)`);
+      }
+      
+      // Filtrar empleados activos Y con rol "Cajero" (rol=2)
+      const empleadosCajeros = Array.isArray(empleadosList) 
+        ? empleadosList.filter(emp => emp.estado !== false && emp.rol === 2) 
         : [];
       
-      console.log("👤 Empleados cajeros filtrados:", empleadosCajeros);
+      console.log(`👤 ${empleadosCajeros.length} empleados cajeros disponibles`);
       setEmpleados(empleadosCajeros);
+      
+      return empleadosCajeros;
     } catch (error) {
-      console.error("❌ Error al cargar empleados:", error);
+      console.error("❌ Error general al cargar empleados:", error);
       toast.error("No se pudieron cargar los empleados");
       setEmpleados([]);
+      return [];
     } finally {
       setLoadingEmpleados(false);
     }
@@ -258,6 +297,26 @@ const CajaManager = () => {
       setMovimientos([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const openAperturaModal = async () => {
+    setShowAperturaModal(true);
+    setLoadingEmpleados(true);
+    setEmpleadoId(""); // Resetear la selección de empleado
+    
+    try {
+      // Cargar empleados específicos para la sucursal actual
+      const sucursalId = localStorage.getItem('sucursal_actual_id');
+      if (sucursalId) {
+        await fetchEmpleados(sucursalId);
+      } else {
+        await fetchEmpleados();
+      }
+    } catch (error) {
+      console.error("Error al cargar empleados para apertura:", error);
+    } finally {
+      setLoadingEmpleados(false);
     }
   };
 
@@ -400,7 +459,7 @@ const CajaManager = () => {
               />
             ) : (
               <CajaCerrada 
-                setShowAperturaModal={setShowAperturaModal}
+                setShowAperturaModal={openAperturaModal} // Usar la nueva función en lugar del setter directo
                 sucursalActual={sucursalActual} // Pasar la sucursal actual
               />
             )}
@@ -416,10 +475,12 @@ const CajaManager = () => {
           empleadoId={empleadoId}
           setEmpleadoId={setEmpleadoId}
           empleados={empleados}
+          setEmpleados={setEmpleados} // Añadido: Pasar setEmpleados
           loadingEmpleados={loadingEmpleados}
+          setLoadingEmpleados={setLoadingEmpleados} // Añadido: Pasar setLoadingEmpleados
           isLoading={isLoading}
           handleAbrirCaja={handleAbrirCaja}
-          sucursalActual={sucursalActual} // Pasar la sucursal actual
+          sucursalActual={sucursalActual}
         />
       )}
       

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, DollarSign, User, LogIn, Store } from 'lucide-react';
+import empleadoService from '../../services/empleadoService';
 
 const AperturaModal = ({ 
   setShowAperturaModal,
@@ -8,21 +9,55 @@ const AperturaModal = ({
   empleadoId,
   setEmpleadoId,
   empleados,
+  setEmpleados, // Añadir esta prop para actualizar los empleados
   loadingEmpleados,
+  setLoadingEmpleados, // Añadir esta prop para actualizar el estado de carga
   isLoading,
   handleAbrirCaja,
-  sucursalActual // Nuevo prop para sucursal
+  sucursalActual // Prop para sucursal
 }) => {
   const montoInputRef = useRef(null);
 
+  // Cargar empleados específicos de la sucursal seleccionada
   useEffect(() => {
+    const fetchEmpleadosBySucursal = async () => {
+      if (sucursalActual?.id) {
+        try {
+          setLoadingEmpleados(true);
+          const userId = localStorage.getItem('id');
+          
+          // Usar el servicio para obtener empleados por sucursal
+          const empleadosSucursal = await empleadoService.getEmpleadosBySucursal(
+            userId,
+            sucursalActual.id
+          );
+          
+          console.log(`🧑‍💼 Empleados cargados para la sucursal ${sucursalActual.nombre}:`, empleadosSucursal);
+          
+          // Actualizar el estado de empleados con los filtrados por sucursal
+          setEmpleados(empleadosSucursal || []);
+          
+          // Si no hay empleados seleccionados pero hay disponibles, seleccionar el primero
+          if (!empleadoId && empleadosSucursal?.length > 0) {
+            setEmpleadoId(empleadosSucursal[0].id.toString());
+          }
+        } catch (error) {
+          console.error('Error al cargar empleados por sucursal:', error);
+          setEmpleados([]);
+        } finally {
+          setLoadingEmpleados(false);
+        }
+      }
+    };
+
+    fetchEmpleadosBySucursal();
+    
     if (montoInputRef.current) {
       montoInputRef.current.focus();
     }
     
-    // Log para depuración
     console.log('🏪 Datos de sucursal en modal apertura:', sucursalActual);
-  }, [sucursalActual]);
+  }, [sucursalActual?.id, setEmpleados, setEmpleadoId, setLoadingEmpleados]);
   
   // Función para guardar el monto en la referencia cuando cambie
   const handleMontoChange = (e) => {
@@ -93,8 +128,13 @@ const AperturaModal = ({
         </div>
         
         <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            Empleado Asignado
+          <label className="block text-gray-700 text-sm font-bold mb-2 justify-between items-center">
+            <span>Empleado Asignado</span>
+            {empleados.length === 0 && !loadingEmpleados && (
+              <span className="text-xs text-orange-500 font-normal">
+                No hay empleados en esta sucursal
+              </span>
+            )}
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -109,20 +149,26 @@ const AperturaModal = ({
                 value={empleadoId}
                 onChange={handleEmpleadoChange}
                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={empleados.length === 0}
               >
                 <option value="">Seleccione un empleado</option>
                 {empleados.map(emp => (
                   <option key={emp.id} value={emp.id}>
-                    {emp.nombre} {emp.apellido}
+                    {emp.nombre} {emp.apellido || ''}
                   </option>
                 ))}
               </select>
             )}
           </div>
           {empleados.length === 0 && !loadingEmpleados && (
-            <p className="mt-1 text-sm text-red-500">
-              No hay empleados con rol Cajero disponibles.
-            </p>
+            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
+              <p className="text-sm text-yellow-700">
+                Esta sucursal no tiene empleados asignados. Puede continuar sin asignar un empleado o primero agregar empleados a la sucursal.
+              </p>
+              <p className="text-xs text-yellow-600 mt-1">
+                Vaya a "Gestión de Empleados" para asignar empleados a esta sucursal.
+              </p>
+            </div>
           )}
         </div>
         

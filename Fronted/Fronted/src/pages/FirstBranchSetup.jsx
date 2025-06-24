@@ -86,13 +86,13 @@ const FirstBranchSetup = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Configura tu primera sucursal</h1>
@@ -102,10 +102,11 @@ const FirstBranchSetup = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+          <div className="bg-green-600 h-2"></div>
           <div className="p-6 sm:p-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                <p className="text-sm text-blue-700">
+              <div className="bg-green-50 p-4 rounded-lg mb-6 border border-green-100">
+                <p className="text-sm text-green-700">
                   Una sucursal representa una ubicación física de tu negocio. Puedes crear más sucursales más adelante.
                 </p>
               </div>
@@ -113,7 +114,7 @@ const FirstBranchSetup = () => {
               <div className="space-y-4">
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                    <FaStore className="mr-2 text-blue-500" />
+                    <FaStore className="mr-2 text-green-500" />
                     Nombre de la Sucursal *
                   </label>
                   <input
@@ -121,7 +122,7 @@ const FirstBranchSetup = () => {
                     name="nombre"
                     value={sucursal.nombre}
                     onChange={handleChange}
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                     placeholder="Ej: Sucursal Principal"
                     required
                   />
@@ -129,7 +130,7 @@ const FirstBranchSetup = () => {
 
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                    <FaLocationArrow className="mr-2 text-blue-500" />
+                    <FaLocationArrow className="mr-2 text-green-500" />
                     Dirección *
                   </label>
                   <textarea
@@ -137,7 +138,7 @@ const FirstBranchSetup = () => {
                     value={sucursal.direccion}
                     onChange={handleChange}
                     rows="2"
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                     placeholder="Ej: Calle Principal #123, Ciudad"
                     required
                   />
@@ -146,7 +147,7 @@ const FirstBranchSetup = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                      <FaPhone className="mr-2 text-blue-500" />
+                      <FaPhone className="mr-2 text-green-500" />
                       Teléfono
                     </label>
                     <input
@@ -154,14 +155,14 @@ const FirstBranchSetup = () => {
                       name="telefono"
                       value={sucursal.telefono}
                       onChange={handleChange}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                       placeholder="Ej: (123) 456-7890"
                     />
                   </div>
 
                   <div>
                     <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                      <FaEnvelope className="mr-2 text-blue-500" />
+                      <FaEnvelope className="mr-2 text-green-500" />
                       Correo Electrónico
                     </label>
                     <input
@@ -169,7 +170,7 @@ const FirstBranchSetup = () => {
                       name="email"
                       value={sucursal.email}
                       onChange={handleChange}
-                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                       placeholder="sucursal@ejemplo.com"
                     />
                   </div>
@@ -177,7 +178,7 @@ const FirstBranchSetup = () => {
 
                 <div>
                   <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
-                    <FaClock className="mr-2 text-blue-500" />
+                    <FaClock className="mr-2 text-green-500" />
                     Horario de Atención
                   </label>
                   <textarea
@@ -185,7 +186,7 @@ const FirstBranchSetup = () => {
                     value={sucursal.horario}
                     onChange={handleChange}
                     rows="2"
-                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
                     placeholder="Ej: Lunes a Viernes: 8:00 AM - 6:00 PM"
                   />
                 </div>
@@ -194,7 +195,7 @@ const FirstBranchSetup = () => {
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
                   disabled={submitting}
                 >
                   {submitting ? (
