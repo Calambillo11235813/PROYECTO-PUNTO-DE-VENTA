@@ -14,8 +14,9 @@ class FacturarPedidoAPIView(APIView):
     """
     POST: Envía un pedido al SIAT para facturación electrónica
     """
-    permission_classes = [AllowAny]  # ✅ AGREGAR ESTA LÍNEA
-    authentication_classes = []  # ✅ AGREGAR ESTA LÍNEA
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    
     def post(self, request, usuario_id, pedido_id):
         try:
             print(f"🎯 Iniciando facturación de pedido {pedido_id} para usuario {usuario_id}")
@@ -26,15 +27,80 @@ class FacturarPedidoAPIView(APIView):
             
             print(f"👤 Empresa: {usuario.razon_social or usuario.nombre_empresa} (NIT: {usuario.nit_empresa})")
             
+            # ✅ CAPTURAR DATOS DEL CLIENTE DESDE EL REQUEST
+            cliente_nit = request.data.get('cliente_nit', '0')
+            cliente_nombre = request.data.get('cliente_nombre', '')
+            cliente_email = request.data.get('cliente_email', '')
+            
+            print(f"📥 Datos recibidos del cliente:")
+            print(f"   - NIT: {cliente_nit}")
+            print(f"   - Nombre: {cliente_nombre or 'NO PROPORCIONADO'}")
+            print(f"   - Email: {cliente_email or 'NO PROPORCIONADO'}")
+            
+            # ✅ CREAR INSTANCIA DEL SERVICIO SIAT
+            siat_service = SIATService(usuario=usuario)
+            
+            # ✅ SI SOLO SE PROPORCIONÓ NIT, BUSCAR DATOS AUTOMÁTICAMENTE
+            if cliente_nit and cliente_nit not in ['0', '99001', '99002', '99003'] and not cliente_nombre:
+                print(f"🔍 Solo se proporcionó NIT {cliente_nit}, buscando datos del contribuyente...")
+                
+                # Validar y obtener datos del NIT
+                validacion_result = siat_service.validar_nit_contribuyente(cliente_nit)
+                
+                print(f"📋 Resultado completo de validación: {validacion_result}")
+                
+                if isinstance(validacion_result, dict) and validacion_result.get('transaccion', False):
+                    # NIT válido, extraer datos
+                    datos_contribuyente = validacion_result.get('datos', {})
+                    nombre_encontrado = datos_contribuyente.get('razonSocial', 'CONTRIBUYENTE VÁLIDO')
+                    
+                    print(f"✅ Datos encontrados para NIT {cliente_nit}:")
+                    print(f"   - Razón Social: {nombre_encontrado}")
+                    
+                    # ✅ ACTUALIZAR EL NOMBRE DEL CLIENTE CON EL DATO OBTENIDO
+                    cliente_nombre = nombre_encontrado
+                    
+                    # Si hay más datos disponibles, también los podemos usar
+                    if 'email' in datos_contribuyente and not cliente_email:
+                        cliente_email = datos_contribuyente.get('email', '')
+                        
+                else:
+                    # NIT no válido o error en consulta
+                    error_msg = validacion_result.get('error', 'NIT no encontrado en el padrón')
+                    print(f"❌ NIT {cliente_nit} no válido: {error_msg}")
+                    
+                    return Response({
+                        'success': False,
+                        'error': f'NIT {cliente_nit} no es válido',
+                        'detalle': error_msg,
+                        'validacion_completa': validacion_result,
+                        'mensaje': 'Por favor verifique el NIT del cliente o proporcione el nombre manualmente'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # ✅ VALORES FINALES PARA EL CLIENTE (DESPUÉS DE LA BÚSQUEDA)
+            cliente_nit_final = cliente_nit if cliente_nit else '0'
+            cliente_nombre_final = cliente_nombre if cliente_nombre else 'SIN NOMBRE'
+            cliente_email_final = cliente_email if cliente_email else ''
+            
+            print(f"📋 Datos finales del cliente (DESPUÉS de búsqueda SIAT):")
+            print(f"   - NIT: {cliente_nit_final}")
+            print(f"   - Nombre: {cliente_nombre_final}")
+            print(f"   - Email: {cliente_email_final}")
+            
+            # ✅ AHORA SÍ ACTUALIZAR EL PEDIDO CON LOS DATOS CORRECTOS
+            pedido.cliente_nit = cliente_nit_final
+            pedido.cliente_nombre = cliente_nombre_final
+            pedido.cliente_email = cliente_email_final
+            pedido.save()
+            
+            print(f"✅ Pedido actualizado con datos del cliente (incluyendo nombre obtenido del SIAT)")
+            
             # Verificar que no esté ya facturado
             if pedido.facturado:
                 return Response({
                     'error': 'Este pedido ya ha sido facturado',
                     'cuf': pedido.cuf
                 }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Crear instancia del servicio SIAT con datos del usuario
-            siat_service = SIATService(usuario=usuario)
             
             # Validar configuración SIAT del usuario
             errores = siat_service.validar_configuracion()
@@ -50,7 +116,7 @@ class FacturarPedidoAPIView(APIView):
             resultado = siat_service.enviar_factura(pedido)
             
             if resultado['success']:
-                # Actualizar el pedido
+                # Actualizar el pedido con información de facturación
                 pedido.facturado = True
                 pedido.cuf = resultado['cuf']
                 pedido.codigo_recepcion = resultado['codigo_recepcion']
@@ -71,7 +137,13 @@ class FacturarPedidoAPIView(APIView):
                     'codigo_recepcion': resultado['codigo_recepcion'],
                     'pedido_id': pedido.id,
                     'empresa': usuario.razon_social or usuario.nombre_empresa,
-                    'nit': usuario.nit_empresa
+                    'nit': usuario.nit_empresa,
+                    'cliente': {
+                        'nit': pedido.cliente_nit,
+                        'nombre': pedido.cliente_nombre,
+                        'email': pedido.cliente_email,
+                        'datos_obtenidos_automaticamente': bool(cliente_nit and not request.data.get('cliente_nombre'))
+                    }
                 }, status=status.HTTP_200_OK)
             else:
                 return Response({

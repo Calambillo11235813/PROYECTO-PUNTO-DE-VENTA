@@ -75,6 +75,11 @@ class Pedido(models.Model):
     total = models.DecimalField(max_digits=10, decimal_places=2)
     tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE,null=True, blank=True)
     
+    # Datos del cliente para facturación
+    cliente_nit = models.CharField(max_length=20, default='0')
+    cliente_nombre = models.CharField(max_length=255, default='SIN NOMBRE')
+    cliente_email = models.EmailField(blank=True, null=True)
+    
     # Campos para facturación SIAT
     facturado = models.BooleanField(default=False)
     cuf = models.CharField(max_length=100, blank=True, null=True)

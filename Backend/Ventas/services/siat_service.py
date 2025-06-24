@@ -61,7 +61,10 @@ class SIATService:
             errores = self.validar_configuracion()
             if errores:
                 print(f"❌ Errores de configuración para {self.razon_social}: {', '.join(errores)}")
-                return False
+                return {
+                    'transaccion': False,
+                    'error': f'Configuración incompleta: {", ".join(errores)}'
+                }
                 
             url = f"{self.base_url}/api/auth/token/"
             data = {
@@ -81,23 +84,36 @@ class SIATService:
                 if result.get('transaccion'):
                     self.token = result.get('token')
                     print(f"✅ Token obtenido para {self.razon_social}")
-                    return True
+                    return {
+                        'transaccion': True,
+                        'token': self.token
+                    }
                 else:
                     print(f"❌ Error en respuesta para {self.razon_social}: {result.get('mensajesList')}")
-                    return False
+                    return {
+                        'transaccion': False,
+                        'error': result.get('mensajesList', 'Error obteniendo token')
+                    }
             else:
                 print(f"❌ Error HTTP para {self.razon_social}: {response.status_code} - {response.text}")
-                return False
+                return {
+                    'transaccion': False,
+                    'error': f'Error HTTP: {response.status_code}'
+                }
                 
         except Exception as e:
             print(f"❌ Excepción obteniendo token para {self.razon_social}: {str(e)}")
-            return False
+            return {
+                'transaccion': False,
+                'error': f'Error de conexión: {str(e)}'
+            }
     
     def obtener_cuis(self):
         """Obtiene el CUIS"""
         if not self.token:
-            if not self.obtener_token():
-                return False
+            token_result = self.obtener_token()
+            if not token_result.get('transaccion'):
+                return token_result
                 
         try:
             url = f"{self.base_url}/api/codigos/cuis/"
@@ -117,23 +133,36 @@ class SIATService:
                 if result.get('transaccion'):
                     self.cuis = result.get('codigo')
                     print(f"✅ CUIS obtenido para {self.razon_social}: {self.cuis}")
-                    return True
+                    return {
+                        'transaccion': True,
+                        'codigo': self.cuis
+                    }
                 else:
                     print(f"❌ Error obteniendo CUIS para {self.razon_social}: {result.get('mensajesList')}")
-                    return False
+                    return {
+                        'transaccion': False,
+                        'error': result.get('mensajesList', 'Error obteniendo CUIS')
+                    }
             else:
                 print(f"❌ Error HTTP CUIS para {self.razon_social}: {response.status_code}")
-                return False
+                return {
+                    'transaccion': False,
+                    'error': f'Error HTTP: {response.status_code}'
+                }
                 
         except Exception as e:
             print(f"❌ Excepción CUIS para {self.razon_social}: {str(e)}")
-            return False
+            return {
+                'transaccion': False,
+                'error': f'Error de conexión: {str(e)}'
+            }
     
     def obtener_cufd(self):
         """Obtiene el CUFD"""
         if not self.cuis:
-            if not self.obtener_cuis():
-                return False
+            cuis_result = self.obtener_cuis()
+            if not cuis_result.get('transaccion'):
+                return cuis_result
                 
         try:
             url = f"{self.base_url}/api/codigos/cufd/"
@@ -152,20 +181,36 @@ class SIATService:
                 if result.get('transaccion'):
                     self.cufd = result.get('codigo')
                     print(f"✅ CUFD obtenido para {self.razon_social}: {self.cufd}")
-                    return True
+                    return {
+                        'transaccion': True,
+                        'codigo': self.cufd
+                    }
                 else:
                     print(f"❌ Error obteniendo CUFD para {self.razon_social}: {result.get('mensajesList')}")
-                    return False
+                    return {
+                        'transaccion': False,
+                        'error': result.get('mensajesList', 'Error obteniendo CUFD')
+                    }
             else:
                 print(f"❌ Error HTTP CUFD para {self.razon_social}: {response.status_code}")
-                return False
+                return {
+                    'transaccion': False,
+                    'error': f'Error HTTP: {response.status_code}'
+                }
                 
         except Exception as e:
             print(f"❌ Excepción CUFD para {self.razon_social}: {str(e)}")
-            return False
+            return {
+                'transaccion': False,
+                'error': f'Error de conexión: {str(e)}'
+            }
     
     def generar_xml_factura(self, pedido):
         """Genera el XML de la factura"""
+        # Obtener datos del cliente del pedido
+        nit_cliente = getattr(pedido, 'cliente_nit', '0')
+        nombre_cliente = getattr(pedido, 'cliente_nombre', 'SIN NOMBRE')
+        
         total_sin_impuestos = sum(
             detalle.cantidad * detalle.producto.precio_venta 
             for detalle in pedido.detalles.all()
@@ -178,8 +223,8 @@ class SIATService:
         <razonSocialEmisor>{self.razon_social}</razonSocialEmisor>
         <municipio>{self.municipio}</municipio>
         <telefono>{self.telefono}</telefono>
-        <nitReceptor>0</nitReceptor>
-        <razonSocialReceptor>SIN NOMBRE</razonSocialReceptor>
+        <nitReceptor>{nit_cliente}</nitReceptor>
+        <razonSocialReceptor>{nombre_cliente}</razonSocialReceptor>
         <codigoMetodoPago>1</codigoMetodoPago>
         <numeroTarjeta>0</numeroTarjeta>
         <montoTotal>{pedido.total}</montoTotal>
@@ -213,15 +258,106 @@ class SIATService:
         
         return xml_content
     
-    def enviar_factura(self, pedido):
-        """Envía la factura al SIAT"""
+    def validar_nit_contribuyente(self, nit):
+        """Valida un NIT contra el padrón del SIN y devuelve datos del contribuyente"""
         try:
-            print(f"🧾 Iniciando facturación para {self.razon_social} - Pedido {pedido.id}")
+            url = f"{self.base_url}/api/validar-nit/"
+            params = {'nit': nit}
             
-            if not self.cufd:
-                if not self.obtener_cufd():
-                    return {'success': False, 'error': 'No se pudo obtener CUFD'}
+            print(f"🔍 Validando NIT {nit} en {url}")
+            response = requests.get(url, params=params, timeout=self.timeout)
             
+            print(f"📥 Status Code: {response.status_code}")
+            print(f"📥 Respuesta completa: {response.text}")
+            
+            if response.status_code == 200:
+                resultado = response.json()
+                print(f"📋 Resultado parseado: {resultado}")
+                
+                # ✅ AJUSTAR SEGÚN LA ESTRUCTURA REAL DE TU API
+                if resultado.get('transaccion', False):
+                    # Extraer datos del contribuyente según tu estructura
+                    contribuyente = resultado.get('contribuyente', {})
+                    
+                    datos_contribuyente = {
+                        'nit': nit,
+                        'razonSocial': contribuyente.get('razonSocial') or contribuyente.get('nombre', 'CONTRIBUYENTE VÁLIDO'),
+                        'estado': contribuyente.get('estado', 'ACTIVO'),
+                        'tipo': contribuyente.get('tipo', 'PERSONA NATURAL')
+                    }
+                    
+                    print(f"✅ Datos extraídos: {datos_contribuyente}")
+                    
+                    return {
+                        'transaccion': True,
+                        'mensaje': 'NIT válido',
+                        'datos': datos_contribuyente
+                    }
+                else:
+                    error_msg = resultado.get('error') or resultado.get('mensaje', 'NIT no encontrado')
+                    print(f"❌ NIT no válido: {error_msg}")
+                    return {
+                        'transaccion': False,
+                        'error': error_msg
+                    }
+            else:
+                print(f"❌ Error HTTP validando NIT: {response.status_code}")
+                return {
+                    'transaccion': False,
+                    'error': f'Error HTTP {response.status_code}: {response.text}'
+                }
+                
+        except Exception as e:
+            print(f"❌ Error validando NIT: {str(e)}")
+            return {
+                'transaccion': False,
+                'error': f'Error de conexión: {str(e)}'
+            }
+
+    def enviar_factura(self, pedido):
+        """Envía la factura al SIAT con validación de NIT"""
+        try:
+            print(f"🎯 Procesando factura para pedido {pedido.id}")
+            
+            # 1. Validar configuración
+            errores = self.validar_configuracion()
+            if errores:
+                return {
+                    'success': False,
+                    'error': f'Configuración SIAT incompleta: {", ".join(errores)}'
+                }
+            
+            # 2. Obtener token si no existe
+            if not self.token:
+                token_result = self.obtener_token()
+                if not token_result.get('transaccion', False):
+                    return {
+                        'success': False,
+                        'error': token_result.get('error', 'Error obteniendo token')
+                    }
+            
+            # 3. Validar NIT del cliente (si no es especial)
+            nit_cliente = getattr(pedido, 'cliente_nit', '0')
+            if nit_cliente and nit_cliente not in ['0', '99001', '99002', '99003']:
+                print(f"🔍 Validando NIT del cliente: {nit_cliente}")
+                validacion_result = self.validar_nit_contribuyente(nit_cliente)
+                
+                if isinstance(validacion_result, dict) and not validacion_result.get('transaccion', False):
+                    return {
+                        'success': False,
+                        'error': f"NIT del cliente inválido: {validacion_result.get('error', 'Error desconocido')}"
+                    }
+                print(f"✅ NIT del cliente validado correctamente")
+            
+            # 4. Obtener CUFD (que internamente obtiene CUIS si es necesario)
+            cufd_result = self.obtener_cufd()
+            if not cufd_result.get('transaccion', False):
+                return {
+                    'success': False,
+                    'error': cufd_result.get('error', 'Error obteniendo CUFD')
+                }
+            
+            # 5. Generar XML y enviar
             xml_content = self.generar_xml_factura(pedido)
             xml_bytes = xml_content.encode('utf-8')
             compressed_xml = gzip.compress(xml_bytes)
@@ -265,17 +401,21 @@ class SIATService:
                 
         except Exception as e:
             print(f"❌ Error enviando factura para {self.razon_social}: {str(e)}")
-            return {'success': False, 'error': str(e)}
+            return {
+                'success': False,
+                'error': f'Error interno: {str(e)}'
+            }
     
     def verificar_estado_factura(self, cuf):
         """Verifica el estado de una factura en SIAT"""
         try:
             print(f"🔍 Verificando estado de factura para {self.razon_social}: {cuf}")
             
-            # ✅ ASEGURAR QUE TENEMOS TOKEN
+            # Asegurar que tenemos token
             if not self.token:
                 print("🔑 Token no disponible, obteniendo nuevo token...")
-                if not self.obtener_token():
+                token_result = self.obtener_token()
+                if not token_result.get('transaccion', False):
                     return {
                         'transaccion': False,
                         'error': 'No se pudo obtener token para verificación'
@@ -283,7 +423,7 @@ class SIATService:
             
             url = f"{self.base_url}/api/facturacion/verificacion/"
             
-            # ✅ AGREGAR PARÁMETROS EN LA URL
+            # Agregar parámetros en la URL
             params = {
                 'token': self.token,
                 'cuf': cuf
@@ -292,7 +432,7 @@ class SIATService:
             print(f"🔗 Enviando verificación con token: {self.token[:20]}...")
             print(f"🔗 Parámetros: {params}")
             
-            # ✅ USAR GET CON PARÁMETROS
+            # Usar GET con parámetros
             response = requests.get(url, params=params, timeout=30)
             
             print(f"📊 Status code verificación: {response.status_code}")

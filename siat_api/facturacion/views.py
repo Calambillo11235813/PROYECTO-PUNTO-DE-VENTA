@@ -12,6 +12,10 @@ import uuid
 from django.utils.crypto import get_random_string
 from django.utils import timezone
 from datetime import timedelta
+from rest_framework.views import APIView
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import re
 
 @api_view(['POST'])
 def generar_token(request):
@@ -334,10 +338,6 @@ def recepcion_factura_base64(request):
 
 # ✅ AGREGAR ESTAS NUEVAS VIEWS AL FINAL DEL ARCHIVO
 
-from rest_framework.views import APIView
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-
 @method_decorator(csrf_exempt, name='dispatch')
 class UsuarioSIATAPIView(APIView):
     """CRUD para gestionar usuarios SIAT de prueba"""
@@ -477,3 +477,114 @@ def limpiar_datos_prueba(request):
         return Response({
             'error': str(e)
         }, status=500)
+
+@api_view(['GET'])
+def validar_nit_contribuyente(request):
+    """
+    Simula la validación de NIT en el sistema del SIN
+    """
+    nit = request.GET.get('nit')
+    
+    if not nit:
+        return Response({
+            'transaccion': False,
+            'error': 'Parámetro NIT requerido'
+        })
+    
+    # NITs especiales que siempre son válidos
+    nits_especiales = {
+        '0': 'Consumidor Final',
+        '99001': 'Extranjero sin NIT',
+        '99002': 'Extranjero con NIT del país de origen', 
+        '99003': 'Venta a crédito fiscal'
+    }
+    
+    if nit in nits_especiales:
+        return Response({
+            'transaccion': True,
+            'contribuyente': {
+                'nit': nit,
+                'razonSocial': nits_especiales[nit],
+                'estado': 'ACTIVO',
+                'tipo': 'ESPECIAL'
+            },
+            'mensaje': 'NIT especial válido'
+        })
+    
+    # Validar formato básico de NIT boliviano
+    if not re.match(r'^\d{7,12}$', nit):
+        return Response({
+            'transaccion': False,
+            'error': 'Formato de NIT inválido. Debe contener entre 7 y 12 dígitos'
+        })
+    
+    # Buscar en la "base de datos del SIN" (simulada)
+    try:
+        cliente = Cliente.objects.get(nit=nit)
+        return Response({
+            'transaccion': True,
+            'contribuyente': {
+                'nit': cliente.nit,
+                'razonSocial': cliente.nombre,
+                'estado': cliente.estado,
+                'tipo': cliente.tipo_contribuyente
+            },
+            'mensaje': 'Contribuyente encontrado'
+        })
+    except Cliente.DoesNotExist:
+        return Response({
+            'transaccion': False,
+            'error': f'El NIT {nit} no se encuentra registrado en el padrón de contribuyentes'
+        })
+
+@api_view(['POST'])
+def facturar_con_validacion_nit(request):
+    """
+    Procesa una factura validando primero el NIT del receptor
+    """
+    try:
+        # Extraer datos de la solicitud
+        nit_receptor = request.data.get('nitReceptor', '0')
+        nombre_receptor = request.data.get('nombreReceptor', 'SIN NOMBRE')
+        
+        # Validar NIT del receptor
+        if nit_receptor not in ['0', '99001', '99002', '99003']:
+            try:
+                cliente = Cliente.objects.get(nit=nit_receptor)
+                if cliente.estado != 'ACTIVO':
+                    return Response({
+                        'transaccion': False,
+                        'error': f'El contribuyente con NIT {nit_receptor} no está activo'
+                    })
+                # Usar el nombre registrado en el SIN
+                nombre_receptor = cliente.nombre
+            except Cliente.DoesNotExist:
+                return Response({
+                    'transaccion': False,
+                    'error': f'El NIT {nit_receptor} no está registrado en el padrón de contribuyentes'
+                })
+        
+        # Si llegamos aquí, el NIT es válido, proceder con la facturación normal
+        # ... resto de la lógica de facturación ...
+        
+        # Simular respuesta exitosa
+        import uuid
+        cuf = str(uuid.uuid4())
+        
+        return Response({
+            'transaccion': True,
+            'cuf': cuf,
+            'codigoRecepcion': f'REC-{cuf[:8]}',
+            'estado': 'Aceptado',
+            'mensaje': 'Factura procesada exitosamente',
+            'receptor': {
+                'nit': nit_receptor,
+                'nombre': nombre_receptor
+            }
+        })
+        
+    except Exception as e:
+        return Response({
+            'transaccion': False,
+            'error': f'Error procesando factura: {str(e)}'
+        })

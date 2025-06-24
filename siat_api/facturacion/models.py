@@ -25,10 +25,24 @@ class Cufd(models.Model):
     fecha_vigencia = models.DateTimeField()
     creado_en = models.DateTimeField(auto_now_add=True)
 
+class Cliente(models.Model):
+    """
+    Simula la base de datos del SIN con NITs registrados
+    """
+    nit = models.CharField(max_length=20, unique=True)
+    nombre = models.CharField(max_length=255)
+    tipo_contribuyente = models.CharField(max_length=50, default='PERSONA NATURAL')
+    estado = models.CharField(max_length=20, default='ACTIVO')
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.nit} - {self.nombre}"
+
 class Factura(models.Model):
     cuf = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     nit_emisor = models.CharField(max_length=20)
     nit_receptor = models.CharField(max_length=20)
+    nombre_receptor = models.CharField(max_length=255, default='SIN NOMBRE')
     fecha_emision = models.DateTimeField()
     monto_total = models.DecimalField(max_digits=10, decimal_places=2)
     codigo_establecimiento = models.CharField(max_length=10)

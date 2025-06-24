@@ -18,4 +18,8 @@ urlpatterns = [
     path('usuarios/', views.UsuarioSIATAPIView.as_view(), name='usuarios-list'),
     path('usuarios/<str:nit>/', views.UsuarioSIATAPIView.as_view(), name='usuarios-detail'),
     path('limpiar-datos/', views.limpiar_datos_prueba, name='limpiar-datos'),
+
+    # Nuevas URLs para validación de NIT y facturación
+    path('validar-nit/', views.validar_nit_contribuyente, name='validar_nit'),
+    path('facturar-validado/', views.facturar_con_validacion_nit, name='facturar_validado'),
 ]
