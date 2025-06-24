@@ -4,7 +4,7 @@ from accounts.serializers import UsuarioSerializer
 from accounts.models import Usuario
 from accounts.serializers import UsuarioSerializer
 from accounts.models import Usuario
-from Productos.models import Producto
+from Productos.models import Producto, PedidoProveedor
 from cloudinary.utils import cloudinary_url
 from Sucursales.models import Sucursal
 
@@ -102,3 +102,9 @@ class InventarioSerializer(serializers.ModelSerializer):
         if valor < 0:
             raise serializers.ValidationError("El stock no puede ser negativo.")
         return valor
+
+class PedidoProveedorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PedidoProveedor
+        fields = '__all__'
+        read_only_fields = ['usuario']

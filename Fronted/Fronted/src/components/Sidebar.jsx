@@ -19,7 +19,9 @@ import {
   FaChevronDown,
   FaChevronUp,
   FaUndoAlt,
-  FaBuilding
+  FaBuilding,
+  FaTruck,
+  FaClipboardList
 } from "react-icons/fa";
 import authService from "../services/authService";
 import useTheme from "../hooks/useTheme";
@@ -145,6 +147,20 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       text: "Mi Plan", 
       path: "/admin/mi-plan",
       allowedRoles: ['admin', undefined, 'Supervisor'] 
+    },
+    {
+      id: "Proveedor",
+      icon: <FaTruck />,
+      text: "Proveedores",
+      path: "/admin/proveedores",
+      allowedRoles: ['admin', undefined, 'Supervisor']
+    },
+    {
+      id: "PedidoProveedor",
+      icon: <FaClipboardList />,
+      text: "Pedido a Proveedor",
+      path: "/admin/pedido-proveedor",
+      allowedRoles: ['admin', undefined, 'Supervisor']
     },
   ];
 

@@ -39,11 +39,14 @@ import PlanManager from "./pages/PlanManager";
 import Vistareportes from './pages/Reportes/Vistareportes'; // Importamos el componente de reportes
 import SucursalesManager from './pages/SucursalesManager';
 
-
 // Componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
 import EmpleadoForm from './pages/Empleados/EmpleadoForm';
 import FirstBranchSetup from './pages/FirstBranchSetup';
+
+// Páginas adicionales
+import Proveedor from "./pages/Proveedor";
+import PedidoProveedor from "./pages/PedidoProveedor";
 
 // Componente para acceso denegado
 const AccesoDenegado = () => (
@@ -122,6 +125,8 @@ function App() {
                   <Route path="caja" element={<CajaManager />} />
                   <Route path="mi-plan" element={<PlanManager />} />
                   <Route path="sucursales" element={<SucursalesManager />} />
+                  <Route path="proveedores" element={<Proveedor />} />
+                  <Route path="pedido-proveedor" element={<PedidoProveedor />} />
                 </Route>
               </Route>
             </Route>
