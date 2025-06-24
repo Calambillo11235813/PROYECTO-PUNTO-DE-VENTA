@@ -30,3 +30,15 @@ class PedidoProveedorDeleteView(APIView):
         pedido = get_object_or_404(PedidoProveedor, pk=pk)
         pedido.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class PedidoProveedorPorSucursalView(APIView):
+    def get(self, request, sucursal_id):
+        pedidos = PedidoProveedor.objects.filter(sucursal_id=sucursal_id)
+        serializer = PedidoProveedorSerializer(pedidos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class PedidoProveedorPorSucursalYUsuarioView(APIView):
+    def get(self, request, usuario_id, sucursal_id):
+        pedidos = PedidoProveedor.objects.filter(usuario_id=usuario_id, sucursal_id=sucursal_id)
+        serializer = PedidoProveedorSerializer(pedidos, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

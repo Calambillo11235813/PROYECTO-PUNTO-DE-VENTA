@@ -38,6 +38,7 @@ import CajaManager from './pages/Caja/CajaManager';
 import PlanManager from "./pages/PlanManager";
 import Vistareportes from './pages/Reportes/Vistareportes'; // Importamos el componente de reportes
 import SucursalesManager from './pages/SucursalesManager';
+import Lista_pedidos from "./pages/Lista_pedidos"; // Agrega este import
 
 // Componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
@@ -127,6 +128,7 @@ function App() {
                   <Route path="sucursales" element={<SucursalesManager />} />
                   <Route path="proveedores" element={<Proveedor />} />
                   <Route path="pedido-proveedor" element={<PedidoProveedor />} />
+                  <Route path="lista-pedidos" element={<Lista_pedidos />} />
                 </Route>
               </Route>
             </Route>

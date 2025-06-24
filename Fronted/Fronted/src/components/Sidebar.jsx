@@ -162,6 +162,13 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       path: "/admin/pedido-proveedor",
       allowedRoles: ['admin', undefined, 'Supervisor']
     },
+    {
+      id: "ListaPedidos",
+      icon: <FaClipboardList />,
+      text: "Lista de Pedidos",
+      path: "/admin/lista-pedidos",
+      allowedRoles: ['admin', undefined, 'Supervisor']
+    },
   ];
 
   const getUserRole = () => {
