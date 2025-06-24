@@ -588,3 +588,49 @@ def facturar_con_validacion_nit(request):
             'transaccion': False,
             'error': f'Error procesando factura: {str(e)}'
         })
+@api_view(['POST'])
+def anular_factura(request):
+    """Simula anulación de factura en el SIAT"""
+    try:
+        cuf = request.data.get('cuf')
+        motivo = request.data.get('motivo')
+        empresa = request.data.get('empresa', {})
+        
+        print(f"🗑️ Recibiendo solicitud de anulación:")
+        print(f"   - CUF: {cuf}")
+        print(f"   - Motivo: {motivo}")
+        print(f"   - Empresa: {empresa}")
+        
+        if not cuf:
+            return Response({
+                'transaccion': False,
+                'error': 'CUF es requerido'
+            }, status=400)
+        
+        if not motivo or len(motivo.strip()) < 5:
+            return Response({
+                'transaccion': False,
+                'error': 'Motivo de anulación debe tener al menos 5 caracteres'
+            }, status=400)
+        
+        # Simular anulación exitosa
+        return Response({
+            'transaccion': True,
+            'mensaje': 'Factura anulada exitosamente',
+            'detalles': {
+                'cuf': cuf,
+                'motivo': motivo,
+                'fecha_anulacion': timezone.now().isoformat(),
+                'empresa_nit': empresa.get('nit', ''),
+                'codigo_anulacion': f'ANU-{get_random_string(8)}',
+                'estado_anterior': 'Aceptado',
+                'estado_actual': 'Anulado'
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Error anulando factura: {str(e)}")
+        return Response({
+            'transaccion': False,
+            'error': f'Error interno: {str(e)}'
+        }, status=500)

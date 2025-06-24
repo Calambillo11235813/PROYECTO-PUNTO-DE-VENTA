@@ -453,3 +453,53 @@ class SIATService:
                 'transaccion': False,
                 'error': f'Error de conexión: {str(e)}'
             }
+    
+    def anular_factura(self, cuf, motivo):
+        """Anula una factura en el SIAT"""
+        try:
+            # ✅ CORREGIR LA URL - usar /api/anular/ en lugar de /api/facturacion/anular/
+            url = f"{self.base_url}/api/anular/"
+            
+            payload = {
+                'cuf': cuf,
+                'motivo': motivo,
+                'empresa': {
+                    'nit': self.usuario.nit_empresa,
+                    'razon_social': self.usuario.razon_social or self.usuario.nombre_empresa
+                }
+            }
+            
+            print(f"🗑️ Anulando factura CUF: {cuf}")
+            print(f"📤 URL: {url}")
+            print(f"📤 Payload: {payload}")
+            
+            response = requests.post(url, json=payload, timeout=self.timeout)
+            print(f"📥 Respuesta SIAT anulación: {response.status_code}")
+            print(f"📄 Contenido: {response.text}")
+            
+            if response.status_code == 200:
+                resultado = response.json()
+                
+                if resultado.get('transaccion', False):
+                    return {
+                        'success': True,
+                        'mensaje': resultado.get('mensaje', 'Factura anulada exitosamente'),
+                        'detalles': resultado.get('detalles', {})
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'error': resultado.get('error', 'Error al anular factura')
+                    }
+            else:
+                return {
+                    'success': False,
+                    'error': f'Error HTTP {response.status_code}: {response.text}'
+                }
+                
+        except Exception as e:
+            print(f"❌ Error anulando factura: {str(e)}")
+            return {
+                'success': False,
+                'error': f'Error de conexión: {str(e)}'
+            }

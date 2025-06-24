@@ -13,6 +13,8 @@ from Ventas.controllers.reporte_controller import (
     ReporteMovimientosView
 )
 from Ventas.controllers.facturacion_controller import FacturarPedidoAPIView, VerificarEstadoFacturaAPIView,TestSIATConnectionAPIView
+from Ventas.controllers.lista_facturas_controller import ListaFacturasUsuarioAPIView
+from Ventas.controllers.anular_factura_controller import AnularFacturaAPIView
 
 
 urlpatterns = [
@@ -56,4 +58,10 @@ urlpatterns = [
     path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/estado-factura/', VerificarEstadoFacturaAPIView.as_view(), name='verificar-estado-factura'),
       # ✅ AGREGAR ESTA LÍNEA
     path('test-siat-connection/<int:usuario_id>/', TestSIATConnectionAPIView.as_view(), name='test-siat-connection'),
+
+    # ✅ NUEVA URL para listar facturas
+    path('facturas/usuario/<int:usuario_id>/', ListaFacturasUsuarioAPIView.as_view(), name='lista_facturas_usuario'),
+
+    # ✅ URL para anular factura
+    path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/factura/anular/', AnularFacturaAPIView.as_view(), name='anular_factura'),
 ]

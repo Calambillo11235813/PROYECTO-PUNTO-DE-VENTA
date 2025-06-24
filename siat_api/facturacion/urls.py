@@ -22,4 +22,7 @@ urlpatterns = [
     # Nuevas URLs para validación de NIT y facturación
     path('validar-nit/', views.validar_nit_contribuyente, name='validar_nit'),
     path('facturar-validado/', views.facturar_con_validacion_nit, name='facturar_validado'),
+
+    # ✅ URL para anular factura
+    path('anular/', views.anular_factura, name='anular_factura'),
 ]
