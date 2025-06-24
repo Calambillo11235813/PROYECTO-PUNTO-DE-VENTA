@@ -232,6 +232,7 @@ class PedidoDetailAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+# Modificar la clase PedidosBySucursalAPIView para que reciba correctamente los parámetros
 class PedidosBySucursalAPIView(APIView):
     def get(self, request, usuario_id, sucursal_id):
         try:

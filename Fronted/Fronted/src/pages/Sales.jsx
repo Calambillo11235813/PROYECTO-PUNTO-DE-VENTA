@@ -7,6 +7,7 @@ import { cajaService } from '../services/cajaService';
 import Barra_busqueda from '../components/barra_busqueda';
 import ShoppingCart from '../components/ShoppingCart';
 import { toast } from 'react-toastify';
+import { Store } from 'lucide-react'; // Importar ícono para sucursal
 
 const VentasView = () => {
   const [products, setProducts] = useState([]);
@@ -22,20 +23,56 @@ const VentasView = () => {
   const [estados, setEstados] = useState([]);
   const [cajaActual, setCajaActual] = useState(null);
   const [loadingCaja, setLoadingCaja] = useState(true);
+  // Nuevo estado para la sucursal actual
+  const [sucursalActual, setSucursalActual] = useState(null);
   const navigate = useNavigate();
 
-  // Verificar si hay una caja abierta al cargar la página
+  // Cargar información de la sucursal actual al inicio
+  useEffect(() => {
+    const cargarSucursalActual = () => {
+      const sucursalId = localStorage.getItem('sucursal_actual_id');
+      const sucursalNombre = localStorage.getItem('sucursal_actual_nombre');
+      
+      console.log(`🏪 Cargando información de sucursal - ID: ${sucursalId}, Nombre: ${sucursalNombre}`);
+      
+      if (sucursalId && sucursalNombre) {
+        setSucursalActual({
+          id: parseInt(sucursalId),
+          nombre: sucursalNombre
+        });
+      } else {
+        toast.warning("No hay una sucursal seleccionada. Por favor seleccione una sucursal.");
+      }
+    };
+    
+    cargarSucursalActual();
+    
+    // Escuchar cambios de sucursal
+    window.addEventListener('sucursalChanged', cargarSucursalActual);
+    
+    return () => {
+      window.removeEventListener('sucursalChanged', cargarSucursalActual);
+    };
+  }, []);
+
+  // Verificar si hay una caja abierta al cargar la página o cuando cambia la sucursal
   useEffect(() => {
     const verificarCaja = async () => {
+      if (!sucursalActual?.id) {
+        console.log("⚠️ No hay sucursal seleccionada para verificar caja");
+        return;
+      }
+      
       setLoadingCaja(true);
       try {
+        console.log(`🔍 Verificando caja para sucursal ${sucursalActual.id}...`);
         const data = await cajaService.getCajaActual();
         setCajaActual(data);
-        console.log("Caja actual cargada:", data);
+        console.log(`✅ Caja cargada para sucursal ${sucursalActual.id}:`, data);
       } catch (error) {
-        console.error("Error al verificar estado de caja:", error);
+        console.error(`❌ Error al verificar caja para sucursal ${sucursalActual.id}:`, error);
         if (error.response && error.response.status === 404) {
-          toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+          toast.error(`No hay una caja abierta en ${sucursalActual.nombre}. Debe abrir una caja antes de realizar ventas.`);
           navigate('/admin/caja');
         }
       } finally {
@@ -43,51 +80,92 @@ const VentasView = () => {
       }
     };
     
-    verificarCaja();
-  }, [navigate]);
+    if (sucursalActual) {
+      verificarCaja();
+    }
+  }, [sucursalActual, navigate]);
 
-  // Cargar pedidos existentes cuando se carga la página o cambia la caja
+  // Cargar pedidos específicos de la sucursal actual
   useEffect(() => {
     const fetchPedidos = async () => {
+      if (!cajaActual || !sucursalActual?.id) {
+        return;
+      }
+      
       try {
-        if (cajaActual) {
-          const data = await pedidoService.getAllPedidos();
-          console.log("Pedidos cargados:", data);
-          setPedidos(data);
-        }
+        console.log(`🔍 Cargando pedidos para sucursal ${sucursalActual.id}...`);
+        // Usar el método específico para obtener pedidos por sucursal
+        const data = await pedidoService.getPedidosBySucursal(
+          localStorage.getItem('id'),
+          sucursalActual.id
+        );
+        console.log(`✅ ${data.length} pedidos cargados para sucursal ${sucursalActual.id}:`, data);
+        setPedidos(data);
       } catch (error) {
-        console.error('Error al cargar pedidos:', error);
-        toast.error('Error al cargar el historial de pedidos');
+        console.error(`❌ Error al cargar pedidos para sucursal ${sucursalActual.id}:`, error);
+        toast.error(`Error al cargar el historial de ventas en ${sucursalActual.nombre}`);
       }
     };
 
     fetchPedidos();
-  }, [cajaActual]);
+  }, [cajaActual, sucursalActual]);
 
+  // Cargar productos filtrados por sucursal
   useEffect(() => {
     const fetchProducts = async () => {
+      if (!sucursalActual?.id) {
+        return;
+      }
+      
       try {
         setLoading(true);
-        const data = await productoService.getAllProducts();
-        const formattedData = Array.isArray(data) ? data.map(product => ({
+        console.log(`🔍 Cargando productos para sucursal ${sucursalActual.id}...`);
+        
+        let productosData;
+        
+        // Intentar obtener productos específicos de la sucursal
+        if (productoService.getProductosBySucursal) {
+          try {
+            // Obtener el ID del usuario actual del localStorage
+            const userId = localStorage.getItem('id');
+
+            // Asegurarse de pasar AMBOS parámetros: userId y sucursalId
+            productosData = await productoService.getProductosBySucursal(userId, sucursalActual.id);
+            console.log(`✅ Se encontraron ${productosData.length} productos específicos para sucursal ${sucursalActual.id}`);
+          } catch (error) {
+            console.warn(`⚠️ No se pudieron obtener productos específicos para la sucursal: ${error.message}`);
+            // Si falla, cargar todos los productos como fallback
+            productosData = await productoService.getAllProducts();
+            console.log(`ℹ️ Usando todos los productos disponibles como alternativa`);
+          }
+        } else {
+          // Si no existe el método, usar getAllProducts
+          productosData = await productoService.getAllProducts();
+        }
+        
+        // Formatear datos
+        const formattedData = Array.isArray(productosData) ? productosData.map(product => ({
           ...product,
           precio_venta: Number(product.precio_venta),
           precio_compra: Number(product.precio_compra),
           stock_inicial: Number(product.stock_inicial)
         })) : [];
         
+        console.log(`✅ ${formattedData.length} productos cargados para la vista de ventas`);
         setProducts(formattedData);
         setFilteredProducts(formattedData.slice(0, 10));
       } catch (error) {
-        console.error('Error al cargar productos:', error);
-        toast.error('Error al cargar productos');
+        console.error(`❌ Error al cargar productos para sucursal ${sucursalActual.id}:`, error);
+        toast.error(`Error al cargar productos en ${sucursalActual.nombre}`);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
-  }, []);
+    if (sucursalActual) {
+      fetchProducts();
+    }
+  }, [sucursalActual]);
 
   useEffect(() => {
     const newTotal = cartItems.reduce((sum, item) => 
@@ -97,9 +175,15 @@ const VentasView = () => {
   }, [cartItems]);
 
   const handleAddToCart = (product) => {
+    // Verificar que haya una sucursal seleccionada
+    if (!sucursalActual?.id) {
+      toast.error("Debe seleccionar una sucursal antes de realizar ventas.");
+      return;
+    }
+    
     // Verificar si hay una caja abierta antes de agregar productos
     if (!cajaActual) {
-      toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+      toast.error(`No hay una caja abierta en ${sucursalActual.nombre}. Debe abrir una caja antes de realizar ventas.`);
       navigate('/admin/caja');
       return;
     }
@@ -154,18 +238,26 @@ const VentasView = () => {
   };
 
   const handleFinalizarVenta = async () => {
+    // Verificar si hay productos en el carrito
     if (cartItems.length === 0) {
       toast.error('No hay productos en el carrito');
       return;
     }
 
+    // Verificar si hay una sucursal seleccionada
+    if (!sucursalActual?.id) {
+      toast.error("Debe seleccionar una sucursal para realizar ventas");
+      return;
+    }
+
     // Verificar si hay una caja abierta
     if (!cajaActual) {
-      toast.error("No hay una caja abierta. Debe abrir una caja antes de realizar ventas.");
+      toast.error(`No hay una caja abierta en ${sucursalActual.nombre}. Debe abrir una caja antes de realizar ventas.`);
       navigate('/admin/caja');
       return;
     }
 
+    // Verificar que los montos coincidan
     const sumPayments = paymentMethods.reduce((sum, payment) => 
       sum + Number(payment.amount || 0), 0
     );
@@ -180,28 +272,41 @@ const VentasView = () => {
       
       // Preparar los datos del pedido con la fecha actual en formato ISO
       const pedidoData = {
-        estado: 2,
+        estado: 2, // Estado completado
         total: total.toFixed(2),
-        tipo_venta: 1,
+        tipo_venta: 1, // Venta directa
+        caja_id: cajaActual.id, // ID de la caja abierta
+        sucursal: parseInt(sucursalActual.id), // Asegurar que sea un número
         detalles_input: cartItems.map(item => ({
           producto_id: item.id,
           cantidad: item.cantidad
+        })),
+        // Agregar transacciones de pago
+        transacciones_input: paymentMethods.map(payment => ({
+          tipo_pago_id: getTipoPagoId(payment.method),
+          monto: Number(payment.amount).toFixed(2)
         }))
       };
 
-      // Crear el pedido con todos los datos en una sola llamada
-      await pedidoService.createPedido(pedidoData);
+      console.log(`📝 Datos de venta a enviar para sucursal ${sucursalActual.id}:`, pedidoData);
       
-      toast.success(`¡Venta finalizada con éxito!\nTotal: $${total.toFixed(2)}`);
+      const nuevoPedido = await pedidoService.createPedido(pedidoData);
+      
+      console.log(`✅ Venta #${nuevoPedido.id} registrada en sucursal ${sucursalActual.nombre}`);
+      toast.success(`¡Venta #${nuevoPedido.id} finalizada en ${sucursalActual.nombre}!`);
+      
       setCartItems([]);
       setPaymentMethods([{ amount: '', method: 'Efectivo' }]);
 
-      // Actualizar la lista de pedidos
-      const actualizarPedidos = await pedidoService.getAllPedidos();
+      // Actualizar la lista de pedidos específicos de la sucursal
+      const actualizarPedidos = await pedidoService.getPedidosBySucursal(
+        localStorage.getItem('id'),
+        sucursalActual.id
+      );
       setPedidos(actualizarPedidos);
       
     } catch (error) {
-      console.error('Error al finalizar la venta:', error);
+      console.error(`❌ Error al finalizar la venta en sucursal ${sucursalActual?.nombre}:`, error);
       toast.error(error.message || "Error al finalizar la venta");
     } finally {
       setProcessingOrder(false);
@@ -219,26 +324,48 @@ const VentasView = () => {
   };
 
   const handleDeletePedido = async (pedidoId) => {
+    if (!sucursalActual?.id) {
+      toast.error("Debe seleccionar una sucursal para gestionar pedidos");
+      return;
+    }
+    
     try {
+      console.log(`🗑️ Eliminando pedido ${pedidoId} de sucursal ${sucursalActual.id}...`);
       await pedidoService.deletePedido(pedidoId);
-      toast.success('Pedido eliminado correctamente');
+      toast.success(`Pedido eliminado correctamente de ${sucursalActual.nombre}`);
       
-      // Actualizar la lista de pedidos
-      const actualizarPedidos = await pedidoService.getAllPedidos();
+      // Actualizar la lista de pedidos específicos de la sucursal
+      const actualizarPedidos = await pedidoService.getPedidosBySucursal(
+        localStorage.getItem('id'),
+        sucursalActual.id
+      );
       setPedidos(actualizarPedidos);
     } catch (error) {
-      console.error('Error al eliminar pedido:', error);
+      console.error(`❌ Error al eliminar pedido ${pedidoId}:`, error);
       toast.error('Error al eliminar el pedido');
     }
   };
 
   return (
-    <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="w-full h-full flex flex-col">
-      <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="py-4 px-6  border-b">
-        <h1 className="text-xl font-medium title-icon">Punto de Venta</h1>
+    <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="w-full h-full flex flex-col">
+      <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="py-4 px-6 border-b">
+        <h1 className="text-xl font-medium title-icon flex items-center">
+          Punto de Venta
+          {sucursalActual && (
+            <span className="ml-3 text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full flex items-center">
+              <Store className="h-4 w-4 mr-1" /> {sucursalActual.nombre}
+            </span>
+          )}
+        </h1>
         {cajaActual && (
           <p className="text-sm text-gray-600">
-            Caja # abierta desde {new Date(cajaActual.fecha_apertura).toLocaleString()}
+            Caja #{cajaActual.id} abierta desde {new Date(cajaActual.fecha_apertura).toLocaleString()}
+            {sucursalActual && ` en ${sucursalActual.nombre}`}
+          </p>
+        )}
+        {!sucursalActual && (
+          <p className="text-sm text-red-600">
+            No hay sucursal seleccionada. Por favor seleccione una sucursal para realizar ventas.
           </p>
         )}
       </div>
@@ -256,18 +383,22 @@ const VentasView = () => {
             <div className="flex justify-center items-center h-64">
               <p>Cargando productos...</p>
             </div>
+          ) : !sucursalActual ? (
+            <div className="flex justify-center items-center h-64">
+              <p className="text-gray-500">Seleccione una sucursal para ver productos</p>
+            </div>
           ) : (
             <>
               {searchTerm && (
                 <div className="mb-3 text-gray-600">
                   {filteredProducts.length === 0 
                     ? 'No se encontraron productos que coincidan con tu búsqueda.' 
-                    : `Se encontraron ${filteredProducts.length} producto(s) para "${searchTerm}"`
+                    : `Se encontraron ${filteredProducts.length} producto(s) para "${searchTerm}" en ${sucursalActual.nombre}`
                   }
                 </div>
               )}
               
-              <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {filteredProducts.map(product => (
                   <ProductCard 
                     key={product.id} 
@@ -292,7 +423,8 @@ const VentasView = () => {
             processingOrder={processingOrder}
             pedidos={pedidos}
             onDeletePedido={handleDeletePedido}
-            cajaActual={cajaActual} // Pasar información de la caja actual
+            cajaActual={cajaActual}
+            sucursalActual={sucursalActual} // Pasar la sucursal actual al componente
           />
         </div>
       </div>

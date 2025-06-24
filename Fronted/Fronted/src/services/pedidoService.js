@@ -21,18 +21,23 @@ export const pedidoService = {
     }
   },
 
-  // Primero, completar la implementación del método getPedidosBySucursal
+  /**
+   * Obtiene los pedidos específicos de una sucursal
+   */
   getPedidosBySucursal: async (userId, sucursalId) => {
-    console.log(`Entrando a getPedidosBySucursal - userId: ${userId}, sucursalId: ${sucursalId}`);
+    console.log(`🏁 Entrando a getPedidosBySucursal - userId: ${userId}, sucursalId: ${sucursalId}`);
     try {
       // Validar que ambos parámetros estén presentes
       if (!userId || !sucursalId) {
-        console.error('Se requiere ID de usuario y sucursal');
+        console.error('❌ Error: Se requiere ID de usuario y sucursal');
         throw new Error('Se requiere ID de usuario y sucursal');
       }
 
-      // Usar la ruta específica para pedidos por sucursal
-      const response = await api.get(`ventas/pedidos/usuario/${userId}/sucursal/${sucursalId}/`);
+      console.log(`🔍 Consultando pedidos para sucursal ${sucursalId}...`);
+      
+      // Usar directamente query params en lugar de la ruta específica
+      // Ya que parece que la ruta específica no está implementada correctamente en el backend
+      const response = await api.get(`ventas/pedidos/usuario/${userId}/?sucursal_id=${sucursalId}`);
       console.log(`✅ Pedidos obtenidos para sucursal ${sucursalId}:`, response.data);
       return response.data;
     } catch (error) {
@@ -42,20 +47,30 @@ export const pedidoService = {
   },
   
   createPedido: async (pedidoData) => {
-    console.log('Entrando a createPedido()');
+    console.log('🏁 Entrando a createPedido()');
     const id = localStorage.getItem('id');
+    const sucursalId = localStorage.getItem('sucursal_actual_id');
+    
     try {
-      // Verificar primero si hay una caja abierta
+      // Validar que se haya especificado una sucursal
+      if (!sucursalId && !pedidoData.sucursal) {
+        console.error('❌ Error: No hay una sucursal seleccionada para registrar la venta');
+        throw new Error('Debe seleccionar una sucursal antes de realizar ventas');
+      }
+      
+      // Si se proporcionó un ID de caja, usarlo directamente
       let cajaId = pedidoData.caja_id;
       
       if (!cajaId) {
         try {
-          // Si no se proporcionó ID de caja, intentar obtenerlo
-          const cajaActual = await api.get(`ventas/caja/actual/${id}/`);
+          // Si no se proporcionó ID de caja, intentar obtenerlo para la sucursal actual
+          console.log(`🔍 Obteniendo caja abierta para sucursal ${sucursalId || pedidoData.sucursal}...`);
+          const cajaActual = await api.get(`ventas/caja/actual/${id}/?sucursal_id=${sucursalId || pedidoData.sucursal}`);
           cajaId = cajaActual.data.id;
+          console.log(`✅ Caja encontrada: ${cajaId}`);
         } catch (cajaError) {
-          console.error('Error al obtener caja actual:', cajaError);
-          throw new Error('Debe abrir una caja antes de realizar ventas');
+          console.error('❌ Error al obtener caja actual:', cajaError.response?.data || cajaError.message);
+          throw new Error(`No hay una caja abierta en la sucursal ${sucursalId || pedidoData.sucursal}. Debe abrir una caja antes de realizar ventas.`);
         }
       }
       
@@ -64,6 +79,8 @@ export const pedidoService = {
         estado: pedidoData.estado || 1,
         fecha: pedidoData.fecha || new Date().toISOString(), // Asegurar que siempre haya una fecha
         total: Number(pedidoData.total).toFixed(2),
+        caja: cajaId, // Agregar la caja identificada
+        sucursal: parseInt(pedidoData.sucursal || sucursalId), // Asegurarse que la sucursal sea un número
         detalles_input: pedidoData.detalles_input.map(item => ({
           producto_id: Number(item.producto_id),
           cantidad: Number(item.cantidad)
@@ -76,11 +93,12 @@ export const pedidoService = {
           : []
       };
       
-      console.log('Datos formateados para crear pedido:', formattedData);
+      console.log(`📝 Datos formateados para crear pedido en sucursal ${formattedData.sucursal}:`, formattedData);
       const response = await api.post(`ventas/pedidos/usuario/${id}/`, formattedData);
+      console.log('✅ Pedido creado exitosamente:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Error al crear pedido:', error);
+      console.error('❌ Error al crear pedido:', error);
       // Agregar detalles del error para ayudar en la depuración
       if (error.response) {
         console.error('Detalles del error:', error.response.data);
