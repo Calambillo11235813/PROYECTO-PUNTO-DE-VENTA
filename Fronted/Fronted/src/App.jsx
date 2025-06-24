@@ -34,7 +34,7 @@ import Inventario from './pages/Inventario/Inventario';
 import Configuracion from './pages/Configuracion';
 import Lista_ventas from './pages/Lista_ventas';
 import Clientes from './pages/Clientes/Clientes';
-import CajaManager from './pages/CajaManager';
+import CajaManager from './pages/Caja/CajaManager';
 import PlanManager from "./pages/PlanManager";
 import Vistareportes from './pages/Reportes/Vistareportes'; // Importamos el componente de reportes
 import SucursalesManager from './pages/SucursalesManager';

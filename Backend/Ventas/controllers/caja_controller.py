@@ -224,23 +224,47 @@ class CajaTransaccionesEfectivoAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class CajaBySucursalAPIView(APIView):
-    def get(self, request, usuario_id, sucursal_id):
+class CajaDeleteAPIView(APIView):
+    """
+    DELETE: Elimina una caja específica por su ID si el usuario tiene los permisos adecuados
+    """
+    def delete(self, request, caja_id, usuario_id):
         try:
-            cajas = Caja.objects.filter(
-                usuario_id=usuario_id,
-                sucursal_id=sucursal_id
+            # Buscar la caja
+            caja = get_object_or_404(Caja, id=caja_id)
+            
+            # Verificar permisos (solo el propietario o un administrador pueden eliminar)
+            usuario = get_object_or_404(Usuario, id=usuario_id)
+            if caja.usuario.id != usuario_id and not usuario.is_admin:
+                return Response(
+                    {"error": "No tienes permisos para eliminar esta caja"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+                
+            # Registrar en el log antes de eliminar
+            logger = get_logger_por_usuario(usuario_id)
+            logger.warning(
+                f"Eliminando caja: {caja.id} | Estado: {caja.estado} | "
+                f"Usuario propietario: {caja.usuario.correo} | "
+                f"Eliminado por: {usuario.correo} | "
+                f"IP: {request.META.get('REMOTE_ADDR')}"
             )
             
-            # Opcional: Parámetro para filtrar solo cajas abiertas o cerradas
-            estado = request.query_params.get('estado')
-            if estado:
-                cajas = cajas.filter(estado=estado)
+            # Eliminar la caja
+            caja.delete()
             
-            serializer = CajaSerializer(cajas, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(
+                {"message": f"Caja {caja_id} eliminada correctamente por usuario {usuario_id}"},
+                status=status.HTTP_200_OK
+            )
+            
+        except Caja.DoesNotExist:
+            return Response(
+                {"error": f"No se encontró una caja con ID {caja_id}"},
+                status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
             return Response(
-                {"error": f"Error al obtener cajas de la sucursal: {str(e)}"},
+                {"error": f"Error al eliminar la caja: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

@@ -21,19 +21,25 @@ export const pedidoService = {
     }
   },
 
-
+  // Primero, completar la implementación del método getPedidosBySucursal
   getPedidosBySucursal: async (userId, sucursalId) => {
-  try {
-    console.log(`🔍 Obteniendo pedidos del usuario ${userId} en la sucursal ${sucursalId}...`);
-    const response = await apiClient.get(`/ventas/pedidos/usuario/${userId}/?sucursal_id=${sucursalId}`);
-    console.log('✅ Pedidos por sucursal obtenidos:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('❌ Error al obtener pedidos por sucursal:', 
-      error.response ? error.response.data : error.message);
-    throw error;
-  }
-},
+    console.log(`Entrando a getPedidosBySucursal - userId: ${userId}, sucursalId: ${sucursalId}`);
+    try {
+      // Validar que ambos parámetros estén presentes
+      if (!userId || !sucursalId) {
+        console.error('Se requiere ID de usuario y sucursal');
+        throw new Error('Se requiere ID de usuario y sucursal');
+      }
+
+      // Usar la ruta específica para pedidos por sucursal
+      const response = await api.get(`ventas/pedidos/usuario/${userId}/sucursal/${sucursalId}/`);
+      console.log(`✅ Pedidos obtenidos para sucursal ${sucursalId}:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`❌ Error al obtener pedidos para sucursal ${sucursalId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  },
   
   createPedido: async (pedidoData) => {
     console.log('Entrando a createPedido()');

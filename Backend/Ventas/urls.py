@@ -4,7 +4,7 @@ from Ventas.controllers.estado_controller import (EstadoListCreateAPIView, Estad
 from Ventas.controllers.tipo_venta_controller import (TipoVentaListCreateAPIView, TipoVentaRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.cliente_controller import (ClienteListCreateAPIView, ClienteDetailAPIView, ClientesBySucursalAPIView)
 from Ventas.controllers.tipo_pago_controller import (TipoPagoListCreateAPIView, TipoPagoRetrieveUpdateDestroyAPIView)
-from Ventas.controllers.caja_controller import AbrirCajaAPIView, CerrarCajaAPIView, CajaActualAPIView, CajaTransaccionesEfectivoAPIView
+from Ventas.controllers.caja_controller import AbrirCajaAPIView, CajaDeleteAPIView, CerrarCajaAPIView, CajaActualAPIView, CajaTransaccionesEfectivoAPIView
 from Ventas.controllers.movimiento_controller import MovimientoEfectivoAPIView
 from Ventas.controllers.reporte_controller import (
     ReporteCajaView, 
@@ -54,4 +54,7 @@ urlpatterns = [
     path('reportes/caja/usuario/<int:usuario_id>/', ReporteCajaView.as_view(), name='reporte-caja'),
     path('reportes/clientes/usuario/<int:usuario_id>/', ReporteClientesView.as_view(), name='reporte-clientes'),
     path('reportes/movimientos/usuario/<int:usuario_id>/', ReporteMovimientosView.as_view(), name='reporte-movimientos'),
+
+    # Ruta con formato /caja/{caja_id}/{usuario_id}/
+    path('caja/<int:caja_id>/<int:usuario_id>/', CajaDeleteAPIView.as_view(), name='eliminar-caja'),
 ]
