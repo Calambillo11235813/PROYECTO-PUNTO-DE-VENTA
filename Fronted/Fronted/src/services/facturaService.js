@@ -144,6 +144,44 @@ const facturaService = {
         throw { error: 'Error al enviar la petición', details: error.message };
       }
     }
+  },
+
+  /**
+   * Anula una factura emitida en el SIAT
+   * @param {number} usuarioId - ID del usuario que está anulando la factura
+   * @param {number} pedidoId - ID del pedido cuya factura se anulará
+   * @param {Object} datosAnulacion - Datos para la anulación
+   * @param {string} datosAnulacion.motivo - Motivo de la anulación (requerido)
+   * @returns {Promise} Promesa con el resultado de la anulación
+   */
+  anularFactura: async (usuarioId, pedidoId, datosAnulacion = {}) => {
+    console.log('Entrando a anularFactura()');
+    try {
+      console.log(`Anulando factura para pedido ${pedidoId} de usuario ${usuarioId}...`);
+      console.log('Motivo de anulación:', datosAnulacion.motivo);
+      
+      // Verificar que se haya proporcionado un motivo
+      if (!datosAnulacion.motivo || datosAnulacion.motivo.trim().length < 5) {
+        throw { error: 'El motivo de anulación debe tener al menos 5 caracteres' };
+      }
+
+      const response = await api.post(
+        `ventas/pedidos/usuario/${usuarioId}/${pedidoId}/factura/anular/`,
+        datosAnulacion
+      );
+      
+      console.log('✅ Factura anulada correctamente:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error al anular factura:', error.response ? error.response.data : error.message);
+      if (error.response) {
+        throw error.response.data;
+      } else if (error.request) {
+        throw { error: 'No se recibió respuesta del servidor', details: error.request };
+      } else {
+        throw { error: 'Error al enviar la petición', details: error.message };
+      }
+    }
   }
 };
 

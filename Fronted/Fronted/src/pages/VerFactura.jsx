@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pedidoService } from '../services/pedidoService';
 import facturaService from '../services/facturaService';
-import authService from '../services/authService'; // <-- Importa el authService
+import authService from '../services/authService';
 
 const VerFactura = () => {
   const { pedidoId } = useParams();
@@ -22,6 +22,14 @@ const VerFactura = () => {
     ciudad: ''
   });
 
+  // Estados para el modal de anulación
+  const [showAnularModal, setShowAnularModal] = useState(false);
+  const [motivoAnulacion, setMotivoAnulacion] = useState('');
+  const [anulando, setAnulando] = useState(false);
+  const [anulacionError, setAnulacionError] = useState(null);
+  const [anulacionExitosa, setAnulacionExitosa] = useState(false);
+
+  // En la función useEffect donde se cargan los datos
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -37,6 +45,10 @@ const VerFactura = () => {
         // Buscar la factura correspondiente al pedido actual
         const facturaEncontrada = facturasList?.facturas?.find(f => f.pedido_id === Number(pedidoId));
         if (facturaEncontrada) {
+          // Respetar el estado_factura del pedido si está anulado
+          if (pedidoData?.estado_factura === 'Anulado') {
+            facturaEncontrada.estado = 'Anulado';
+          }
           setFactura(facturaEncontrada);
         } else {
           throw new Error('No se encontró la factura para este pedido');
@@ -65,6 +77,67 @@ const VerFactura = () => {
   // Función para imprimir la factura
   const handlePrint = () => {
     window.print();
+  };
+
+  // Función para abrir el modal de anulación
+  const handleOpenAnularModal = () => {
+    setShowAnularModal(true);
+    setMotivoAnulacion('');
+    setAnulacionError(null);
+  };
+
+  // Función para cerrar el modal de anulación
+  const handleCloseAnularModal = () => {
+    if (!anulando) {
+      setShowAnularModal(false);
+      setAnulacionError(null);
+    }
+  };
+
+  // Función para anular la factura
+  const handleAnularFactura = async () => {
+    if (!motivoAnulacion || motivoAnulacion.trim().length < 5) {
+      setAnulacionError('El motivo de anulación debe tener al menos 5 caracteres');
+      return;
+    }
+
+    try {
+      setAnulando(true);
+      setAnulacionError(null);
+
+      const resultado = await facturaService.anularFactura(userId, pedidoId, {
+        motivo: motivoAnulacion
+      });
+
+      console.log('Resultado de anulación:', resultado);
+      setAnulacionExitosa(true);
+      
+      // Actualizar el estado de la factura en el componente
+      if (factura) {
+        setFactura({
+          ...factura,
+          estado: 'Anulado'
+        });
+      }
+      
+      // Actualizar el estado del pedido en el componente
+      if (pedido) {
+        setPedido({
+          ...pedido,
+          estado_factura: 'Anulado'
+        });
+      }
+
+      // Cerrar el modal después de un breve retraso
+      setTimeout(() => {
+        setShowAnularModal(false);
+        setAnulando(false);
+      }, 1500);
+    } catch (err) {
+      console.error('Error al anular factura:', err);
+      setAnulacionError(err.error || err.message || 'Error al anular la factura');
+      setAnulando(false);
+    }
   };
 
   // Función utilitaria para formatear fechas
@@ -119,16 +192,42 @@ const VerFactura = () => {
           </svg>
           Volver
         </button>
-        <button
-          className="bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded flex items-center"
-          onClick={handlePrint}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-          </svg>
-          Imprimir Factura
-        </button>
+        <div className="flex space-x-2">
+          {/* Botón para anular factura - solo visible si no está anulada */}
+          {factura && factura.estado !== 'Anulado' && (
+            <button
+              className="bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded flex items-center"
+              onClick={handleOpenAnularModal}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Anular Factura
+            </button>
+          )}
+          <button
+            className="bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded flex items-center"
+            onClick={handlePrint}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Imprimir Factura
+          </button>
+        </div>
       </div>
+
+      {/* Si la factura está anulada, mostrar una etiqueta de estado */}
+      {factura && factura.estado === 'Anulado' && (
+        <div className="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4">
+          <div className="flex items-center">
+            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="font-bold">FACTURA ANULADA</span>
+          </div>
+        </div>
+      )}
 
       {/* Encabezado de la factura */}
       <div className="border-b-2 border-gray-300 pb-4 flex flex-wrap justify-between items-start">
@@ -147,8 +246,15 @@ const VerFactura = () => {
           <div className="mt-2">
             <p><strong>N° Factura:</strong> {factura?.codigo_recepcion || 'RECEP-9c12d9f3ca'}</p>
             <p><strong>Fecha Emisión:</strong> {formatearFecha(factura?.fecha_emision)}</p>
-            <p><strong>Estado:</strong> <span className="text-green-600 font-semibold">{factura?.estado || 'Aceptado'}</span></p>
-            <p><strong>CUF:</strong> {factura?.cuf || pedido?.cuf || 'No disponible'}</p>
+            <p><strong>Estado:</strong> 
+              <span className={`font-semibold ${(factura?.estado === 'Anulado' || pedido?.estado_factura === 'Anulado') 
+                ? 'text-red-600' 
+                : 'text-green-600'}`}>
+                {(factura?.estado === 'Anulado' || pedido?.estado_factura === 'Anulado') 
+                  ? 'Anulado' 
+                  : factura?.estado || 'Aceptado'}
+              </span>
+            </p>
           </div>
         </div>
       </div>
@@ -247,16 +353,10 @@ const VerFactura = () => {
         </table>
       </div>
 
-      
-
       {/* Información de factura electrónica */}
       <div className="mt-8 border-t-2 border-gray-300 pt-4 text-sm">
         <p className="font-semibold mb-2">INFORMACIÓN IMPORTANTE:</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p><strong>CUIS:</strong> {factura?.cuis || 'No disponible'}</p>
-            <p><strong>Código de Recepción:</strong> {factura?.codigo_recepcion || 'No disponible'}</p>
-          </div>
           <div>
             <p>Esta factura contribuye al desarrollo del país, el uso ilícito será sancionado penalmente de acuerdo a ley.</p>
           </div>
@@ -274,6 +374,94 @@ const VerFactura = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de anulación de factura */}
+      {showAnularModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">Anular Factura</h3>
+              <button 
+                onClick={handleCloseAnularModal}
+                disabled={anulando}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {anulacionExitosa ? (
+              <div className="text-center py-4">
+                <svg className="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="mt-2 text-lg font-semibold text-gray-900">Factura anulada correctamente</p>
+              </div>
+            ) : (
+              <>
+                <p className="mb-4 text-sm text-gray-600">
+                  Esta acción anulará la factura en el sistema SIAT. Esta operación no se puede deshacer.
+                </p>
+                
+                <div className="mb-4">
+                  <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="motivo">
+                    Motivo de anulación (obligatorio)
+                  </label>
+                  <textarea
+                    id="motivo"
+                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    value={motivoAnulacion}
+                    onChange={(e) => setMotivoAnulacion(e.target.value)}
+                    placeholder="Ingrese el motivo de anulación (mínimo 5 caracteres)"
+                    rows={3}
+                    disabled={anulando}
+                  />
+                </div>
+                
+                {anulacionError && (
+                  <div className="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-2">
+                    <p>{anulacionError}</p>
+                  </div>
+                )}
+                
+                <div className="flex justify-end space-x-2 mt-4">
+                  <button
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                    onClick={handleCloseAnularModal}
+                    disabled={anulando}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className={`bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded flex items-center ${anulando ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={handleAnularFactura}
+                    disabled={anulando}
+                  >
+                    {anulando ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Anulando...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Anular Factura
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

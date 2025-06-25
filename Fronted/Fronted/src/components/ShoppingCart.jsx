@@ -113,30 +113,52 @@ const ShoppingCart = ({
       setLoadingTransactions(true);
       const userId = localStorage.getItem('id');
       
-      // Primero intentamos con el endpoint específico de verificación
+      // Primero obtenemos el pedido para verificar si ya está anulado
+      const pedidoActual = await pedidoService.getPedidoById(pedidoId);
+      
+      // Si el pedido está anulado, mantenemos ese estado y evitamos la verificación
+      if (pedidoActual.estado_factura === "Anulado") {
+        console.log('Este pedido tiene factura anulada, manteniendo estado anulado.');
+        setSelectedPedido(pedidoActual);
+        return true;
+      }
+      
+      // Intentamos con el endpoint específico de verificación si no está anulado
       try {
         const resultado = await facturaService.verificarEstadoFactura(userId, pedidoId);
         console.log('Resultado verificación factura:', resultado);
         
-        if (resultado.success && (resultado.estado === "Aceptado" || resultado.transaccion_exitosa)) {
-          // La factura está aceptada, actualizamos el pedido localmente
-          const pedidoActualizado = await pedidoService.getPedidoById(pedidoId);
-          
-          // Forzar el estado a facturado aunque el backend no lo tenga actualizado
-          pedidoActualizado.facturado = true;
-          pedidoActualizado.estado_factura = resultado.estado || 'Aceptado';
-          pedidoActualizado.cuf = resultado.cuf || pedidoActualizado.cuf;
-          
-          // Actualizar en la base de datos por si acaso
-          try {
-            await pedidoService.updatePedidoFacturado(pedidoId);
-          } catch (updateError) {
-            console.warn('No se pudo actualizar la BD, pero continuamos con la actualización local:', updateError);
+        // Mantener el estado anulado si viene en la respuesta
+        if (resultado.success) {
+          // Si está anulado, respetamos ese estado
+          if (resultado.estado === "Anulado") {
+            pedidoActual.estado_factura = "Anulado";
+            pedidoActual.facturado = true; // Aún está facturado, aunque anulado
+            setSelectedPedido(pedidoActual);
+            return true;
           }
           
-          // Actualizar la interfaz
-          setSelectedPedido(pedidoActualizado);
-          return true;
+          // Si no está anulado pero sí aceptado
+          if (resultado.estado === "Aceptado" || resultado.transaccion_exitosa) {
+            // La factura está aceptada, actualizamos el pedido localmente
+            const pedidoActualizado = pedidoActual;
+            
+            // Actualizar estado solo si no está anulado
+            pedidoActualizado.facturado = true;
+            pedidoActualizado.estado_factura = resultado.estado || 'Aceptado';
+            pedidoActualizado.cuf = resultado.cuf || pedidoActualizado.cuf;
+            
+            // Actualizar en la base de datos por si acaso
+            try {
+              await pedidoService.updatePedidoFacturado(pedidoId);
+            } catch (updateError) {
+              console.warn('No se pudo actualizar la BD, pero continuamos con la actualización local:', updateError);
+            }
+            
+            // Actualizar la interfaz
+            setSelectedPedido(pedidoActualizado);
+            return true;
+          }
         }
       } catch (verificacionError) {
         console.warn('Error en verificación de estado, continuando con carga normal:', verificacionError);
@@ -165,16 +187,28 @@ const ShoppingCart = ({
     return estados[estadoId] || "Desconocido";
   };
 
-  // Añadir este efecto para actualizar un pedido después de facturación (después de otros useEffect)
+  
+  // Reemplazo por una versión actualizada que respeta el estado de anulación:
   useEffect(() => {
-    // Si hay un pedido seleccionado, verificar periódicamente su estado de facturación
+    // Si hay un pedido seleccionado y no está facturado, verificar estado
     if (selectedPedido && !selectedPedido.facturado) {
       const interval = setInterval(async () => {
         try {
-          const updatedPedido = await pedidoService.getPedidoById(selectedPedido.id);
-          if (updatedPedido.facturado) {
-            console.log('📋 Pedido actualizado a facturado:', updatedPedido);
-            setSelectedPedido(updatedPedido);
+          // Primero obtener datos actuales
+          const pedidoActual = await pedidoService.getPedidoById(selectedPedido.id);
+          
+          // Si está anulado, mantener ese estado y no hacer nada más
+          if (pedidoActual.estado_factura === "Anulado") {
+            console.log('📝 Pedido con factura anulada, manteniendo estado');
+            setSelectedPedido(pedidoActual);
+            clearInterval(interval);
+            return;
+          }
+          
+          // Si está facturado pero no anulado, actualizar
+          if (pedidoActual.facturado && pedidoActual.estado_factura !== "Anulado") {
+            console.log('📋 Pedido actualizado a facturado:', pedidoActual);
+            setSelectedPedido(pedidoActual);
             clearInterval(interval);
           }
         } catch (error) {
@@ -520,9 +554,18 @@ const ShoppingCart = ({
               
               {/* Información del estado de facturación con botón para ver factura */}
               <div className="mt-4 mb-2">
-                {(selectedPedido.facturado === true || 
-                  selectedPedido.facturado === "true" || 
-                  selectedPedido.estado_factura === "Aceptado") ? (
+                {selectedPedido?.estado_factura === "Anulado" ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                      <p className="font-medium text-red-800">
+                        Factura Anulada
+                      </p>
+                    </div>
+                  </div>
+                ) : (selectedPedido?.facturado === true || 
+                  selectedPedido?.facturado === "true" || 
+                  selectedPedido?.estado_factura === "Aceptado") ? (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
@@ -530,7 +573,6 @@ const ShoppingCart = ({
                         Facturado {selectedPedido.estado_factura ? `(${selectedPedido.estado_factura})` : ''}
                       </p>
                     </div>
-                    
                   </div>
                 ) : (
                   <div className="flex items-center">
@@ -556,25 +598,30 @@ const ShoppingCart = ({
                 
                 {/* Lado derecho - botones Facturar/Ver Factura */}
                 <div className="flex space-x-2">
-                  {/* Botón Ver Factura - solo visible si está facturado */}
-                  {(selectedPedido.facturado === true || 
-                   selectedPedido.facturado === "true" || 
-                   selectedPedido.estado_factura === "Aceptado") && (
+                  {/* Botón Ver Factura - siempre visible si está facturado, incluso si está anulada */}
+                  {(selectedPedido?.facturado === true || 
+                   selectedPedido?.facturado === "true" || 
+                   selectedPedido?.estado_factura === "Aceptado" ||
+                   selectedPedido?.estado_factura === "Anulado") && (
                     <button
-                      className="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded flex items-center"
+                      className={`${selectedPedido?.estado_factura === "Anulado" ? 
+                        "bg-gray-500 hover:bg-gray-600" : 
+                        "bg-green-500 hover:bg-green-600"} 
+                        text-white py-2 px-4 rounded flex items-center`}
                       onClick={() => navigate(`/ver-factura/${selectedPedido.id}`)}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      Ver Factura
+                      Ver Factura {selectedPedido?.estado_factura === "Anulado" ? "(Anulada)" : ""}
                     </button>
                   )}
                   
-                  {/* Botón Facturar Pedido - solo visible si no está facturado */}
-                  {!(selectedPedido.facturado === true || 
-                     selectedPedido.facturado === "true" || 
-                     selectedPedido.estado_factura === "Aceptado") && (
+                  {/* Botón Facturar Pedido - solo visible si no está facturado ni anulado */}
+                  {!(selectedPedido?.facturado === true || 
+                     selectedPedido?.facturado === "true" || 
+                     selectedPedido?.estado_factura === "Aceptado" ||
+                     selectedPedido?.estado_factura === "Anulado") && (
                     <button
                       className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
                       onClick={() => {
