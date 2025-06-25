@@ -25,6 +25,7 @@ const VentasView = () => {
   const [loadingCaja, setLoadingCaja] = useState(true);
   // Nuevo estado para la sucursal actual
   const [sucursalActual, setSucursalActual] = useState(null);
+  const [componentKey, setComponentKey] = useState(Date.now()); // Nuevo estado para refrescar el componente
   const navigate = useNavigate();
 
   // Cargar información de la sucursal actual al inicio
@@ -297,6 +298,7 @@ const VentasView = () => {
       
       setCartItems([]);
       setPaymentMethods([{ amount: '', method: 'Efectivo' }]);
+      // ...otros estados a limpiar...
 
       // Actualizar la lista de pedidos específicos de la sucursal
       const actualizarPedidos = await pedidoService.getPedidosBySucursal(
@@ -304,7 +306,10 @@ const VentasView = () => {
         sucursalActual.id
       );
       setPedidos(actualizarPedidos);
-      
+
+      // Refrescar el componente
+      setComponentKey(Date.now());
+
     } catch (error) {
       console.error(`❌ Error al finalizar la venta en sucursal ${sucursalActual?.nombre}:`, error);
       toast.error(error.message || "Error al finalizar la venta");
@@ -347,7 +352,7 @@ const VentasView = () => {
   };
 
   return (
-    <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="w-full h-full flex flex-col">
+    <div key={componentKey} style={{ backgroundColor: "var(--bg-tertiary)" }} className="w-full h-full flex flex-col">
       <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="py-4 px-6 border-b">
         <h1 className="text-xl font-medium title-icon flex items-center">
           Punto de Venta

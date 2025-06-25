@@ -86,6 +86,13 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
     },
     { 
+      id: "Facturacion", 
+      icon: <FaFileInvoiceDollar />, 
+      text: "Facturación", 
+      path: "/admin/facturacion",
+      allowedRoles: ['admin', undefined, 'Supervisor']
+    },
+    { 
       id: "Pedidos", 
       icon: <FaShoppingBag />, 
       text: "Lista de ventas", 
@@ -113,41 +120,6 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       path: "/admin/empleados",
       allowedRoles: ['admin', undefined, 'Supervisor'] 
     },
-    { 
-      id: "Facturacion", 
-      icon: <FaFileInvoiceDollar />, 
-      text: "Facturación", 
-      path: "/admin/facturacion",
-      allowedRoles: ['admin', undefined, 'Supervisor']
-    },
-    { 
-      id: "Reportes", 
-      icon: <FaChartBar />, 
-      text: "Reportes", 
-      path: "/admin/reportes",
-      allowedRoles: ['admin', undefined, 'Supervisor'] 
-    },
-    { 
-      id: "Sucursales", 
-      icon: <FaBuilding />, 
-      text: "Sucursales", 
-      path: "/admin/sucursales",
-      allowedRoles: ['admin', undefined, 'Supervisor'] 
-    },
-    { 
-      id: "Configuracion", 
-      icon: <FaCog />, 
-      text: "Configuración", 
-      path: "/admin/configuracion",
-      allowedRoles: ['admin', undefined, 'Supervisor']
-    },
-    { 
-      id: "MiPlan", 
-      icon: <FaStar className="h-5 w-5" />,
-      text: "Mi Plan", 
-      path: "/admin/mi-plan",
-      allowedRoles: ['admin', undefined, 'Supervisor'] 
-    },
     {
       id: "Proveedor",
       icon: <FaTruck />,
@@ -167,6 +139,34 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       icon: <FaClipboardList />,
       text: "Lista de Pedidos",
       path: "/admin/lista-pedidos",
+      allowedRoles: ['admin', undefined, 'Supervisor']
+    },
+    { 
+      id: "Sucursales", 
+      icon: <FaBuilding />, 
+      text: "Sucursales", 
+      path: "/admin/sucursales",
+      allowedRoles: ['admin', undefined, 'Supervisor'] 
+    },
+    { 
+      id: "Reportes", 
+      icon: <FaChartBar />, 
+      text: "Reportes", 
+      path: "/admin/reportes",
+      allowedRoles: ['admin', undefined, 'Supervisor'] 
+    },
+    { 
+      id: "MiPlan", 
+      icon: <FaStar className="h-5 w-5" />,
+      text: "Mi Plan", 
+      path: "/admin/mi-plan",
+      allowedRoles: ['admin', undefined, 'Supervisor'] 
+    },
+    { 
+      id: "Configuracion", 
+      icon: <FaCog />, 
+      text: "Configuración", 
+      path: "/admin/configuracion",
       allowedRoles: ['admin', undefined, 'Supervisor']
     },
   ];
