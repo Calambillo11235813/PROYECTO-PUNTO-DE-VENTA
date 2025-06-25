@@ -80,9 +80,9 @@ WSGI_APPLICATION = 'siat_api.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'SIAT',
+        'NAME': 'siat',
         'USER': 'postgres',
-        'PASSWORD': 'mcangel03',
+        'PASSWORD': '123',
         'HOST': 'localhost',
         'PORT': '5432',
     }

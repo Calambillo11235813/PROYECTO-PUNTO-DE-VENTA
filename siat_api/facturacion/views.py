@@ -27,7 +27,7 @@ def generar_token(request):
             # asumimos que puedes ignorar códigoAmbiente por ahora
         )
         # validar códigoSistema (simulado aquí como constante)
-        if data.get("codigoSistema") != "ABC123456":
+        if data.get("codigoSistema") != "SYS100":
             raise Exception("Código de sistema inválido")
 
         # generar y guardar token
