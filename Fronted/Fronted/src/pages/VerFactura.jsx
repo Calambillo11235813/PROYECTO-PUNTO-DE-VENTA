@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pedidoService } from '../services/pedidoService';
 import facturaService from '../services/facturaService';
+import authService from '../services/authService'; // <-- Importa el authService
 
 const VerFactura = () => {
   const { pedidoId } = useParams();
@@ -21,7 +22,6 @@ const VerFactura = () => {
     ciudad: ''
   });
 
-  // Cargar los datos del pedido y la información de la factura
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -31,18 +31,19 @@ const VerFactura = () => {
         const pedidoData = await pedidoService.getPedidoById(pedidoId);
         setPedido(pedidoData);
 
-        // Obtener estado de factura que contiene los datos completos
+        // Obtener estado de factura
         const facturaData = await facturaService.verificarEstadoFactura(userId, pedidoId);
         if (facturaData.success) {
           setFactura(facturaData);
-          
-          // Extraer datos de la empresa desde la respuesta
+
+          // Obtener datos de la empresa desde authService
+          const company = authService.getCompanyInfo();
           setEmpresaData({
-            nombre: facturaData.empresa || 'Comercio',
-            nit: facturaData.nit || '13701877019',
-            direccion: facturaData.direccion || 'Av. Principal #123',
-            telefono: facturaData.telefono || '591-12345678',
-            ciudad: facturaData.ciudad || 'La Paz, Bolivia'
+            nombre: company.nombre_empresa || facturaData.empresa || 'Comercio',
+            nit: company.nit_empresa || facturaData.nit || '13701877019',
+            direccion: company.direccion || facturaData.direccion || 'Av. Principal #123',
+            telefono: company.telefono_empresa || facturaData.telefono || '591-12345678',
+            ciudad: company.municipio || facturaData.ciudad || 'La Paz, Bolivia'
           });
         } else {
           throw new Error(facturaData.error || 'No se pudo obtener la información de la factura');
@@ -58,26 +59,23 @@ const VerFactura = () => {
 
     fetchData();
   }, [pedidoId, userId]);
-
-  // Función para formatear la fecha
-  const formatearFecha = (fechaStr) => {
-    try {
-      const fecha = new Date(fechaStr);
-      return fecha.toLocaleDateString('es-BO', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (e) {
-      return fechaStr || 'Fecha no disponible';
-    }
-  };
-
   // Función para imprimir la factura
   const handlePrint = () => {
     window.print();
+  };
+
+  // Función utilitaria para formatear fechas
+  const formatearFecha = (fecha) => {
+    if (!fecha) return '';
+    const date = new Date(fecha);
+    if (isNaN(date)) return fecha;
+    return date.toLocaleDateString('es-BO', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (loading) {
@@ -246,60 +244,7 @@ const VerFactura = () => {
         </table>
       </div>
 
-      {/* Información detallada del pedido */}
-      <div className="my-6">
-        <h3 className="font-bold text-gray-700 mb-2">DETALLE DE LA VENTA</h3>
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <p className="text-sm text-gray-500">N° de Pedido</p>
-              <p className="font-medium">#{pedido?.id || pedidoId}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Fecha del Pedido</p>
-              <p className="font-medium">{formatearFecha(pedido?.fecha)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Estado</p>
-              <p className={`font-medium ${
-                pedido?.estado === 1 ? 'text-green-600' : 
-                pedido?.estado === 2 ? 'text-yellow-600' : 
-                pedido?.estado === 3 ? 'text-red-600' : 'text-gray-600'
-              }`}>
-                {pedido?.estado === 1 ? 'Completado' : 
-                 pedido?.estado === 2 ? 'En proceso' : 
-                 pedido?.estado === 3 ? 'Cancelado' : 'Desconocido'}
-              </p>
-            </div>
-          </div>
-          
-          {pedido?.codigo_recepcion && (
-            <div className="mb-2">
-              <p className="text-sm text-gray-500">Código de recepción</p>
-              <p className="font-medium">{pedido.codigo_recepcion}</p>
-            </div>
-          )}
-          
-          {factura?.transaccion_exitosa && (
-            <div className="bg-green-50 border-l-4 border-green-500 p-3 mb-3">
-              <div className="flex">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <p className="text-green-700">Transacción de facturación exitosa</p>
-              </div>
-            </div>
-          )}
-          
-          {/* Cualquier información adicional del pedido */}
-          {pedido?.observaciones && (
-            <div className="mt-2">
-              <p className="text-sm text-gray-500">Observaciones</p>
-              <p className="italic text-gray-600">{pedido.observaciones}</p>
-            </div>
-          )}
-        </div>
-      </div>
+      
 
       {/* Información de factura electrónica */}
       <div className="mt-8 border-t-2 border-gray-300 pt-4 text-sm">
