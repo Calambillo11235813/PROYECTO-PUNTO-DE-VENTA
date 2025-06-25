@@ -37,6 +37,8 @@ import Clientes from './pages/Clientes/Clientes';
 import CajaManager from './pages/CajaManager';
 import PlanManager from "./pages/PlanManager";
 import Vistareportes from './pages/Reportes/Vistareportes'; // Importamos el componente de reportes
+import Factura from './pages/Factura';
+import VerFactura from './pages/VerFactura'; // Añadir esta línea para importar el componente
 
 // Componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
@@ -115,6 +117,10 @@ function App() {
                   <Route path="mi-plan" element={<PlanManager />} />
                 </Route>
               </Route>
+              
+              {/* Añadir las rutas para Factura y VerFactura */}
+              <Route path="/factura/:pedidoId" element={<Factura />} />
+              <Route path="/ver-factura/:pedidoId" element={<VerFactura />} />
             </Route>
 
             {/* Ruta para redireccionar URLs no encontradas */}
