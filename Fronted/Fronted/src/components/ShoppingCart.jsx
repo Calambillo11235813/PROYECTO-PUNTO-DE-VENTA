@@ -71,20 +71,18 @@ const ShoppingCart = ({
     return Math.abs(sum - total) > 0.01;
   };
 
-  // Reemplazar la función handleViewPedidoDetails existente
+  // Versión mejorada de handleViewPedidoDetails
   const handleViewPedidoDetails = async (pedidoId) => {
     try {
       setLoadingTransactions(true);
       // Obtener detalles básicos del pedido
       const pedidoDetails = await pedidoService.getPedidoById(pedidoId);
-      setSelectedPedido(pedidoDetails);
       
       // Si el pedido no tiene transacciones formateadas, intentar obtenerlas por separado
       if (!pedidoDetails.transacciones_formateadas || pedidoDetails.transacciones_formateadas.length === 0) {
         try {
           const transacciones = await pedidoService.getPedidoTransactions(pedidoId);
           pedidoDetails.transacciones_formateadas = transacciones;
-          setSelectedPedido({...pedidoDetails}); // Actualizar estado con nuevas transacciones
         } catch (transError) {
           console.error("Error al cargar transacciones:", transError);
         }
@@ -93,85 +91,33 @@ const ShoppingCart = ({
       // Establecer transacciones para uso en el componente
       setPedidoTransactions(pedidoDetails.transacciones || []);
       
-      // Verificar estado de facturación si hay indicios de que podría estar facturado
-      // (Lo hacemos después para no bloquear la carga inicial del pedido)
-      if (pedidoDetails.estado === 1 || pedidoDetails.estado === 2) {
-        setTimeout(() => {
-          verificarEstadoFacturacion(pedidoId);
-        }, 100);
+      // Solo verificar estado de facturación si:
+      // 1. No está ya facturado o anulado (para no sobrescribir estados existentes)
+      // 2. El pedido está completado (estado 1 o 2) y podría estar facturado
+      if (
+        !pedidoDetails.estado_factura && 
+        !pedidoDetails.facturado && 
+        (pedidoDetails.estado === 1 || pedidoDetails.estado === 2)
+      ) {
+        try {
+          const userId = localStorage.getItem('id');
+          const facturaStatus = await facturaService.verificarEstadoFactura(userId, pedidoId);
+          
+          // Solo actualizamos si la verificación fue exitosa y no tenemos un estado previo
+          if (facturaStatus.success) {
+            pedidoDetails.estado_factura = facturaStatus.estado;
+            pedidoDetails.facturado = true;
+          }
+        } catch (verifyError) {
+          console.warn("Error al verificar estado de factura:", verifyError);
+          // No hacemos nada si falla la verificación, mantenemos los datos originales
+        }
       }
+      
+      // Actualizar el estado con todos los datos recolectados
+      setSelectedPedido(pedidoDetails);
     } catch (error) {
       console.error("Error al cargar detalles del pedido:", error);
-    } finally {
-      setLoadingTransactions(false);
-    }
-  };
-
-  // Función para actualizar y verificar el estado de facturación de un pedido
-  const verificarEstadoFacturacion = async (pedidoId) => {
-    try {
-      setLoadingTransactions(true);
-      const userId = localStorage.getItem('id');
-      
-      // Primero obtenemos el pedido para verificar si ya está anulado
-      const pedidoActual = await pedidoService.getPedidoById(pedidoId);
-      
-      // Si el pedido está anulado, mantenemos ese estado y evitamos la verificación
-      if (pedidoActual.estado_factura === "Anulado") {
-        console.log('Este pedido tiene factura anulada, manteniendo estado anulado.');
-        setSelectedPedido(pedidoActual);
-        return true;
-      }
-      
-      // Intentamos con el endpoint específico de verificación si no está anulado
-      try {
-        const resultado = await facturaService.verificarEstadoFactura(userId, pedidoId);
-        console.log('Resultado verificación factura:', resultado);
-        
-        // Mantener el estado anulado si viene en la respuesta
-        if (resultado.success) {
-          // Si está anulado, respetamos ese estado
-          if (resultado.estado === "Anulado") {
-            pedidoActual.estado_factura = "Anulado";
-            pedidoActual.facturado = true; // Aún está facturado, aunque anulado
-            setSelectedPedido(pedidoActual);
-            return true;
-          }
-          
-          // Si no está anulado pero sí aceptado
-          if (resultado.estado === "Aceptado" || resultado.transaccion_exitosa) {
-            // La factura está aceptada, actualizamos el pedido localmente
-            const pedidoActualizado = pedidoActual;
-            
-            // Actualizar estado solo si no está anulado
-            pedidoActualizado.facturado = true;
-            pedidoActualizado.estado_factura = resultado.estado || 'Aceptado';
-            pedidoActualizado.cuf = resultado.cuf || pedidoActualizado.cuf;
-            
-            // Actualizar en la base de datos por si acaso
-            try {
-              await pedidoService.updatePedidoFacturado(pedidoId);
-            } catch (updateError) {
-              console.warn('No se pudo actualizar la BD, pero continuamos con la actualización local:', updateError);
-            }
-            
-            // Actualizar la interfaz
-            setSelectedPedido(pedidoActualizado);
-            return true;
-          }
-        }
-      } catch (verificacionError) {
-        console.warn('Error en verificación de estado, continuando con carga normal:', verificacionError);
-      }
-      
-      // Como respaldo, cargamos los detalles del pedido nuevamente
-      const pedidoDetails = await pedidoService.getPedidoById(pedidoId);
-      setSelectedPedido(pedidoDetails);
-      
-      return pedidoDetails.facturado;
-    } catch (error) {
-      console.error("Error al verificar estado de facturación:", error);
-      return false;
     } finally {
       setLoadingTransactions(false);
     }
@@ -188,38 +134,6 @@ const ShoppingCart = ({
   };
 
   
-  // Reemplazo por una versión actualizada que respeta el estado de anulación:
-  useEffect(() => {
-    // Si hay un pedido seleccionado y no está facturado, verificar estado
-    if (selectedPedido && !selectedPedido.facturado) {
-      const interval = setInterval(async () => {
-        try {
-          // Primero obtener datos actuales
-          const pedidoActual = await pedidoService.getPedidoById(selectedPedido.id);
-          
-          // Si está anulado, mantener ese estado y no hacer nada más
-          if (pedidoActual.estado_factura === "Anulado") {
-            console.log('📝 Pedido con factura anulada, manteniendo estado');
-            setSelectedPedido(pedidoActual);
-            clearInterval(interval);
-            return;
-          }
-          
-          // Si está facturado pero no anulado, actualizar
-          if (pedidoActual.facturado && pedidoActual.estado_factura !== "Anulado") {
-            console.log('📋 Pedido actualizado a facturado:', pedidoActual);
-            setSelectedPedido(pedidoActual);
-            clearInterval(interval);
-          }
-        } catch (error) {
-          console.error('Error al actualizar estado de facturación:', error);
-        }
-      }, 5000); // Verificar cada 5 segundos
-      
-      return () => clearInterval(interval);
-    }
-  }, [selectedPedido]);
-
   // Modificar la función handleFacturarPedido para recordar el pedido actual
   const handleFacturarPedido = (pedidoId) => {
     // Almacenar el ID del pedido en sesión para recuperarlo al volver
