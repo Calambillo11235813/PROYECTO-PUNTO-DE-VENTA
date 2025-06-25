@@ -31,23 +31,26 @@ const VerFactura = () => {
         const pedidoData = await pedidoService.getPedidoById(pedidoId);
         setPedido(pedidoData);
 
-        // Obtener estado de factura
-        const facturaData = await facturaService.verificarEstadoFactura(userId, pedidoId);
-        if (facturaData.success) {
-          setFactura(facturaData);
+        // Obtener lista de facturas del usuario
+        const facturasList = await facturaService.listarFacturasPorUsuario(userId);
 
-          // Obtener datos de la empresa desde authService
-          const company = authService.getCompanyInfo();
-          setEmpresaData({
-            nombre: company.nombre_empresa || facturaData.empresa || 'Comercio',
-            nit: company.nit_empresa || facturaData.nit || '13701877019',
-            direccion: company.direccion || facturaData.direccion || 'Av. Principal #123',
-            telefono: company.telefono_empresa || facturaData.telefono || '591-12345678',
-            ciudad: company.municipio || facturaData.ciudad || 'La Paz, Bolivia'
-          });
+        // Buscar la factura correspondiente al pedido actual
+        const facturaEncontrada = facturasList?.facturas?.find(f => f.pedido_id === Number(pedidoId));
+        if (facturaEncontrada) {
+          setFactura(facturaEncontrada);
         } else {
-          throw new Error(facturaData.error || 'No se pudo obtener la información de la factura');
+          throw new Error('No se encontró la factura para este pedido');
         }
+
+        // Obtener datos de la empresa desde authService
+        const company = authService.getCompanyInfo();
+        setEmpresaData({
+          nombre: company.nombre_empresa || facturasList.empresa?.razon_social || 'Comercio',
+          nit: company.nit_empresa || facturasList.empresa?.nit || '13701877019',
+          direccion: company.direccion || 'Av. Principal #123',
+          telefono: company.telefono_empresa || '591-12345678',
+          ciudad: company.municipio || 'La Paz, Bolivia'
+        });
 
         setLoading(false);
       } catch (err) {

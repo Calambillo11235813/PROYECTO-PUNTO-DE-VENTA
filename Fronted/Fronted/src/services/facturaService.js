@@ -121,6 +121,29 @@ const facturaService = {
         throw { error: 'Error al buscar contribuyente', details: error.message };
       }
     }
+  },
+
+  /**
+   * Lista todas las facturas de un usuario/empresa
+   * @param {number} usuarioId - ID del usuario/empresa
+   * @returns {Promise} Promesa con la lista de facturas
+   */
+  listarFacturasPorUsuario: async (usuarioId) => {
+    console.log('Entrando a listarFacturasPorUsuario()');
+    try {
+      const response = await api.get(`ventas/facturas/usuario/${usuarioId}/`);
+      console.log('✅ Lista de facturas obtenida:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error al obtener lista de facturas:', error.response ? error.response.data : error.message);
+      if (error.response) {
+        throw error.response.data;
+      } else if (error.request) {
+        throw { error: 'No se recibió respuesta del servidor', details: error.request };
+      } else {
+        throw { error: 'Error al enviar la petición', details: error.message };
+      }
+    }
   }
 };
 
