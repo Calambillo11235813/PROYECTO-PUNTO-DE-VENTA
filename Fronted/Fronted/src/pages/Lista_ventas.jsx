@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { pedidoService } from '../services/pedidoService';
 import { toast } from 'react-toastify';
-import { FaShoppingBag, FaSearch, FaEye, FaTrash, FaFileInvoice } from 'react-icons/fa';
+import { FaShoppingBag, FaSearch, FaEye, FaTrash, FaStore } from 'react-icons/fa';
+import SucursalIndicator from '../components/SucursalIndicator';
 
 const Lista_ventas = () => {
   const [pedidos, setPedidos] = useState([]);
@@ -15,10 +16,38 @@ const Lista_ventas = () => {
     endDate: '',
   });
   const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Obtener la sucursal actual del localStorage
+  const [sucursalActualId, setSucursalActualId] = useState(localStorage.getItem('sucursal_actual_id'));
+  const [sucursalActualNombre, setSucursalActualNombre] = useState(localStorage.getItem('sucursal_actual_nombre'));
+  
+  // Actualizar estado local cuando cambia localStorage
+  useEffect(() => {
+    const checkSucursalChange = () => {
+      const currentId = localStorage.getItem('sucursal_actual_id');
+      const currentNombre = localStorage.getItem('sucursal_actual_nombre');
+      
+      if (currentId !== sucursalActualId) {
+        setSucursalActualId(currentId);
+      }
+      
+      if (currentNombre !== sucursalActualNombre) {
+        setSucursalActualNombre(currentNombre);
+      }
+    };
+    
+    // Verificar cambios cada segundo
+    const interval = setInterval(checkSucursalChange, 1000);
+    
+    // Limpiar intervalo al desmontar
+    return () => clearInterval(interval);
+  }, [sucursalActualId, sucursalActualNombre]);
 
   useEffect(() => {
-    fetchPedidos();
-  }, [refreshKey]);
+    if (sucursalActualId) {
+      fetchPedidos();
+    }
+  }, [refreshKey, sucursalActualId]); // Recargar cuando cambie la sucursal
 
   useEffect(() => {
     if (pedidos.length > 0) {
@@ -29,12 +58,22 @@ const Lista_ventas = () => {
   const fetchPedidos = async () => {
     setLoading(true);
     try {
-      const data = await pedidoService.getAllPedidos();
-      setPedidos(data);
-      setFilteredPedidos(data);
+      const userId = localStorage.getItem('id');
+      
+      if (userId && sucursalActualId) {
+        console.log(`🔍 Obteniendo ventas para sucursal ${sucursalActualId}...`);
+        const data = await pedidoService.getPedidosBySucursal(userId, sucursalActualId);
+        console.log(`✅ Ventas obtenidas para sucursal ${sucursalActualId}:`, data);
+        setPedidos(data);
+        setFilteredPedidos(data);
+      } else {
+        console.warn('⚠️ No se pudo determinar el usuario o la sucursal');
+        setPedidos([]);
+        setFilteredPedidos([]);
+      }
     } catch (error) {
-      console.error('Error al obtener ventas:', error);
-      toast.error('No se pudieron cargar las ventas');
+      console.error('❌ Error al obtener ventas:', error);
+      toast.error(`No se pudieron cargar las ventas de ${sucursalActualNombre || 'la sucursal'}`);
     } finally {
       setLoading(false);
     }
@@ -59,7 +98,7 @@ const Lista_ventas = () => {
       endDate.setHours(23, 59, 59); // Incluir todo el día final
 
       filtered = filtered.filter((pedido) => {
-        const pedidoDate = new Date(pedido.fecha_creacion);
+        const pedidoDate = new Date(pedido.fecha || pedido.fecha_creacion || pedido.created_at);
         return pedidoDate >= startDate && pedidoDate <= endDate;
       });
     }
@@ -135,18 +174,25 @@ const Lista_ventas = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold title-icon flex items-center mb-2">
-          <FaShoppingBag className="mr-2 icon-accent" />
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold flex items-center">
+          <FaShoppingBag className="mr-2" />
           Lista de ventas
+          {sucursalActualNombre && (
+            <span className="ml-2 text-green-600 flex items-center text-lg">
+              <FaStore className="mx-2" />
+              {sucursalActualNombre}
+            </span>
+          )}
         </h1>
-        <p className="text-gray-600">
-          Visualiza y gestiona todas las ventas realizadas en el sistema
-        </p>
+        <SucursalIndicator 
+          sucursalNombre={sucursalActualNombre} 
+          sucursalId={sucursalActualId} 
+        />
       </div>
-
+      
       {/* Filtros y Búsqueda */}
-      <div style={{ backgroundColor: "var(--bg-tertiary)" }}className=" rounded-lg shadow-md p-4 mb-6">
+      <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="rounded-lg shadow-md p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="col-span-1 md:col-span-2">
             <div className="relative">
@@ -200,12 +246,14 @@ const Lista_ventas = () => {
         </div>
       </div>
 
-      {/* Tabla de Ventas */}
-      <div style={{ backgroundColor: "var(--bg-tertiary)" }}className=" rounded-lg shadow-md overflow-hidden">
+      {/* Tabla de Ventas con indicador de sucursal */}
+      <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="rounded-lg shadow-md overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center p-10">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-            <span className="ml-3 text-gray-600">Cargando ventas...</span>
+            <span className="ml-3 text-gray-600">
+              Cargando ventas{sucursalActualNombre ? ` de ${sucursalActualNombre}` : ''}...
+            </span>
           </div>
         ) : filteredPedidos.length > 0 ? (
           <div className="overflow-x-auto">
@@ -269,10 +317,12 @@ const Lista_ventas = () => {
           </div>
         ) : (
           <div className="text-center p-10">
-            <FaShoppingBag className="mx-auto h-12 w-12 icon-accent" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay ventas</h3>
+            <FaShoppingBag className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No hay ventas{sucursalActualNombre ? ` en ${sucursalActualNombre}` : ''}
+            </h3>
             <p className="mt-1 text-sm text-gray-500">
-              No se encontraron ventas que coincidan con los filtros aplicados.
+              No se encontraron ventas con los filtros aplicados.
             </p>
           </div>
         )}

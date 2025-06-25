@@ -2,15 +2,13 @@ from django.urls import path
 from Ventas.controllers.pedido_controller import (PedidoListCreateAPIView, PedidoDetailAPIView)
 from Ventas.controllers.estado_controller import (EstadoListCreateAPIView, EstadoRetrieveUpdateDestroyAPIView)
 from Ventas.controllers.tipo_venta_controller import (TipoVentaListCreateAPIView, TipoVentaRetrieveUpdateDestroyAPIView)
-from Ventas.controllers.cliente_controller import (ClienteListCreateAPIView, ClienteDetailAPIView)
+from Ventas.controllers.cliente_controller import (ClienteListCreateAPIView, ClienteDetailAPIView, ClientesBySucursalAPIView)
 from Ventas.controllers.tipo_pago_controller import (TipoPagoListCreateAPIView, TipoPagoRetrieveUpdateDestroyAPIView)
-from Ventas.controllers.caja_controller import AbrirCajaAPIView, CerrarCajaAPIView, CajaActualAPIView, CajaTransaccionesEfectivoAPIView
+from Ventas.controllers.caja_controller import AbrirCajaAPIView, CajaDeleteAPIView, CerrarCajaAPIView, CajaActualAPIView, CajaTransaccionesEfectivoAPIView
 from Ventas.controllers.movimiento_controller import MovimientoEfectivoAPIView
 from Ventas.controllers.reporte_controller import (
-    ReporteCajaView, 
-    ReporteVentasView, 
-    ReporteClientesView, 
-    ReporteMovimientosView
+    ReporteVentasView, ReporteCajaView, ReporteClientesView,
+    ReporteMovimientosView, ReporteProductosView
 )
 
 urlpatterns = [
@@ -25,11 +23,13 @@ urlpatterns = [
     # Pedidos por usuario (con filtro opcional de sucursal via query params: ?sucursal_id=1)
     path('pedidos/usuario/<int:usuario_id>/', PedidoListCreateAPIView.as_view(), name='pedido-lista-crear'),
     path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/', PedidoDetailAPIView.as_view(), name='pedido-detail'),
-
+    path('pedidos/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', PedidoListCreateAPIView.as_view(), name='pedido-by-sucursal'),  # Nueva ruta
+    
     # Clientes por usuario (con filtro opcional de sucursal via query params: ?sucursal_id=1)
     path('clientes/usuario/<int:usuario_id>/', ClienteListCreateAPIView.as_view(), name='cliente-lista-crear'),
     path('clientes/usuario/<int:usuario_id>/<int:cliente_id>/', ClienteDetailAPIView.as_view(), name='cliente-detail'),
-   
+    path('clientes/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', ClientesBySucursalAPIView.as_view(), name='cliente-by-sucursal'),  # Nueva ruta
+    
     # Tipos de pago   
     path('tipo-pago/', TipoPagoListCreateAPIView.as_view(), name='tipo-pago-list-create'),
     path('tipo-pago/<int:pk>/', TipoPagoRetrieveUpdateDestroyAPIView.as_view(), name='tipo-pago-detail'),
@@ -38,6 +38,8 @@ urlpatterns = [
     path('caja/abrir/<int:usuario_id>/', AbrirCajaAPIView.as_view(), name='abrir-caja'),
     path('caja/cerrar/<int:usuario_id>/', CerrarCajaAPIView.as_view(), name='cerrar-caja'),
     path('caja/actual/<int:usuario_id>/', CajaActualAPIView.as_view(), name='caja-actual'),
+    path('caja/sucursal/<int:sucursal_id>/', CajaActualAPIView.as_view(), name='caja-por-sucursal'),
+    
     
     # Transacciones en efectivo por caja
     path('caja/<int:caja_id>/transacciones/efectivo/', CajaTransaccionesEfectivoAPIView.as_view(), name='transacciones-efectivo-caja'),
@@ -50,4 +52,20 @@ urlpatterns = [
     path('reportes/caja/usuario/<int:usuario_id>/', ReporteCajaView.as_view(), name='reporte-caja'),
     path('reportes/clientes/usuario/<int:usuario_id>/', ReporteClientesView.as_view(), name='reporte-clientes'),
     path('reportes/movimientos/usuario/<int:usuario_id>/', ReporteMovimientosView.as_view(), name='reporte-movimientos'),
+    path('productos/reportes/usuario/<int:usuario_id>/', ReporteProductosView.as_view(), name='productos-reportes'),
+    
+    # Nuevas rutas con sucursal
+    path('reportes/ventas/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteVentasView.as_view(), name='reporte-ventas-sucursal'),
+    path('reportes/caja/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteCajaView.as_view(), name='reporte-caja-sucursal'),
+    path('reportes/clientes/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteClientesView.as_view(), name='reporte-clientes-sucursal'),
+    path('reportes/movimientos/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteMovimientosView.as_view(), name='reporte-movimientos-sucursal'),
+    path('productos/reportes/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteProductosView.as_view(), name='productos-reportes-sucursal'),
+
+    # Ruta con formato /caja/{caja_id}/{usuario_id}/
+    path('caja/<int:caja_id>/<int:usuario_id>/', CajaDeleteAPIView.as_view(), name='eliminar-caja'),
 ]

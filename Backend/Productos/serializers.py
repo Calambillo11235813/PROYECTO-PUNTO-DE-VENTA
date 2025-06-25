@@ -2,9 +2,7 @@ from rest_framework import serializers
 from .models import Producto, Categoria, Proveedor, Inventario
 from accounts.serializers import UsuarioSerializer
 from accounts.models import Usuario
-from accounts.serializers import UsuarioSerializer
-from accounts.models import Usuario
-from Productos.models import Producto
+from Productos.models import Producto, PedidoProveedor
 from cloudinary.utils import cloudinary_url
 from Sucursales.models import Sucursal
 
@@ -102,3 +100,25 @@ class InventarioSerializer(serializers.ModelSerializer):
         if valor < 0:
             raise serializers.ValidationError("El stock no puede ser negativo.")
         return valor
+
+class PedidoProveedorSerializer(serializers.ModelSerializer):
+    producto_nombre = serializers.SerializerMethodField()
+    proveedor_nombre = serializers.SerializerMethodField()
+    sucursal_nombre = serializers.SerializerMethodField()
+    usuario_nombre = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PedidoProveedor
+        fields = '__all__'  # o lista explícita de campos + los nuevos
+
+    def get_producto_nombre(self, obj):
+        return getattr(obj.producto, "nombre", None)
+
+    def get_proveedor_nombre(self, obj):
+        return getattr(obj.proveedor, "nombre", None)
+
+    def get_sucursal_nombre(self, obj):
+        return getattr(obj.sucursal, "nombre", None)
+
+    def get_usuario_nombre(self, obj):
+        return getattr(obj.usuario, "nombre", None)

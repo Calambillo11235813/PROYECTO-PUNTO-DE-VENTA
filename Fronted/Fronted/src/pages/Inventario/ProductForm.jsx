@@ -139,6 +139,15 @@ const ProductForm = ({
       formData.append('cantidad_maxima', formProduct.cantidad_maxima || 0);
       formData.append('usuario_id', formProduct.usuario_id);
       
+      // Obtener ID de la sucursal actual del localStorage
+      const sucursal_id = localStorage.getItem('sucursal_actual_id');
+      if (sucursal_id) {
+        formData.append('sucursal_id', sucursal_id);
+        console.log('✅ Añadiendo sucursal_id al formulario:', sucursal_id);
+      } else {
+        console.warn('⚠️ No se encontró ID de sucursal en localStorage, usando sucursal por defecto');
+      }
+      
       // Agregar imagen solo si hay una nueva seleccionada
       if (formProduct.imagen) {
         formData.append('imagen', formProduct.imagen);
@@ -161,6 +170,15 @@ const ProductForm = ({
         // Crear nuevo producto
         result = await productoService.createProduct(formData);
         console.log("Producto creado con éxito:", result);
+        
+        // Verificar la estructura de la respuesta para mostrar la sucursal correctamente
+        if (result.sucursal) {
+          console.log("Sucursal asociada al producto:", result.sucursal.id);
+        } else if (result.sucursal_id) {
+          console.log("Sucursal asociada al producto:", result.sucursal_id);
+        } else {
+          console.log("Sucursal asociada al producto: No asignada");
+        }
       }
       
       // Notificar al componente padre que se ha guardado un producto

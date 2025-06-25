@@ -34,13 +34,20 @@ import Inventario from './pages/Inventario/Inventario';
 import Configuracion from './pages/Configuracion';
 import Lista_ventas from './pages/Lista_ventas';
 import Clientes from './pages/Clientes/Clientes';
-import CajaManager from './pages/CajaManager';
+import CajaManager from './pages/Caja/CajaManager';
 import PlanManager from "./pages/PlanManager";
 import Vistareportes from './pages/Reportes/Vistareportes'; // Importamos el componente de reportes
+import SucursalesManager from './pages/SucursalesManager';
+import Lista_pedidos from "./pages/Lista_pedidos"; // Agrega este import
 
 // Componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
 import EmpleadoForm from './pages/Empleados/EmpleadoForm';
+import FirstBranchSetup from './pages/FirstBranchSetup';
+
+// Páginas adicionales
+import Proveedor from "./pages/Proveedor";
+import PedidoProveedor from "./pages/PedidoProveedor";
 
 // Componente para acceso denegado
 const AccesoDenegado = () => (
@@ -96,6 +103,11 @@ function App() {
             {/* Ruta de acceso denegado */}
             <Route path="/acceso-denegado" element={<AccesoDenegado />} />
 
+            {/* ¡IMPORTANTE! Ruta para primera sucursal - DEBE IR ANTES de las rutas admin */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/primera-sucursal" element={<FirstBranchSetup />} />
+            </Route>
+
             {/* Rutas protegidas - solo para administradores */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AdminRoute />}>
@@ -113,6 +125,10 @@ function App() {
                   <Route path="clientes" element={<Clientes />} />
                   <Route path="caja" element={<CajaManager />} />
                   <Route path="mi-plan" element={<PlanManager />} />
+                  <Route path="sucursales" element={<SucursalesManager />} />
+                  <Route path="proveedores" element={<Proveedor />} />
+                  <Route path="pedido-proveedor" element={<PedidoProveedor />} />
+                  <Route path="lista-pedidos" element={<Lista_pedidos />} />
                 </Route>
               </Route>
             </Route>

@@ -13,6 +13,8 @@ import planService from '../../services/planService';
 import paymentService from '../../services/paymentService';
 import { useAuth } from '../Contexts/AuthContext';
 
+localStorage.clear();
+
 const initialState = {
   step: 1,
   loading: false,
@@ -197,6 +199,11 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
       console.log('PaymentIntent:', paymentIntent);
       console.log('Plan seleccionado:', plan);
 
+      // IMPORTANTE: Eliminar datos de sucursales en localStorage
+      localStorage.removeItem('sucursal_actual_id');
+      localStorage.removeItem('sucursal_actual_nombre');
+      console.log('🧹 Datos de sucursales eliminados del localStorage');
+
       // 1. Registrar usuario primero
       console.log('📝 Paso 1: Registrando usuario...');
       const registerResponse = await authService.register({
@@ -218,6 +225,13 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
       localStorage.setItem('access_token', loginResponse.access);
       localStorage.setItem('refresh_token', loginResponse.refresh);
       localStorage.setItem('id', loginResponse.usuario.id);
+
+      // Verificar nuevamente que no haya datos de sucursales
+      if (localStorage.getItem('sucursal_actual_id')) {
+        console.warn('⚠️ Todavía hay datos de sucursal, eliminando nuevamente...');
+        localStorage.removeItem('sucursal_actual_id');
+        localStorage.removeItem('sucursal_actual_nombre');
+      }
 
       // 4. Crear suscripción con el plan seleccionado
       console.log('📋 Paso 3: Creando suscripción...');
@@ -260,7 +274,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
       // Pequeña pausa para que el usuario vea el mensaje
       setTimeout(() => {
         onClose();
-        navigate('/admin');
+        navigate('/primera-sucursal'); // Cambiar esta línea de '/admin' a '/primera-sucursal'
       }, 2000);
 
     } catch (error) {

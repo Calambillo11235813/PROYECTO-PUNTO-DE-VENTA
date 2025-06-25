@@ -45,55 +45,52 @@ const authService = {
   
   // Iniciar sesión
   login: async (correo, contrasena) => {
+    console.log('Intentando login con:', { correo, contrasena });
     try {
-      console.log('Intentando login con:', { correo, contrasena });
-    
-      // Elimina cualquier token previo para asegurar una solicitud limpia
-      localStorage.removeItem('access_token');
-      
-      // Usar publicApi para login (no tiene autenticación previa)
+      // Usar publicApi para evitar problemas con tokens anteriores
       const response = await publicApi.post('/accounts/login/', { 
-        correo: correo,
+        correo, 
         password: contrasena
       });
+      const data = response.data;
       
-      console.log('Login exitoso:', response.data);
+      // Logs de depuración
+      console.log('Estructura de la respuesta del servidor:');
+      console.log('- data.usuario:', data.usuario);
+      console.log('- data.usuario.rol:', data.usuario.rol);
       
-      // Guardar tokens
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
-
-      // Resto del código igual...
-      if (response.data.tipo === "empleado") {
-        localStorage.setItem('user_data', JSON.stringify(response.data.empleado));
-        localStorage.setItem('empleado_id', response.data.empleado.id);
-        console.log('Empleado ID:', response.data.empleado.id);
-        const a = await empleadoService.getEmpleadoById(response.data.empleado.id);
-        console.log('Empleado:', a);
-        localStorage.setItem('id', a.usuario);
-
-        console.log('ID de usuario 222:', a.usuario);
-        localStorage.setItem('usuario_id', response.data.empleado.usuario);
-        localStorage.setItem('user_type', 'empleado');
-
-        localStorage.setItem('rol',response.data.empleado.rol);
-        console.log('Rol:', response.data.empleado.rol);
-    
-      } else {
-        localStorage.setItem('user_data', JSON.stringify(response.data.usuario));
-        localStorage.setItem('id', response.data.usuario.id);
-        localStorage.setItem('user_type', 'usuario');
-        
-        if (response.data.usuario.rol) {
-          localStorage.setItem('rol', response.data.usuario.rol);
-        }
+      // Limpiar localStorage para evitar datos obsoletos
+      localStorage.clear();
+      
+      // Guardar tokens en localStorage
+      localStorage.setItem('access_token', data.access);
+      localStorage.setItem('refresh_token', data.refresh);
+      localStorage.setItem('id', data.usuario.id);
+      localStorage.setItem('user_type', data.tipo);
+      
+      // También guardar los datos completos del usuario
+      localStorage.setItem('user_data', JSON.stringify(data.usuario));
+      
+      // Normalizar y guardar el rol correctamente
+      normalizeAndSaveRole(data.usuario);
+      
+      // También verificar si hay sucursales y obtener la primera si existe
+      try {
+        const sucursalService = await import('./SucursalService').then(m => m.default);
+        const tieneSucursales = await sucursalService.hasSucursales();
+        console.log('Usuario tiene sucursales:', tieneSucursales);
+      } catch (sucursalError) {
+        console.error('Error verificando sucursales durante login:', sucursalError);
       }
+       console.log(data);
+      return data;
       
-      return response.data;
     } catch (error) {
-      console.error('Error completo:', error);
-      const errorMessage = error.response?.data?.error || 'Error al conectar con el servidor';
-      throw new Error(errorMessage);
+      console.error('Error en login:', error);
+      throw new Error(
+        error.response?.data?.detail || 
+        'Error al iniciar sesión. Verifica tus credenciales.'
+      );
     }
   },
   
@@ -132,6 +129,34 @@ const authService = {
       throw new Error('Sesión expirada, por favor inicie sesión nuevamente');
     }
   },
+};
+
+// Mejorar la función normalizeAndSaveRole
+const normalizeAndSaveRole = (userData) => {
+  let roleValue = null;
+  
+  // Verificar si hay un rol explícito
+  if (userData.rol) {
+    if (typeof userData.rol === 'object' && userData.rol.nombre) {
+      roleValue = userData.rol.nombre;
+    } else if (typeof userData.rol === 'string') {
+      roleValue = userData.rol;
+    } else if (typeof userData.rol === 'number') {
+      roleValue = 'admin'; // Convertir ID de rol a "admin"
+    }
+  }
+  
+  // Si es tipo 'usuario' y no hay un rol específico, asignar 'admin'
+  if (userData.tipo === 'usuario' && !roleValue) {
+    roleValue = 'admin';
+    console.log('Asignando rol admin por defecto para usuario principal');
+  }
+  
+  // Garantizar que siempre haya un valor válido (nunca null)
+  localStorage.setItem('rol', roleValue || 'admin');
+  console.log('Rol normalizado guardado:', roleValue || 'admin');
+  
+  return roleValue || 'admin';
 };
 
 export default authService;

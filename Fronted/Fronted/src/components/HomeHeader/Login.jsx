@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import authService from '../../services/authService';
+import { useAuth } from '../Contexts/AuthContext'; // Importar el contexto de autenticación
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth(); // Obtener la función login del contexto
 
   const { correo, contrasena } = formData;
 
@@ -24,7 +26,14 @@ const Login = () => {
 
     try {
       const response = await authService.login(correo, contrasena);
-      setIsLoading(false);
+      
+      // Asegurar que el rol se guarde correctamente para usuarios principales
+      if (response.tipo === 'usuario') {
+        localStorage.setItem('rol', 'admin');
+      }
+      
+      // Actualizar el contexto (esto debería desencadenar una re-renderización)
+      login({...response.usuario, rol: 'admin'});
       
       // Obtener el rol del usuario desde localStorage después del login
       const userRole = localStorage.getItem('rol');
@@ -32,25 +41,37 @@ const Login = () => {
       
       console.log('Login exitoso, rol:', userRole, 'tipo:', userType);
       
-      // Redirigir según el rol
+      // Verificar si hay sucursales antes de redirigir
+      const sucursalId = localStorage.getItem('sucursal_actual_id');
+      
+      // Determinar la ruta de redirección
+      let redirectPath;
+      
       if (userType === 'empleado') {
+        // Lógica para empleados sin cambios
         switch(userRole) {
           case 'Cajero':
-            navigate('/admin/ventas');
+            redirectPath = '/admin/ventas';
             break;
           case 'Gestion de inventario':
-            navigate('/admin/inventario');
+            redirectPath = '/admin/inventario';
             break;
           case 'Supervisor':
-            navigate('/admin');
+            redirectPath = '/admin';
             break;
           default:
-            navigate('/admin');
+            redirectPath = '/admin';
         }
       } else {
-        // Usuario administrador o sin rol específico
-        navigate('/admin');
+        // Para administradores
+        redirectPath = sucursalId ? '/admin' : '/primera-sucursal';
       }
+      
+      // Usar setTimeout para asegurar que la redirección ocurra después de que React actualice el estado
+      setTimeout(() => {
+        console.log('Redirigiendo a:', redirectPath);
+        navigate(redirectPath, { replace: true });
+      }, 100);
       
     } catch (error) {
       setIsLoading(false);

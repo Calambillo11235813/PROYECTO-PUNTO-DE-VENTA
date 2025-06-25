@@ -3,6 +3,8 @@ from Productos.controllers.producto_controller import (ProductoListaCrearVista, 
 from Productos.controllers.categoria_controller import (CategoriaListaCrearVista, CategoriaDetalleVista)
 from Productos.controllers.inventario_controller import (InventarioListaCrearVista, InventarioDetalleVista)
 from Productos.controllers.reporte_controller import ReporteProductosView  # Nueva importación
+from Productos.controllers.proveedor_controller import ProveedorListaCrearVista, ProveedorDetalleVista
+from Productos.controllers.pedido_proveedor_controller import PedidoProveedorCreateView, PedidoProveedorDeleteView, PedidoProveedorPorSucursalView, PedidoProveedorPorSucursalYUsuarioView
 
 urlpatterns = [
     path('crear/usuario/<int:usuario_id>/', ProductoListaCrearVista.as_view(), name='producto-lista-crear'),
@@ -22,4 +24,13 @@ urlpatterns = [
     
     # Nueva ruta para reportes
     path('reportes/usuario/<int:usuario_id>/', ReporteProductosView.as_view(), name='reporte-productos'),
+
+    path('proveedor/usuario/<int:usuario_id>/', ProveedorListaCrearVista.as_view(), name='proveedor-list-create'),
+    path('proveedor/<int:pk>/usuario/<int:usuario_id>/', ProveedorDetalleVista.as_view(), name='proveedor-detail'),
+
+    path('pedido-proveedor/usuario/<int:usuario_id>/', PedidoProveedorCreateView.as_view(), name='pedido-proveedor-create'),
+    path('pedido-proveedor/<int:pk>/', PedidoProveedorDeleteView.as_view(), name='pedido-proveedor-delete'),
+
+    path('pedido-proveedor/sucursal/<int:sucursal_id>/', PedidoProveedorPorSucursalView.as_view(), name='pedido-proveedor-por-sucursal'),
+    path('pedido-proveedor/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', PedidoProveedorPorSucursalYUsuarioView.as_view(), name='pedido-proveedor-por-sucursal-usuario'),
 ]

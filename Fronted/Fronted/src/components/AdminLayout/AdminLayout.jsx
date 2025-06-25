@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../Sidebar";
 import { useAuth } from "../Contexts/AuthContext";
+// Importar el componente selector de sucursal
+import SucursalSelector from "../SucursalSelector/SucursalSelector";
 
 import {
   FaBars,
@@ -83,6 +85,13 @@ const AdminLayout = () => {
             <div className="page-title">
               {getPageIcon()}
               <h1>{activePage}</h1>
+            </div>
+          </div>
+          {/* Nuevo: Agregar el selector de sucursal a la derecha del header */}
+          <div className="right">
+            <div className="flex items-center gap-4">
+              <SucursalSelector />
+              {/* Aquí puedes agregar otros elementos del header si los necesitas */}
             </div>
           </div>
         </header>

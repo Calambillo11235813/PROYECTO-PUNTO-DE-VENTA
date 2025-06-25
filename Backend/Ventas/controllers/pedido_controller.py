@@ -231,3 +231,24 @@ class PedidoDetailAPIView(APIView):
                 {"error": f"Error al actualizar pedido: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+# Modificar la clase PedidosBySucursalAPIView para que reciba correctamente los parámetros
+class PedidosBySucursalAPIView(APIView):
+    def get(self, request, usuario_id, sucursal_id):
+        try:
+            pedidos = Pedido.objects.filter(
+                usuario_id=usuario_id,
+                sucursal_id=sucursal_id
+            )
+            
+            print(f"Buscando pedidos para usuario {usuario_id} en sucursal {sucursal_id}")
+            print(f"Encontrados {pedidos.count()} pedidos")
+            
+            serializer = PedidoSerializer(pedidos, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"Error al obtener pedidos por sucursal: {str(e)}")
+            return Response(
+                {"error": f"Error al obtener pedidos de la sucursal: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

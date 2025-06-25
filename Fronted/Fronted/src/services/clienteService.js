@@ -37,22 +37,53 @@ const clienteService = {
     }
   },
   
+  /**
+   * Obtener clientes por sucursal específica
+   * @param {number} userId - ID del usuario (dueño/admin)
+   * @param {number} sucursalId - ID de la sucursal
+   * @returns {Promise<Array>} - Lista de clientes de la sucursal
+   */
+  getClientesBySucursal: async (userId, sucursalId) => {
+    try {
+      console.log(`🔍 Obteniendo clientes del usuario ${userId} en la sucursal ${sucursalId}...`);
+      const response = await apiClient.get(`/ventas/clientes/usuario/${userId}/sucursal/${sucursalId}/`);
+      console.log('✅ Clientes por sucursal obtenidos:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error al obtener clientes por sucursal:', 
+        error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
+  
   // Crear un nuevo cliente
   createCliente: async (clienteData) => {
     try {
       const id = localStorage.getItem('id');
+      const sucursalId = localStorage.getItem('sucursal_actual_id');
+      
       if (!id) {
         throw new Error('No se encontró ID de usuario');
       }
       
-      console.log('Intentando crear cliente:', clienteData);
-      const response = await apiClient.post(`/ventas/clientes/usuario/${id}/`, {
+      // Preparar datos con la sucursal
+      const dataToSend = {
         nombre: clienteData.nombre,
         cedula_identidad: clienteData.cedula_identidad || null,
         telefono: clienteData.telefono || null,
         direccion: clienteData.direccion || null,
-        email: clienteData.email || null
-      });
+        email: clienteData.email || null,
+        sucursal: sucursalId ? parseInt(sucursalId) : null
+      };
+      
+      if (sucursalId) {
+        console.log(`✅ Asociando cliente a la sucursal ${sucursalId}`);
+      } else {
+        console.warn('⚠️ No se encontró ID de sucursal para asociar al cliente');
+      }
+      
+      console.log('Intentando crear cliente:', dataToSend);
+      const response = await apiClient.post(`/ventas/clientes/usuario/${id}/`, dataToSend);
       
       console.log('✅ Cliente creado:', response.data);
       return response.data;
@@ -66,18 +97,24 @@ const clienteService = {
   updateCliente: async (clienteId, clienteData) => {
     try {
       const id = localStorage.getItem('id');
+      const sucursalId = clienteData.sucursal || localStorage.getItem('sucursal_actual_id');
+      
       if (!id) {
         throw new Error('No se encontró ID de usuario');
       }
       
-      console.log(`Intentando actualizar cliente con ID ${clienteId}...`);
-      const response = await apiClient.put(`/ventas/clientes/usuario/${id}/${clienteId}/`, {
+      // Preparar datos con la sucursal
+      const dataToSend = {
         nombre: clienteData.nombre,
         cedula_identidad: clienteData.cedula_identidad || null,
         telefono: clienteData.telefono || null,
         direccion: clienteData.direccion || null,
-        email: clienteData.email || null
-      });
+        email: clienteData.email || null,
+        sucursal: sucursalId ? parseInt(sucursalId) : null
+      };
+      
+      console.log(`Intentando actualizar cliente con ID ${clienteId}...`);
+      const response = await apiClient.put(`/ventas/clientes/usuario/${id}/${clienteId}/`, dataToSend);
       
       console.log('✅ Cliente actualizado:', response.data);
       return response.data;
