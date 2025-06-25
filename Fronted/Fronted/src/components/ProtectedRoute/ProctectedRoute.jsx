@@ -7,7 +7,6 @@ import sucursalService from '../../services/SucursalService';
 // Definimos las rutas permitidas por rol (con el cambio necesario)
 const rolePermissions = {
   'undefined': ['*'], // Superusuario - acceso a todo como string
-  undefined: ['*'],   // También manejamos el caso de undefined real
   'admin': ['*'],     // AÑADIDO: Explicitamente dar acceso completo al rol 'admin'
   Supervisor: [
     '/admin',

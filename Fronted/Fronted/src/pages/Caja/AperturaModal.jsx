@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, DollarSign, User, LogIn, Store } from 'lucide-react';
-import empleadoService from '../../services/empleadoService';
+import empleadoService from '../../services/EmpleadoService';
 
 const AperturaModal = ({ 
   setShowAperturaModal,
