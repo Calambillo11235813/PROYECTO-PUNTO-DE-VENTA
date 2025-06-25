@@ -18,7 +18,8 @@ import {
   FaPalette,
   FaChevronDown,
   FaChevronUp,
-  FaUndoAlt  // Añadido icono para restablecer
+  FaUndoAlt,
+  FaReceipt  // Añadido para Lista de Facturas
 } from "react-icons/fa";
 import authService from "../services/authService";
 import useTheme from "../hooks/useTheme";
@@ -34,7 +35,7 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
     palette, 
     handleColorChange, 
     savePalette, 
-    resetPalette,  // Añadida esta función
+    resetPalette,
     colorNames 
   } = useTheme();
 
@@ -84,6 +85,14 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       icon: <FaShoppingBag />, 
       text: "Lista de ventas", 
       path: "/admin/Lista_ventas",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    // Nuevo ítem para Lista de Facturas
+    { 
+      id: "Facturas", 
+      icon: <FaReceipt />, 
+      text: "Lista de facturas", 
+      path: "/admin/lista-facturas",
       allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
