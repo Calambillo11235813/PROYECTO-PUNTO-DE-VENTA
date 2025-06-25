@@ -20,7 +20,8 @@ const initialState = {
   loading: false,
   userData: {
     nombre: '', correo: '', contrasena: '', confirmContrasena: '',
-    nombre_empresa: '', direccion: '', nit_empresa: ''
+    nombre_empresa: '', direccion: '', nit_empresa: '', 
+    razon_social: '', municipio: '', telefono_empresa: '', clave_siat: ''
   },
   payment: {
     clientSecret: null,
@@ -213,6 +214,10 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
         nombre_empresa: userData.nombre_empresa,
         direccion: userData.direccion,
         nit_empresa: userData.nit_empresa,
+        razon_social: userData.razon_social,
+        municipio: userData.municipio, 
+        telefono_empresa: userData.telefono_empresa,
+        clave_siat: userData.clave_siat
       });
       console.log('✅ Usuario registrado:', registerResponse);
 
@@ -380,7 +385,8 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
       type: 'UPDATE_USER_DATA', 
       payload: {
         nombre: '', correo: '', contrasena: '', confirmContrasena: '',
-        nombre_empresa: '', direccion: '', nit_empresa: ''
+        nombre_empresa: '', direccion: '', nit_empresa: '',
+        razon_social: '', municipio: '', telefono_empresa: '', clave_siat: ''
       }
     });
     
@@ -421,7 +427,9 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
     
     if (step === 2) {
       // Validar datos de empresa
-      if (!userData.nombre_empresa || !userData.direccion || !userData.nit_empresa) {
+      if (!userData.nombre_empresa || !userData.direccion || !userData.nit_empresa || 
+          !userData.razon_social || !userData.municipio || !userData.telefono_empresa || 
+          !userData.clave_siat) {
         toast.error('Por favor, completa todos los campos de la empresa');
         return;
       }
@@ -596,7 +604,7 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                 <p className="text-gray-600">Información de tu negocio</p>
               </div>
 
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Nombre de la empresa *
@@ -608,6 +616,34 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
                     onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { nombre_empresa: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="Nombre de tu empresa"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Razón Social *
+                  </label>
+                  <input
+                    type="text"
+                    name="razon_social"
+                    value={userData.razon_social}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { razon_social: e.target.value } })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Razón social de la empresa"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    NIT de la empresa *
+                  </label>
+                  <input
+                    type="text"
+                    name="nit_empresa"
+                    value={userData.nit_empresa}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { nit_empresa: e.target.value } })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Número de Identificación Tributaria"
                   />
                 </div>
 
@@ -627,15 +663,43 @@ const RegisterWithPlan = ({ plan, isOpen, onClose }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    NIT de la empresa *
+                    Municipio *
                   </label>
                   <input
                     type="text"
-                    name="nit_empresa"
-                    value={userData.nit_empresa}
-                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { nit_empresa: e.target.value } })}
+                    name="municipio"
+                    value={userData.municipio}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { municipio: e.target.value } })}
                     className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Número de Identificación Tributaria"
+                    placeholder="Municipio"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Teléfono de contacto *
+                  </label>
+                  <input
+                    type="text"
+                    name="telefono_empresa"
+                    value={userData.telefono_empresa}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { telefono_empresa: e.target.value } })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Número telefónico"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Clave SIAT *
+                  </label>
+                  <input
+                    type="text"
+                    name="clave_siat"
+                    value={userData.clave_siat}
+                    onChange={e => dispatch({ type: 'UPDATE_USER_DATA', payload: { clave_siat: e.target.value } })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="Clave de acceso al sistema SIAT"
                   />
                 </div>
               </div>

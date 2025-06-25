@@ -22,6 +22,7 @@ import {
   FaBuilding,
   FaTruck,
   FaClipboardList
+  FaReceipt  // Añadido para Lista de Facturas
 } from "react-icons/fa";
 import authService from "../services/authService";
 import useTheme from "../hooks/useTheme";
@@ -84,6 +85,43 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       text: "Punto de Venta", 
       path: "/admin/ventas",
       allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    { 
+      id: "Pedidos", 
+      icon: <FaShoppingBag />, 
+      text: "Lista de ventas", 
+      path: "/admin/Lista_ventas",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    // Nuevo ítem para Lista de Facturas
+    { 
+      id: "Facturas", 
+      icon: <FaReceipt />, 
+      text: "Lista de facturas", 
+      path: "/admin/lista-facturas",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    { 
+      id: "Inventario", 
+      icon: <FaBoxOpen />, 
+      text: "Inventario", 
+      path: "/admin/inventario",
+      allowedRoles: [undefined, 'Supervisor', 'Gestion de inventario']
+    },
+    { 
+      id: "Clientes", 
+      icon: <FaUsers />, 
+      text: "Clientes", 
+      path: "/admin/clientes",
+      allowedRoles: [undefined, 'Supervisor', 'Cajero']
+    },
+    { 
+      id: "Empleados", 
+      icon: <FaUserTie />, 
+      text: "Empleados", 
+      path: "/admin/empleados",
+      allowedRoles: [undefined, 'Supervisor'] 
     },
     { 
       id: "Facturacion", 

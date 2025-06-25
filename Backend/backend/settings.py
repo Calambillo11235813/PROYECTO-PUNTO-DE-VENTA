@@ -260,3 +260,15 @@ LOGGING = {
         },
     },
 }
+
+# Configuración SIAT API
+SIAT_API = {
+    'BASE_URL': 'http://127.0.0.1:8001',
+    'USERNAME': '12345678',  # NIT del emisor
+    'PASSWORD': 'tu_clave',  # Clave del emisor
+    'CODIGO_SISTEMA': 'SYS100',  # Código de tu sistema
+    'CODIGO_AMBIENTE': '2',  # 1=Producción, 2=Pruebas
+    'CODIGO_ESTABLECIMIENTO': '0',
+    'CODIGO_PUNTO_VENTA': '0',
+    'TIMEOUT': 30,
+}

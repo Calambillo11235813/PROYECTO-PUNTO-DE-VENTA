@@ -2,10 +2,7 @@ import axios from 'axios';
 
 // Cliente base para todas las peticiones autenticadas
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL: 'http://127.0.0.1:8000/',
 });
 
 // Interceptor para añadir el token de autenticación a todas las solicitudes

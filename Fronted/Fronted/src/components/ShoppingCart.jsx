@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart as CartIcon, Trash2, Plus, Minus, Loader, FileText, Search } from 'lucide-react';
+import { ShoppingCart as CartIcon, Trash2, Plus, Minus, Loader, FileText } from 'lucide-react';
 import { pedidoService } from '../services/pedidoService';
+import facturaService from '../services/facturaService';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify'; // Si no tienes react-toastify, puedes crear una función básica de toast
 
 const ShoppingCart = ({ 
   cartItems, 
@@ -15,12 +18,15 @@ const ShoppingCart = ({
   onDeletePedido,
   cajaActual = null // Nuevo prop para recibir la caja actual
 }) => {
+  const navigate = useNavigate(); // Añadir hook de navegación
   const [activeTab, setActiveTab] = useState('cart'); // 'cart' o 'history'
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [pedidoTransactions, setPedidoTransactions] = useState([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [pedidosCaja, setPedidosCaja] = useState([]); // Estado para los pedidos filtrados por caja
   const [isLoadingPedidos, setIsLoadingPedidos] = useState(false);
+  const [facturacionMessage, setFacturacionMessage] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Efecto para filtrar los pedidos de la caja actual cuando cambia la pestaña o los pedidos
   useEffect(() => {
@@ -38,6 +44,26 @@ const ShoppingCart = ({
     }
   }, [activeTab, pedidos, cajaActual]);
   
+  useEffect(() => {
+    const facturacionExitosa = sessionStorage.getItem('facturacionExitosa');
+    if (facturacionExitosa === 'true') {
+      setFacturacionMessage('¡Facturación completada con éxito!');
+      
+      // Forzar actualización de los datos
+      if (selectedPedido) {
+        handleViewPedidoDetails(selectedPedido.id);
+      }
+      
+      // Limpiar mensaje después de unos segundos
+      setTimeout(() => {
+        setFacturacionMessage('');
+      }, 5000);
+      
+      // Limpiar la bandera
+      sessionStorage.removeItem('facturacionExitosa');
+    }
+  }, [activeTab, refreshTrigger]);
+
   const validateTotalAmount = () => {
     const sum = paymentMethods.reduce((acc, payment) => {
       return acc + (Number(payment.amount) || 0);
@@ -45,25 +71,51 @@ const ShoppingCart = ({
     return Math.abs(sum - total) > 0.01;
   };
 
+  // Versión mejorada de handleViewPedidoDetails
   const handleViewPedidoDetails = async (pedidoId) => {
     try {
       setLoadingTransactions(true);
+      // Obtener detalles básicos del pedido
       const pedidoDetails = await pedidoService.getPedidoById(pedidoId);
-      setSelectedPedido(pedidoDetails);
       
       // Si el pedido no tiene transacciones formateadas, intentar obtenerlas por separado
       if (!pedidoDetails.transacciones_formateadas || pedidoDetails.transacciones_formateadas.length === 0) {
         try {
           const transacciones = await pedidoService.getPedidoTransactions(pedidoId);
           pedidoDetails.transacciones_formateadas = transacciones;
-          setSelectedPedido({...pedidoDetails}); // Actualizar el estado con las nuevas transacciones
         } catch (transError) {
           console.error("Error al cargar transacciones:", transError);
         }
       }
       
-      // Establecer las transacciones para uso en el componente
+      // Establecer transacciones para uso en el componente
       setPedidoTransactions(pedidoDetails.transacciones || []);
+      
+      // Solo verificar estado de facturación si:
+      // 1. No está ya facturado o anulado (para no sobrescribir estados existentes)
+      // 2. El pedido está completado (estado 1 o 2) y podría estar facturado
+      if (
+        !pedidoDetails.estado_factura && 
+        !pedidoDetails.facturado && 
+        (pedidoDetails.estado === 1 || pedidoDetails.estado === 2)
+      ) {
+        try {
+          const userId = localStorage.getItem('id');
+          const facturaStatus = await facturaService.verificarEstadoFactura(userId, pedidoId);
+          
+          // Solo actualizamos si la verificación fue exitosa y no tenemos un estado previo
+          if (facturaStatus.success) {
+            pedidoDetails.estado_factura = facturaStatus.estado;
+            pedidoDetails.facturado = true;
+          }
+        } catch (verifyError) {
+          console.warn("Error al verificar estado de factura:", verifyError);
+          // No hacemos nada si falla la verificación, mantenemos los datos originales
+        }
+      }
+      
+      // Actualizar el estado con todos los datos recolectados
+      setSelectedPedido(pedidoDetails);
     } catch (error) {
       console.error("Error al cargar detalles del pedido:", error);
     } finally {
@@ -81,6 +133,35 @@ const ShoppingCart = ({
     return estados[estadoId] || "Desconocido";
   };
 
+  
+  // Modificar la función handleFacturarPedido para recordar el pedido actual
+  const handleFacturarPedido = (pedidoId) => {
+    // Almacenar el ID del pedido en sesión para recuperarlo al volver
+    sessionStorage.setItem('lastFacturedPedidoId', pedidoId);
+    navigate(`/factura/${pedidoId}`);
+  };
+
+  // Reemplazar el useEffect para restaurar el pedido al volver
+  useEffect(() => {
+    if (activeTab === 'history') {
+      const lastFacturedPedidoId = sessionStorage.getItem('lastFacturedPedidoId');
+      const justReturned = sessionStorage.getItem('returnedFromFactura');
+      const facturacionExitosa = sessionStorage.getItem('facturacionExitosa');
+      
+      if (lastFacturedPedidoId && (justReturned === 'true' || facturacionExitosa === 'true')) {
+        // Limpiar flags
+        sessionStorage.removeItem('returnedFromFactura');
+        sessionStorage.removeItem('lastFacturedPedidoId');
+        
+        // Esperar un momento para que los datos se actualicen en el servidor
+        setTimeout(async () => {
+          await handleViewPedidoDetails(lastFacturedPedidoId);
+          setRefreshTrigger(prev => prev + 1); // Forzar actualización
+        }, 500);
+      }
+    }
+  }, [activeTab]);
+  
   return (
     <div className="w-full h-full bg-gray-50 border-l border-gray-200 flex flex-col">
       <div className="p-4 border-b flex justify-between items-center">
@@ -315,15 +396,50 @@ const ShoppingCart = ({
               
               <h4 className="font-medium mb-2 mt-4">Productos:</h4>
               <div className="mb-4 border rounded-lg">
-                {selectedPedido.detalles && selectedPedido.detalles.map(detalle => (
-                  <div key={detalle.id} className="p-2 border-b last:border-b-0 flex justify-between">
-                    <div>
-                      <span className="font-medium">{detalle.producto}</span>
-                      <span className="text-gray-500 ml-2">x {detalle.cantidad}</span>
+                {selectedPedido.detalles && selectedPedido.detalles.length > 0 ? (
+                  selectedPedido.detalles.map(detalle => (
+                    <div key={detalle.id || Math.random()} className="p-2 border-b last:border-b-0 flex justify-between">
+                      <div>
+                        <span className="font-medium">
+                          {/* Determinar el nombre del producto según la estructura de datos */}
+                          {typeof detalle.producto === 'object' 
+                            ? detalle.producto.nombre 
+                            : typeof detalle === 'object' && detalle.nombre_producto 
+                              ? detalle.nombre_producto
+                              : typeof detalle === 'object' && detalle.producto_nombre
+                                ? detalle.producto_nombre
+                                : detalle.producto || 'Producto sin nombre'}
+                        </span>
+                        <span className="text-gray-500 ml-2">x {detalle.cantidad}</span>
+                      </div>
+                      <div className="text-right">
+                        <span>
+                          {/* Mostrar el precio unitario utilizando cualquier propiedad disponible */}
+                          ${Number(
+                            detalle.precio_unitario || 
+                            (typeof detalle.producto === 'object' ? detalle.producto.precio_venta : 0) ||
+                            detalle.precio_venta ||
+                            0
+                          ).toFixed(2)}
+                        </span>
+                        <div className="text-sm text-gray-500">
+                          {/* Mostrar el subtotal */}
+                          Total: ${Number(
+                            ((detalle.precio_unitario || 
+                            (typeof detalle.producto === 'object' ? detalle.producto.precio_venta : 0) ||
+                            detalle.precio_venta ||
+                            0) 
+                            * detalle.cantidad)
+                          ).toFixed(2)}
+                        </div>
+                      </div>
                     </div>
-                    <span>${Number(detalle.precio_unitario || 0).toFixed(2)}</span>
+                  ))
+                ) : (
+                  <div className="p-3 text-gray-500 text-center">
+                    No hay detalles de productos disponibles
                   </div>
-                ))}
+                )}
               </div>
               
               <h4 className="font-medium mb-2">Transacciones:</h4>
@@ -350,7 +466,38 @@ const ShoppingCart = ({
                 </div>
               )}
               
-              <div className="mt-4 flex justify-end">
+              {/* Información del estado de facturación con botón para ver factura */}
+              <div className="mt-4 mb-2">
+                {selectedPedido?.estado_factura === "Anulado" ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                      <p className="font-medium text-red-800">
+                        Factura Anulada
+                      </p>
+                    </div>
+                  </div>
+                ) : (selectedPedido?.facturado === true || 
+                  selectedPedido?.facturado === "true" || 
+                  selectedPedido?.estado_factura === "Aceptado") ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                      <p className="font-medium text-green-800">
+                        Facturado {selectedPedido.estado_factura ? `(${selectedPedido.estado_factura})` : ''}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+                    <p className="font-medium text-orange-800">No facturado</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-4 flex justify-between">
+                {/* Lado izquierdo - botón Eliminar */}
                 <button
                   className="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded"
                   onClick={() => {
@@ -362,6 +509,43 @@ const ShoppingCart = ({
                 >
                   Eliminar Pedido
                 </button>
+                
+                {/* Lado derecho - botones Facturar/Ver Factura */}
+                <div className="flex space-x-2">
+                  {/* Botón Ver Factura - siempre visible si está facturado, incluso si está anulada */}
+                  {(selectedPedido?.facturado === true || 
+                   selectedPedido?.facturado === "true" || 
+                   selectedPedido?.estado_factura === "Aceptado" ||
+                   selectedPedido?.estado_factura === "Anulado") && (
+                    <button
+                      className={`${selectedPedido?.estado_factura === "Anulado" ? 
+                        "bg-gray-500 hover:bg-gray-600" : 
+                        "bg-green-500 hover:bg-green-600"} 
+                        text-white py-2 px-4 rounded flex items-center`}
+                      onClick={() => navigate(`/ver-factura/${selectedPedido.id}`)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Ver Factura {selectedPedido?.estado_factura === "Anulado" ? "(Anulada)" : ""}
+                    </button>
+                  )}
+                  
+                  {/* Botón Facturar Pedido - solo visible si no está facturado ni anulado */}
+                  {!(selectedPedido?.facturado === true || 
+                     selectedPedido?.facturado === "true" || 
+                     selectedPedido?.estado_factura === "Aceptado" ||
+                     selectedPedido?.estado_factura === "Anulado") && (
+                    <button
+                      className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+                      onClick={() => {
+                        handleFacturarPedido(selectedPedido.id);
+                      }}
+                    >
+                      Facturar Pedido
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
@@ -409,6 +593,17 @@ const ShoppingCart = ({
               )}
             </>
           )}
+        </div>
+      )}
+      
+      {facturacionMessage && (
+        <div className="mx-4 mt-2 bg-green-100 border-l-4 border-green-500 text-green-700 p-2 rounded">
+          <div className="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            {facturacionMessage}
+          </div>
         </div>
       )}
     </div>

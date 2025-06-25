@@ -77,6 +77,19 @@ class Pedido(models.Model):
     caja = models.ForeignKey(Caja, on_delete=models.PROTECT, null=True, blank=True)
     total = models.DecimalField(max_digits=10, decimal_places=2)
     tipo_venta = models.ForeignKey(TipoVenta, on_delete=models.CASCADE,null=True, blank=True)
+    
+    # Datos del cliente para facturación
+    cliente_nit = models.CharField(max_length=20, default='0')
+    cliente_nombre = models.CharField(max_length=255, default='SIN NOMBRE')
+    cliente_email = models.EmailField(blank=True, null=True)
+    
+    # Campos para facturación SIAT
+    facturado = models.BooleanField(default=False)
+    cuf = models.CharField(max_length=100, blank=True, null=True)
+    codigo_recepcion = models.CharField(max_length=100, blank=True, null=True)
+    fecha_facturacion = models.DateTimeField(blank=True, null=True)
+    estado_factura = models.CharField(max_length=50, blank=True, null=True)
+    
     def __str__(self):
         return f"Pedido #{self.id} - Usuario {self.usuario.correo}"
 

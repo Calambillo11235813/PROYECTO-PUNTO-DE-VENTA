@@ -39,6 +39,9 @@ import PlanManager from "./pages/PlanManager";
 import Vistareportes from './pages/Reportes/Vistareportes'; // Importamos el componente de reportes
 import SucursalesManager from './pages/SucursalesManager';
 import Lista_pedidos from "./pages/Lista_pedidos"; // Agrega este import
+import Factura from './pages/Factura';
+import VerFactura from './pages/VerFactura'; // Añadir esta línea para importar el componente
+import Lista_facturas from './pages/Lista_facturas'; // Nueva importación
 
 // Componentes de empleados
 import Empleados from './pages/Empleados/Empleados';
@@ -116,6 +119,7 @@ function App() {
                   <Route path="inventario" element={<Inventario />} />
                   <Route path="ventas" element={<Sales />} />
                   <Route path="Lista_ventas" element={<Lista_ventas/>} />
+                  <Route path="lista-facturas" element={<Lista_facturas />} /> {/* Nueva ruta */}
                   <Route path="empleados" element={<Empleados />} />
                   <Route path="empleados/crear" element={<EmpleadoForm />} />
                   <Route path="empleados/editar/:id" element={<EmpleadoForm />} />
@@ -131,6 +135,10 @@ function App() {
                   <Route path="lista-pedidos" element={<Lista_pedidos />} />
                 </Route>
               </Route>
+              
+              {/* Añadir las rutas para Factura y VerFactura */}
+              <Route path="/factura/:pedidoId" element={<Factura />} />
+              <Route path="/ver-factura/:pedidoId" element={<VerFactura />} />
             </Route>
 
             {/* Ruta para redireccionar URLs no encontradas */}

@@ -303,5 +303,22 @@ export const pedidoService = {
       console.error('❌ Error al obtener tipos de pago:', error.response ? error.response.data : error.message);
       throw error;
     }
-  }
+  },
+
+  // Añadir esta nueva función al objeto pedidoService
+  updatePedidoFacturado: async (pedidoId) => {
+    console.log('Entrando a updatePedidoFacturado()');
+    try {
+      const id = localStorage.getItem('id');
+      const response = await api.patch(`ventas/pedidos/usuario/${id}/${pedidoId}/`, {
+        facturado: true,
+        estado_factura: 'Aceptado'
+      });
+      console.log('✅ Estado de facturación del pedido actualizado:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error al actualizar estado de facturación:', error.response ? error.response.data : error.message);
+      throw error;
+    }
+  },
 };
