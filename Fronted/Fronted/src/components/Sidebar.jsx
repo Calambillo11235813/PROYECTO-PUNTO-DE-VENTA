@@ -21,8 +21,8 @@ import {
   FaUndoAlt,
   FaBuilding,
   FaTruck,
-  FaClipboardList
-  FaReceipt  // Añadido para Lista de Facturas
+  FaClipboardList,
+  FaReceipt // <-- Último ícono, sin coma al final
 } from "react-icons/fa";
 import authService from "../services/authService";
 import useTheme from "../hooks/useTheme";
@@ -85,7 +85,6 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       text: "Punto de Venta", 
       path: "/admin/ventas",
       allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
-      allowedRoles: [undefined, 'Supervisor', 'Cajero']
     },
     { 
       id: "Pedidos", 
@@ -123,13 +122,7 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       path: "/admin/empleados",
       allowedRoles: [undefined, 'Supervisor'] 
     },
-    { 
-      id: "Facturacion", 
-      icon: <FaFileInvoiceDollar />, 
-      text: "Facturación", 
-      path: "/admin/facturacion",
-      allowedRoles: ['admin', undefined, 'Supervisor']
-    },
+   ,
     { 
       id: "Pedidos", 
       icon: <FaShoppingBag />, 

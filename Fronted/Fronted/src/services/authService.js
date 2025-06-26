@@ -160,6 +160,8 @@ const authService = {
         console.log('Usuario tiene sucursales:', tieneSucursales);
       } catch (sucursalError) {
         console.error('Error verificando sucursales durante login:', sucursalError);
+      } // <-- ESTA LLAVE FALTABA
+
       // Guardar tokens
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);

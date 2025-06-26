@@ -109,7 +109,8 @@ class PedidoProveedorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PedidoProveedor
-        fields = '__all__'  # o lista explícita de campos + los nuevos
+        fields = '__all__'
+        read_only_fields = ['usuario']  # <-- Agrega esto
 
     def get_producto_nombre(self, obj):
         return getattr(obj.producto, "nombre", None)
