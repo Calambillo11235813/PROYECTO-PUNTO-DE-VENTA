@@ -1,6 +1,6 @@
 from django.urls import path
 from Ventas.controllers.tipo_venta_controller import (TipoVentaListCreateAPIView, TipoVentaRetrieveUpdateDestroyAPIView)
-from Ventas.controllers.cliente_controller import (ClienteListCreateAPIView, ClienteDetailAPIView)
+from Ventas.controllers.cliente_controller import (ClienteListCreateAPIView, ClienteDetailAPIView, ClientesBySucursalAPIView)
 from Ventas.controllers.pedido_controller import PedidoListCreateAPIView
 from Ventas.controllers.pedido_controller import PedidoListCreateAPIView, PedidoDetailAPIView
 from Ventas.controllers.tipo_pago_controller import (TipoPagoListCreateAPIView, TipoPagoRetrieveUpdateDestroyAPIView)
@@ -39,7 +39,8 @@ urlpatterns = [
     # Clientes por usuario
     path('clientes/usuario/<int:usuario_id>/', ClienteListCreateAPIView.as_view(), name='cliente-lista-crear'),
     path('clientes/usuario/<int:usuario_id>/<int:cliente_id>/', ClienteDetailAPIView.as_view(), name='cliente-detail'),
-   
+    path('clientes/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', ClientesBySucursalAPIView.as_view(), name='clientes-por-sucursal'),
+
     # Tipos de pago   
     path('tipo-pago/', TipoPagoListCreateAPIView.as_view(), name='tipo-pago-list-create'),
     path('tipo-pago/<int:pk>/', TipoPagoRetrieveUpdateDestroyAPIView.as_view(), name='tipo-pago-detail'),

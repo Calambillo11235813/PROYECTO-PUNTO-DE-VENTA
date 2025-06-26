@@ -122,35 +122,10 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       path: "/admin/empleados",
       allowedRoles: [undefined, 'Supervisor'] 
     },
-   ,
-    { 
-      id: "Pedidos", 
-      icon: <FaShoppingBag />, 
-      text: "Lista de ventas", 
-      path: "/admin/Lista_ventas",
-      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
-    },
-    { 
-      id: "Inventario", 
-      icon: <FaBoxOpen />, 
-      text: "Inventario", 
-      path: "/admin/inventario",
-      allowedRoles: ['admin', undefined, 'Supervisor', 'Gestion de inventario']
-    },
-    { 
-      id: "Clientes", 
-      icon: <FaUsers />, 
-      text: "Clientes", 
-      path: "/admin/clientes",
-      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
-    },
-    { 
-      id: "Empleados", 
-      icon: <FaUserTie />, 
-      text: "Empleados", 
-      path: "/admin/empleados",
-      allowedRoles: ['admin', undefined, 'Supervisor'] 
-    },
+  ,
+ 
+    
+    ,
     {
       id: "Proveedor",
       icon: <FaTruck />,
