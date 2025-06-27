@@ -164,6 +164,21 @@ const Inventario = () => {
     setShowSucursalSelector(false);
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const producto = {
+      // ...otros campos...
+      stock_minimo,
+      stock_maximo,
+      // ...otros campos...
+    };
+
+    console.log("Producto a guardar:", producto); // <-- Aquí ves los valores
+
+    await productoService.saveProduct(producto);
+    // ...resto del código...
+  };
+
   return (
     <div style={{ backgroundColor: "var(--bg-tertiary)" }}className="p-6 dark:bg-white-800 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6">

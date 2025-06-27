@@ -19,9 +19,9 @@ class EmpleadoListCreate(APIView):
         serializer = EmpleadoSerializer(empleados, many=True)
         return Response(serializer.data)
 
-    # Añade los decoradores aquí
-    # @check_employee_limit
-    # @register_resource_usage('employee')
+    # ✅ Aplica los decoradores aquí
+    @check_employee_limit
+    @register_resource_usage('employee')
     def post(self, request, usuario_id):
         # Extraer el nombre del rol desde el JSON
         rol_nombre = request.data.get('rol', None)
@@ -163,4 +163,7 @@ class EmpleadoDetailSimple(APIView):
     def delete(self, request, pk):
         empleado = self.get_object(pk)
         empleado.delete()
+        # Decrementa el contador de empleados en la suscripción
+        from accounts.services.plan_limits_service import PlanLimitsService
+        PlanLimitsService.release_employee_usage(usuario_id)
         return Response({"mensaje": "Empleado eliminado correctamente"}, status=status.HTTP_204_NO_CONTENT)

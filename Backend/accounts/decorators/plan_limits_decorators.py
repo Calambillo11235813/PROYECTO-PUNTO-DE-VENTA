@@ -32,11 +32,12 @@ def check_employee_limit(view_func):
     """Decorador que verifica el límite de empleados antes de procesar la vista"""
     @wraps(view_func)
     def wrapped_view(self, request, usuario_id, *args, **kwargs):
+        print("Decorador check_employee_limit ejecutado para usuario:", usuario_id)
         try:
-            # Usar el usuario_id del parámetro, no de request.user
             PlanLimitsService.check_employee_limit(usuario_id)
             return view_func(self, request, usuario_id, *args, **kwargs)
         except PermissionDenied as e:
+            print("Decorador atrapó PermissionDenied:", e.detail)
             return Response(e.detail, status=status.HTTP_403_FORBIDDEN)
     return wrapped_view
 

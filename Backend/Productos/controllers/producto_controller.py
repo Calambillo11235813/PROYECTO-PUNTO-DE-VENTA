@@ -29,8 +29,8 @@ class ProductoListaCrearVista(APIView):
         return Response(serializer.data)
     
     
-    # @check_product_limit  # Verificar límite antes de procesar
-    # @register_resource_usage('product')  # Registrar uso después de crear exitosamente
+    @check_product_limit  # Verificar límite antes de procesar
+    @register_resource_usage('product')  # Registrar uso después de crear exitosamente
     def post(self, request, usuario_id):
         data = request.data.copy()
         nombre_producto = data.get('nombre')
