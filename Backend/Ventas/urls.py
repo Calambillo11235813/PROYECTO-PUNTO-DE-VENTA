@@ -75,5 +75,17 @@ urlpatterns = [
 
     # ✅ URL para anular factura
     path('pedidos/usuario/<int:usuario_id>/<int:pedido_id>/factura/anular/', AnularFacturaAPIView.as_view(), name='anular_factura'),
+    
+      # Nuevas rutas con sucursal
+    path('reportes/ventas/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteVentasView.as_view(), name='reporte-ventas-sucursal'),
+    path('reportes/caja/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteCajaView.as_view(), name='reporte-caja-sucursal'),
+    path('reportes/clientes/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteClientesView.as_view(), name='reporte-clientes-sucursal'),
+    path('reportes/movimientos/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteMovimientosView.as_view(), name='reporte-movimientos-sucursal'),
+    path('productos/reportes/usuario/<int:usuario_id>/sucursal/<int:sucursal_id>/', 
+         ReporteProductosView.as_view(), name='productos-reportes-sucursal'),
 
 ]
