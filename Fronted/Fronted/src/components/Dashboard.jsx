@@ -4,6 +4,7 @@ import { productoService } from "../services/productoService";
 import { pedidoService } from "../services/pedidoService"; 
 import reporteService from "../services/reporteService"; // Importar el servicio de reportes
 import { FaExclamationTriangle } from "react-icons/fa";
+import GraficaVentas from './GraficaVentas'; // Importar el componente de gráfica
 
 const Dashboard = () => {
   // Obtenemos el contexto del AdminLayout 
@@ -413,8 +414,8 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
         <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
           <h3 className="text-gray-600 text-lg">Ventas de la Semana</h3>
-          <div className="h-44 bg-gradient-to-r from-green-500 to-blue-500 rounded-md flex items-center justify-center text-white">
-            <span className="text-lg">Gráfico de Ventas</span>
+          <div className="mt-2">
+            <GraficaVentas />
           </div>
         </div>
 
