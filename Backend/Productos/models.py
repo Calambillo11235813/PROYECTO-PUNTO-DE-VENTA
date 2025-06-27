@@ -50,25 +50,69 @@ class Inventario(models.Model):
         return f'Inventario de {self.producto.nombre}'
 
 class PedidoProveedor(models.Model):
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='pedidos_proveedor')
+    ESTADOS = [
+        ('pendiente', 'Pendiente'),
+        ('recibido', 'Recibido'),
+        ('cancelado', 'Cancelado'),
+    ]
     proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, related_name='pedidos_proveedor')
     sucursal = models.ForeignKey(Sucursal, on_delete=models.CASCADE, related_name='pedidos_proveedor')
-    cantidad = models.PositiveIntegerField()
     fecha = models.DateTimeField(auto_now_add=True)
+    fecha_entrega_estimada = models.DateField(null=True, blank=True)
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='pedidos_proveedor')
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+    codigo_control = models.CharField(max_length=100, blank=True, null=True)
+    numero_autorizacion = models.CharField(max_length=100, blank=True, null=True)
+    total = models.DecimalField(max_digits=12, decimal_places=2, editable=False, default=0)
 
     def save(self, *args, **kwargs):
+        estado_anterior = None
+        if self.pk:
+            estado_anterior = PedidoProveedor.objects.get(pk=self.pk).estado
         super().save(*args, **kwargs)
-        # Actualiza el stock solo si el producto pertenece a la sucursal
-        if self.producto.sucursal_id == self.sucursal_id:
+        total = sum(detalle.subtotal for detalle in self.detalles.all())
+        if self.total != total:
+            self.total = total
+            super().save(update_fields=['total'])
+        # Si el estado cambió a 'recibido', actualiza el stock
+        if estado_anterior != 'recibido' and self.estado == 'recibido':
+            for detalle in self.detalles.all():
+                producto = detalle.producto
+                if producto.sucursal_id == self.sucursal_id:
+                    inventario = getattr(producto, 'inventario', None)
+                    if inventario:
+                        inventario.stock += detalle.cantidad
+                        inventario.save()
+                    else:
+                        from Productos.models import Inventario
+                        Inventario.objects.create(producto=producto, stock=detalle.cantidad)
+                    producto.precio_compra = detalle.precio_compra
+                    producto.save()
+
+    def __str__(self):
+        return f"Pedido a {self.proveedor.nombre} para {self.sucursal.nombre} ({self.fecha.date()})"
+
+class DetallePedidoProveedor(models.Model):
+    pedido = models.ForeignKey(PedidoProveedor, on_delete=models.CASCADE, related_name='detalles')
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField()
+    precio_compra = models.DecimalField(max_digits=10, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, editable=False, default=0)
+
+    def save(self, *args, **kwargs):
+        self.subtotal = self.cantidad * self.precio_compra
+        super().save(*args, **kwargs)
+        # Actualiza el stock y el precio de compra del producto si el pedido está recibido
+        if self.pedido.estado == 'recibido' and self.producto.sucursal_id == self.pedido.sucursal_id:
             inventario = getattr(self.producto, 'inventario', None)
             if inventario:
                 inventario.stock += self.cantidad
                 inventario.save()
             else:
-                # Si no existe inventario, puedes crearlo o lanzar un error controlado
                 from Productos.models import Inventario
                 Inventario.objects.create(producto=self.producto, stock=self.cantidad)
+            self.producto.precio_compra = self.precio_compra
+            self.producto.save()
 
     def __str__(self):
-        return f"Pedido a {self.proveedor.nombre} de {self.cantidad} {self.producto.nombre} para {self.sucursal.nombre}"
+        return f"{self.cantidad} x {self.producto.nombre} (Pedido #{self.pedido.id})"

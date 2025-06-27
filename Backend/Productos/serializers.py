@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from .models import Producto, Categoria, Proveedor, Inventario
+from .models import Producto, Categoria, Proveedor, Inventario, PedidoProveedor, DetallePedidoProveedor
 from accounts.serializers import UsuarioSerializer
 from accounts.models import Usuario
-from Productos.models import Producto, PedidoProveedor
 from cloudinary.utils import cloudinary_url
 from Sucursales.models import Sucursal
 
@@ -101,25 +100,34 @@ class InventarioSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("El stock no puede ser negativo.")
         return valor
 
+class DetallePedidoProveedorSerializer(serializers.ModelSerializer):
+    producto_nombre = serializers.CharField(source='producto.nombre', read_only=True)
+
+    class Meta:
+        model = DetallePedidoProveedor
+        fields = ['id', 'producto', 'producto_nombre', 'cantidad', 'precio_compra', 'subtotal']
+
 class PedidoProveedorSerializer(serializers.ModelSerializer):
-    producto_nombre = serializers.SerializerMethodField()
-    proveedor_nombre = serializers.SerializerMethodField()
-    sucursal_nombre = serializers.SerializerMethodField()
-    usuario_nombre = serializers.SerializerMethodField()
+    detalles = DetallePedidoProveedorSerializer(many=True)
+    proveedor_nombre = serializers.CharField(source='proveedor.nombre', read_only=True)
+    sucursal_nombre = serializers.CharField(source='sucursal.nombre', read_only=True)
+    usuario_nombre = serializers.CharField(source='usuario.nombre', read_only=True)
 
     class Meta:
         model = PedidoProveedor
-        fields = '__all__'
-        read_only_fields = ['usuario']  # <-- Agrega esto
+        fields = [
+            'id', 'proveedor', 'proveedor_nombre', 'sucursal', 'sucursal_nombre',
+            'fecha', 'fecha_entrega_estimada', 'usuario', 'usuario_nombre',
+            'estado', 'codigo_control', 'numero_autorizacion', 'total', 'detalles'
+        ]
+        read_only_fields = ['usuario', 'total']
 
-    def get_producto_nombre(self, obj):
-        return getattr(obj.producto, "nombre", None)
-
-    def get_proveedor_nombre(self, obj):
-        return getattr(obj.proveedor, "nombre", None)
-
-    def get_sucursal_nombre(self, obj):
-        return getattr(obj.sucursal, "nombre", None)
-
-    def get_usuario_nombre(self, obj):
-        return getattr(obj.usuario, "nombre", None)
+    def create(self, validated_data):
+        detalles_data = validated_data.pop('detalles')
+        pedido = PedidoProveedor.objects.create(**validated_data)
+        for detalle_data in detalles_data:
+            DetallePedidoProveedor.objects.create(pedido=pedido, **detalle_data)
+        # Recalcula el total después de crear los detalles
+        pedido.total = sum(d.cantidad * d.precio_compra for d in pedido.detalles.all())
+        pedido.save(update_fields=['total'])
+        return pedido

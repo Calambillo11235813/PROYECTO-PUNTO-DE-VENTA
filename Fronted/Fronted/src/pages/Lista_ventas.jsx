@@ -336,11 +336,9 @@ const Lista_ventas = () => {
               className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
               onClick={() => setShowModal(false)}
             ></div>
-
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen">
               &#8203;
             </span>
-
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg md:max-w-xl lg:max-w-2xl sm:w-full">
               <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
@@ -433,22 +431,17 @@ const Lista_ventas = () => {
                 </div>
 
                 <div className="mt-6 bg-gray-50 p-4 rounded-md">
-                  <div className="flex justify-between items-center">
+                  {/* Elimina la fila de Subtotal */}
+                  {/* <div className="flex justify-between items-center">
                     <span className="text-sm font-medium text-gray-600">Subtotal:</span>
                     <span className="text-sm text-gray-800">
                       {formatCurrency(selectedPedido.subtotal || selectedPedido.total * 0.84 || 0)}
                     </span>
-                  </div>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm font-medium text-gray-600">IVA (16%):</span>
-                    <span className="text-sm text-gray-800">
-                      {formatCurrency(selectedPedido.impuestos || selectedPedido.total * 0.16 || 0)}
-                    </span>
-                  </div>
+                  </div> */}
                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
                     <span className="text-base font-bold text-gray-900">Total:</span>
                     <span className="text-base font-bold text-gray-900">
-                      {formatCurrency(selectedPedido.total_con_impuestos || selectedPedido.total || 0)}
+                      {formatCurrency(selectedPedido.total || 0)}
                     </span>
                   </div>
                 </div>

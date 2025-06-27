@@ -5,14 +5,10 @@ from Productos.models import PedidoProveedor
 from Productos.serializers import PedidoProveedorSerializer
 from django.shortcuts import get_object_or_404
 from accounts.models import Usuario  # Agrega este import al inicio del archivo
+from rest_framework import permissions
 
 class PedidoProveedorCreateView(APIView):
-    # {
-    #     "producto": 3,
-    #     "proveedor": 1,
-    #     "sucursal": 6,
-    #     "cantidad": 10
-    # }
+  
     def post(self, request, usuario_id):
         data = request.data.copy()
         usuario = get_object_or_404(Usuario, pk=usuario_id)
@@ -42,3 +38,14 @@ class PedidoProveedorPorSucursalYUsuarioView(APIView):
         pedidos = PedidoProveedor.objects.filter(usuario_id=usuario_id, sucursal_id=sucursal_id)
         serializer = PedidoProveedorSerializer(pedidos, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class PedidoProveedorUpdateView(APIView):
+
+
+    def patch(self, request, pk):
+        pedido = get_object_or_404(PedidoProveedor, pk=pk)
+        serializer = PedidoProveedorSerializer(pedido, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

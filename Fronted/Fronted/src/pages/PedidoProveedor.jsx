@@ -3,7 +3,7 @@ import pedidoProveedorService from "../services/pedidoProveedorService";
 import sucursalService from "../services/SucursalService";
 import { productoService } from "../services/productoService";
 import proveedorService from "../services/proveedorService";
-import { ShoppingCart, Building2, Package, Users, Hash, Send, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { ShoppingCart, Building2, Package, Users, Hash, Loader2, CheckCircle, AlertCircle, Plus, Trash2, Send } from "lucide-react";
 
 const PedidoProveedor = () => {
   const usuarioId = localStorage.getItem("id");
@@ -12,10 +12,13 @@ const PedidoProveedor = () => {
   const [proveedores, setProveedores] = useState([]);
   const [form, setForm] = useState({
     sucursal: "",
-    producto: "",
     proveedor: "",
-    cantidad: ""
+    fecha_entrega_estimada: "",
+    codigo_control: "",
+    numero_autorizacion: "",
   });
+  const [detalle, setDetalle] = useState({ producto: "", cantidad: "", precio_compra: "" });
+  const [detalles, setDetalles] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Cargar sucursales y proveedores al montar
@@ -48,24 +51,56 @@ const PedidoProveedor = () => {
         }
       } else {
         setProductos([]);
-        setForm((prev) => ({ ...prev, producto: "" }));
       }
     };
     fetchProductos();
   }, [form.sucursal, usuarioId]);
 
+  // Manejo de cambios en el formulario principal
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  // Manejo de cambios en el detalle
+  const handleDetalleChange = (e) => {
+    setDetalle({
+      ...detalle,
+      [e.target.name]: e.target.value ?? ""
+    });
+  };
+
+  // Agregar producto al detalle
+  const handleAddDetalle = () => {
+    if (detalle.producto && detalle.cantidad && detalle.precio_compra) {
+      setDetalles([...detalles, { ...detalle }]);
+      setDetalle({ producto: "", cantidad: "", precio_compra: "" });
+    } else {
+      alert("Completa todos los campos del producto");
+    }
+  };
+
+  // Eliminar producto del detalle
+  const handleRemoveDetalle = (idx) => {
+    setDetalles(detalles.filter((_, i) => i !== idx));
+  };
+
+  // Enviar el pedido
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Detalles al enviar:", detalles);
+    if (!form.sucursal || !form.proveedor || detalles.length === 0) {
+      alert("Completa todos los campos y agrega al menos un producto");
+      return;
+    }
     setLoading(true);
     try {
-      await pedidoProveedorService.crearPedidoProveedor(usuarioId, form);
+      await pedidoProveedorService.crearPedidoProveedor(usuarioId, {
+        ...form,
+        detalles,
+      });
       alert("Pedido realizado correctamente");
-      setForm({ sucursal: "", producto: "", proveedor: "", cantidad: "" });
-      setProductos([]);
+      setForm({ sucursal: "", proveedor: "", fecha_entrega_estimada: "" });
+      setDetalles([]);
     } catch (error) {
       alert("Error al realizar el pedido");
     } finally {
@@ -95,144 +130,101 @@ const PedidoProveedor = () => {
             <h3 className="text-xl font-semibold text-white">Información del Pedido</h3>
           </div>
           
-          <div className="p-6 space-y-6">
-            {/* Grid Layout for Desktop */}
+          <form className="p-6 space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
               {/* Sucursal */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                   <Building2 className="w-4 h-4 text-green-600" />
                   <span>Sucursal</span>
                 </label>
-                <div className="relative">
-                  <select
-                    name="sucursal"
-                    value={form.sucursal}
-                    onChange={handleChange}
-                    className="w-full p-4 pl-12 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 appearance-none cursor-pointer text-gray-900 hover:bg-white"
-                    required
-                  >
-                    <option value="">Selecciona una sucursal</option>
-                    {sucursales.map((suc) => (
-                      <option key={suc.id} value={suc.id}>
-                        {suc.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <Building2 className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
+                <select
+                  name="sucursal"
+                  value={form.sucursal}
+                  onChange={handleChange}
+                  className="w-full p-4 pl-12 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 appearance-none cursor-pointer text-gray-900 hover:bg-white"
+                  required
+                >
+                  <option value="">Selecciona una sucursal</option>
+                  {sucursales.map((suc) => (
+                    <option key={suc.id} value={suc.id}>
+                      {suc.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
-
               {/* Proveedor */}
               <div className="space-y-2">
                 <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                   <Users className="w-4 h-4 text-green-600" />
                   <span>Proveedor</span>
                 </label>
-                <div className="relative">
-                  <select
-                    name="proveedor"
-                    value={form.proveedor}
-                    onChange={handleChange}
-                    className="w-full p-4 pl-12 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 appearance-none cursor-pointer text-gray-900 hover:bg-white"
-                    required
-                  >
-                    <option value="">Selecciona un proveedor</option>
-                    {proveedores.map((prov) => (
-                      <option key={prov.id} value={prov.id}>
-                        {prov.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <Users className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Producto - Full Width */}
-            <div className="space-y-2">
-              <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
-                <Package className="w-4 h-4 text-green-600" />
-                <span>Producto</span>
-              </label>
-              <div className="relative">
                 <select
-                  name="producto"
-                  value={form.producto}
+                  name="proveedor"
+                  value={form.proveedor}
                   onChange={handleChange}
-                  className={`w-full p-4 pl-12 border border-gray-200 rounded-xl transition-all duration-200 appearance-none cursor-pointer text-gray-900 ${
-                    !form.sucursal 
-                      ? 'bg-gray-100 cursor-not-allowed opacity-60' 
-                      : 'bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 hover:bg-white'
-                  }`}
+                  className="w-full p-4 pl-12 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 appearance-none cursor-pointer text-gray-900 hover:bg-white"
                   required
-                  disabled={!form.sucursal}
                 >
-                  <option value="">
-                    {!form.sucursal ? 'Primero selecciona una sucursal' : 'Selecciona un producto'}
-                  </option>
-                  {productos.map((prod) => (
-                    <option key={prod.id} value={prod.id}>
-                      {prod.nombre}
+                  <option value="">Selecciona un proveedor</option>
+                  {proveedores.map((prov) => (
+                    <option key={prov.id} value={prov.id}>
+                      {prov.nombre}
                     </option>
                   ))}
                 </select>
-                <Package className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none ${
-                  !form.sucursal ? 'text-gray-300' : 'text-gray-400'
-                }`} />
-                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                  <svg className={`w-4 h-4 ${!form.sucursal ? 'text-gray-300' : 'text-gray-400'}`} viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </div>
               </div>
-              {!form.sucursal && (
-                <div className="flex items-center space-x-2 mt-2">
-                  <AlertCircle className="w-4 h-4 text-amber-500" />
-                  <p className="text-xs text-amber-600">
-                    Los productos se cargarán automáticamente al seleccionar una sucursal
-                  </p>
-                </div>
-              )}
             </div>
-
-            {/* Cantidad */}
+            {/* Fecha estimada de entrega */}
+            <div className="space-y-2">
+              <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
+                <Send className="w-4 h-4 text-green-600" />
+                <span>Fecha estimada de entrega</span>
+              </label>
+              <input
+                type="date"
+                name="fecha_entrega_estimada"
+                value={form.fecha_entrega_estimada}
+                onChange={handleChange}
+                className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 text-gray-900"
+                required
+              />
+            </div>
+            {/* Código de control */}
             <div className="space-y-2">
               <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
                 <Hash className="w-4 h-4 text-green-600" />
-                <span>Cantidad</span>
+                <span>Código de control</span>
               </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  name="cantidad"
-                  value={form.cantidad}
-                  onChange={handleChange}
-                  placeholder="Ingresa la cantidad solicitada"
-                  className="w-full p-4 pl-12 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 text-gray-900 placeholder-gray-500 hover:bg-white"
-                  min={1}
-                  required
-                />
-                <Hash className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
+              <input
+                type="text"
+                name="codigo_control"
+                value={form.codigo_control}
+                onChange={handleChange}
+                className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 text-gray-900"
+                placeholder="Ej: ABC123"
+              />
+            </div>
+            {/* Número de autorización */}
+            <div className="space-y-2">
+              <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-3">
+                <Hash className="w-4 h-4 text-green-600" />
+                <span>Número de autorización</span>
+              </label>
+              <input
+                type="text"
+                name="numero_autorizacion"
+                value={form.numero_autorizacion}
+                onChange={handleChange}
+                className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 text-gray-900"
+                placeholder="Ej: 123456789"
+              />
             </div>
 
             {/* Submit Button */}
             <div className="pt-6">
               <button
                 type="submit"
-                onClick={handleSubmit}
                 disabled={loading}
                 className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 ${
                   loading 
@@ -252,6 +244,98 @@ const PedidoProveedor = () => {
                   </>
                 )}
               </button>
+            </div>
+          </form>
+
+          {/* --- Agregar productos FUERA del <form> --- */}
+          <div className="mt-10"> {/* Aumenta el margen superior */}
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <label className="flex items-center space-x-2 text-sm font-semibold text-gray-700 mb-4">
+                <Package className="w-4 h-4 text-green-600" />
+                <span>Agregar productos al pedido</span>
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
+                <select
+                  name="producto"
+                  value={detalle.producto ?? ""}
+                  onChange={handleDetalleChange}
+                  className="p-3 border border-gray-200 rounded-xl bg-gray-50"
+                  required
+                  disabled={!form.sucursal}
+                >
+                  <option value="">Producto</option>
+                  {productos.map((prod) => (
+                    <option key={prod.id} value={prod.id}>
+                      {prod.nombre}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  name="cantidad"
+                  value={detalle.cantidad ?? ""}
+                  onChange={handleDetalleChange}
+                  placeholder="Cantidad"
+                  className="p-3 border border-gray-200 rounded-xl bg-gray-50"
+                  min={1}
+                  required
+                />
+                <input
+                  type="number"
+                  name="precio_compra"
+                  value={detalle.precio_compra ?? ""}
+                  onChange={handleDetalleChange}
+                  placeholder="Precio compra"
+                  className="p-3 border border-gray-200 rounded-xl bg-gray-50"
+                  min={0}
+                  step="0.01"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={handleAddDetalle}
+                  className="flex items-center justify-center bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 py-2 transition-all duration-200"
+                  disabled={!detalle.producto || !detalle.cantidad || !detalle.precio_compra}
+                  title="Agregar producto"
+                  style={{ minWidth: "48px" }}
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+              {/* Tabla de productos agregados */}
+              {detalles.length > 0 && (
+                <div className="mt-4">
+                  <table className="min-w-full bg-white rounded-lg overflow-hidden">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Precio compra</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {detalles.map((d, idx) => (
+                        <tr key={idx}>
+                          <td className="px-4 py-2">{productos.find(p => p.id === Number(d.producto))?.nombre || d.producto}</td>
+                          <td className="px-4 py-2">{d.cantidad}</td>
+                          <td className="px-4 py-2">{d.precio_compra}</td>
+                          <td className="px-4 py-2">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDetalle(idx)}
+                              className="text-red-600 hover:text-red-800"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
