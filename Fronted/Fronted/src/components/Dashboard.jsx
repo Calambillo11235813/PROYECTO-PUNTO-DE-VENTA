@@ -22,6 +22,14 @@ const Dashboard = () => {
     incremento: 0
   });
 
+  // Nuevo estado para ventas mensuales
+  const [ventasDelMes, setVentasDelMes] = useState({
+    total: 0,
+    cantidad: 0,
+    cargando: true,
+    error: null
+  });
+  
   // Nuevo estado para productos más vendidos
   const [productosMasVendidos, setProductosMasVendidos] = useState({
     productos: [],
@@ -136,6 +144,69 @@ const Dashboard = () => {
     };
     
     obtenerVentasDelDia();
+  }, []);
+
+  // Obtener ventas del mes actual
+  useEffect(() => {
+    const obtenerVentasDelMes = async () => {
+      try {
+        // Obtener el ID del usuario y de la sucursal (si está disponible)
+        const userId = localStorage.getItem('id');
+        const sucursalId = localStorage.getItem('sucursal_actual_id');
+        
+        // Obtener fecha actual
+        const hoy = new Date();
+        // Primer día del mes actual
+        const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const fechaInicio = primerDiaMes.toISOString().split('T')[0];
+        // Último día del mes actual (día 0 del siguiente mes es el último día del mes actual)
+        const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+        const fechaFin = ultimoDiaMes.toISOString().split('T')[0];
+        
+        console.log('Rango mensual:', fechaInicio, 'a', fechaFin);
+        
+        // Obtener todos los pedidos
+        let pedidos;
+        if (sucursalId) {
+          pedidos = await pedidoService.getPedidosBySucursal(userId, sucursalId);
+        } else {
+          pedidos = await pedidoService.getAllPedidos();
+        }
+        
+        // Filtrar pedidos del mes actual
+        const pedidosDelMes = pedidos.filter(pedido => {
+          const fechaPedido = new Date(pedido.fecha).toISOString().split('T')[0];
+          return fechaPedido >= fechaInicio && fechaPedido <= fechaFin;
+        });
+        
+        // Calcular total de ventas del mes
+        const totalMes = pedidosDelMes.reduce((suma, pedido) => 
+          suma + parseFloat(pedido.total || 0), 0);
+        
+        setVentasDelMes({
+          total: totalMes,
+          cantidad: pedidosDelMes.length,
+          cargando: false,
+          error: null
+        });
+        
+        console.log('Ventas del mes:', {
+          total: totalMes,
+          cantidad: pedidosDelMes.length
+        });
+        
+      } catch (error) {
+        console.error('Error al obtener ventas del mes:', error);
+        setVentasDelMes({
+          total: 0,
+          cantidad: 0,
+          cargando: false,
+          error: 'No se pudieron cargar las ventas del mes'
+        });
+      }
+    };
+    
+    obtenerVentasDelMes();
   }, []);
 
   // Obtener productos con stock bajo (mantener el código existente)
@@ -303,10 +374,22 @@ const Dashboard = () => {
           )}
         </div>
 
+        {/* Reemplazo del cuadro de Transacciones por Ventas Mensuales */}
         <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
-          <h3 className="text-gray-600 text-lg">Transacciones</h3>
-          <div className="text-2xl font-bold text-gray-900">{ventasDelDia.cantidad || 0}</div>
-          <p className="text-sm text-green-600">+8% vs. ayer</p>
+          <h3 className="text-gray-600 text-lg">Ventas del mes</h3>
+          {ventasDelMes.cargando ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500 mr-2"></div>
+              <span>Cargando...</span>
+            </div>
+          ) : ventasDelMes.error ? (
+            <div className="text-sm text-red-600">{ventasDelMes.error}</div>
+          ) : (
+            <>
+              <div className="text-2xl font-bold text-gray-900">{formatCurrency(ventasDelMes.total)}</div>
+              <p className="text-sm text-gray-600">{ventasDelMes.cantidad} transacciones</p>
+            </>
+          )}
         </div>
 
         <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
