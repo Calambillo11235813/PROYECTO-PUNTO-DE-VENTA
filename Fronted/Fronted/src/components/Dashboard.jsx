@@ -356,7 +356,7 @@ const Dashboard = () => {
   return (
     <div className="p-6 bg-gray-100 dark:bg-gray-900 transition-colors">
       {/* Cards de estadísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Card de ventas del día con datos dinámicos */}
         <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
           <h3 className="text-gray-600 text-lg">Ventas del día</h3>
@@ -391,22 +391,6 @@ const Dashboard = () => {
               <p className="text-sm text-gray-600">{ventasDelMes.cantidad} transacciones</p>
             </>
           )}
-        </div>
-
-        <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
-          <h3 className="text-gray-600 text-lg">Ticket Promedio</h3>
-          <div className="text-2xl font-bold text-gray-900">
-            {ventasDelDia.cantidad > 0 
-              ? formatCurrency(ventasDelDia.total / ventasDelDia.cantidad) 
-              : formatCurrency(0)}
-          </div>
-          <p className="text-sm text-green-600">+5% vs. ayer</p>
-        </div>
-
-        <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
-          <h3 className="text-gray-600 text-lg">Facturas Pendientes</h3>
-          <div className="text-2xl font-bold text-gray-900">7</div>
-          <p className="text-sm text-red-600">Requiere atención</p>
         </div>
       </div>
 
