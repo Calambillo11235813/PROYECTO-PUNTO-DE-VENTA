@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react"; 
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { productoService } from "../services/productoService";
-import { pedidoService } from "../services/pedidoService"; // Importar el servicio de pedidos
+import { pedidoService } from "../services/pedidoService"; 
+import reporteService from "../services/reporteService"; // Importar el servicio de reportes
 import { FaExclamationTriangle } from "react-icons/fa";
 
 const Dashboard = () => {
@@ -21,6 +22,21 @@ const Dashboard = () => {
     incremento: 0
   });
 
+  // Nuevo estado para ventas mensuales
+  const [ventasDelMes, setVentasDelMes] = useState({
+    total: 0,
+    cantidad: 0,
+    cargando: true,
+    error: null
+  });
+  
+  // Nuevo estado para productos más vendidos
+  const [productosMasVendidos, setProductosMasVendidos] = useState({
+    productos: [],
+    cargando: true,
+    error: null
+  });
+  
   // Aseguramos que el título de la página sea "Dashboard"
   useEffect(() => {
     setActivePage("Dashboard");
@@ -130,6 +146,69 @@ const Dashboard = () => {
     obtenerVentasDelDia();
   }, []);
 
+  // Obtener ventas del mes actual
+  useEffect(() => {
+    const obtenerVentasDelMes = async () => {
+      try {
+        // Obtener el ID del usuario y de la sucursal (si está disponible)
+        const userId = localStorage.getItem('id');
+        const sucursalId = localStorage.getItem('sucursal_actual_id');
+        
+        // Obtener fecha actual
+        const hoy = new Date();
+        // Primer día del mes actual
+        const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const fechaInicio = primerDiaMes.toISOString().split('T')[0];
+        // Último día del mes actual (día 0 del siguiente mes es el último día del mes actual)
+        const ultimoDiaMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+        const fechaFin = ultimoDiaMes.toISOString().split('T')[0];
+        
+        console.log('Rango mensual:', fechaInicio, 'a', fechaFin);
+        
+        // Obtener todos los pedidos
+        let pedidos;
+        if (sucursalId) {
+          pedidos = await pedidoService.getPedidosBySucursal(userId, sucursalId);
+        } else {
+          pedidos = await pedidoService.getAllPedidos();
+        }
+        
+        // Filtrar pedidos del mes actual
+        const pedidosDelMes = pedidos.filter(pedido => {
+          const fechaPedido = new Date(pedido.fecha).toISOString().split('T')[0];
+          return fechaPedido >= fechaInicio && fechaPedido <= fechaFin;
+        });
+        
+        // Calcular total de ventas del mes
+        const totalMes = pedidosDelMes.reduce((suma, pedido) => 
+          suma + parseFloat(pedido.total || 0), 0);
+        
+        setVentasDelMes({
+          total: totalMes,
+          cantidad: pedidosDelMes.length,
+          cargando: false,
+          error: null
+        });
+        
+        console.log('Ventas del mes:', {
+          total: totalMes,
+          cantidad: pedidosDelMes.length
+        });
+        
+      } catch (error) {
+        console.error('Error al obtener ventas del mes:', error);
+        setVentasDelMes({
+          total: 0,
+          cantidad: 0,
+          cargando: false,
+          error: 'No se pudieron cargar las ventas del mes'
+        });
+      }
+    };
+    
+    obtenerVentasDelMes();
+  }, []);
+
   // Obtener productos con stock bajo (mantener el código existente)
   useEffect(() => {
     const obtenerProductosConAlerta = async () => {
@@ -206,6 +285,73 @@ const Dashboard = () => {
     obtenerProductosConAlerta();
   }, []);
 
+  // Nueva función para obtener productos más vendidos
+  useEffect(() => {
+    const obtenerProductosMasVendidos = async () => {
+      try {
+        const sucursalId = localStorage.getItem('sucursal_actual_id');
+        
+        // Si no hay sucursal seleccionada, no podemos continuar
+        if (!sucursalId) {
+          setProductosMasVendidos({
+            productos: [],
+            cargando: false,
+            error: 'Seleccione una sucursal para ver productos más vendidos'
+          });
+          return;
+        }
+        
+        // Obtener la fecha actual y hace 30 días
+        const hoy = new Date();
+        const fechaFin = hoy.toISOString().split('T')[0];
+        
+        const treintaDiasAtras = new Date();
+        treintaDiasAtras.setDate(hoy.getDate() - 30);
+        const fechaInicio = treintaDiasAtras.toISOString().split('T')[0];
+        
+        // Utilizar el servicio de reportes para obtener datos de ventas por productos
+        const reporteVentas = await reporteService.getReporteVentas({
+          tipo: 'productos',
+          filtros: {
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin
+          }
+        });
+        
+        // Verificar si tenemos datos
+        if (!reporteVentas || !reporteVentas.productos || reporteVentas.productos.length === 0) {
+          setProductosMasVendidos({
+            productos: [],
+            cargando: false,
+            error: 'No hay datos de ventas disponibles'
+          });
+          return;
+        }
+        
+        // Ordenar productos por total de ventas (de mayor a menor)
+        const productosOrdenados = [...reporteVentas.productos]
+          .sort((a, b) => (b.ventas_total || 0) - (a.ventas_total || 0))
+          .slice(0, 5); // Tomar solo los 5 primeros
+        
+        setProductosMasVendidos({
+          productos: productosOrdenados,
+          cargando: false,
+          error: null
+        });
+        
+      } catch (error) {
+        console.error('Error al obtener productos más vendidos:', error);
+        setProductosMasVendidos({
+          productos: [],
+          cargando: false,
+          error: 'No se pudieron cargar los productos más vendidos'
+        });
+      }
+    };
+    
+    obtenerProductosMasVendidos();
+  }, []);
+
   return (
     <div className="p-6 bg-gray-100 dark:bg-gray-900 transition-colors">
       {/* Cards de estadísticas */}
@@ -228,10 +374,22 @@ const Dashboard = () => {
           )}
         </div>
 
+        {/* Reemplazo del cuadro de Transacciones por Ventas Mensuales */}
         <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
-          <h3 className="text-gray-600 text-lg">Transacciones</h3>
-          <div className="text-2xl font-bold text-gray-900">{ventasDelDia.cantidad || 0}</div>
-          <p className="text-sm text-green-600">+8% vs. ayer</p>
+          <h3 className="text-gray-600 text-lg">Ventas del mes</h3>
+          {ventasDelMes.cargando ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500 mr-2"></div>
+              <span>Cargando...</span>
+            </div>
+          ) : ventasDelMes.error ? (
+            <div className="text-sm text-red-600">{ventasDelMes.error}</div>
+          ) : (
+            <>
+              <div className="text-2xl font-bold text-gray-900">{formatCurrency(ventasDelMes.total)}</div>
+              <p className="text-sm text-gray-600">{ventasDelMes.cantidad} transacciones</p>
+            </>
+          )}
         </div>
 
         <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
@@ -262,24 +420,38 @@ const Dashboard = () => {
 
         <div style={{ backgroundColor: "var(--bg-tertiary)" }} className="p-6 rounded-lg shadow-lg">
           <h3 className="text-gray-600 text-lg">Productos Más Vendidos</h3>
-          <ul className="space-y-4">
-            <li className="flex justify-between text-gray-700">
-              <span>Laptop HP 15"</span>
-              <span>125 vendidos</span>
-            </li>
-            <li className="flex justify-between text-gray-700">
-              <span>Monitor Samsung 24"</span>
-              <span>98 vendidos</span>
-            </li>
-            <li className="flex justify-between text-gray-700">
-              <span>Mouse Logitech</span>
-              <span>87 vendidos</span>
-            </li>
-            <li className="flex justify-between text-gray-700">
-              <span>Teclado Mecánico</span>
-              <span>65 vendidos</span>
-            </li>
-          </ul>
+          
+          {productosMasVendidos.cargando ? (
+            <div className="flex justify-center items-center p-8">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-500 mr-2"></div>
+              <span className="text-gray-600">Cargando productos...</span>
+            </div>
+          ) : productosMasVendidos.error ? (
+            <div className="p-4 text-sm text-center text-gray-500">
+              {productosMasVendidos.error}
+            </div>
+          ) : productosMasVendidos.productos.length === 0 ? (
+            <div className="p-4 text-sm text-center text-gray-500">
+              No hay datos de ventas por producto disponibles
+            </div>
+          ) : (
+            <ul className="space-y-4 mt-3">
+              {productosMasVendidos.productos.map((producto, index) => (
+                <li key={producto.id || index} className="flex justify-between text-gray-700 py-2 border-b">
+                  <div className="flex items-center">
+                    <span className="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">
+                      {index + 1}
+                    </span>
+                    <span>{producto.nombre}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">{producto.cantidad_vendida || 0} vendidos</span>
+                    <p className="text-xs text-gray-500">{formatCurrency(producto.ventas_total || 0)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
