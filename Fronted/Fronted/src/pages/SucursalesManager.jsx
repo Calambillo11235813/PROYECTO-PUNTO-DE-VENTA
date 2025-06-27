@@ -73,32 +73,27 @@ const SucursalesManager = () => {
   const handleSaveSucursal = async (formData) => {
     try {
       if (currentSucursal) {
-        // Actualizar sucursal existente
         await sucursalService.updateSucursal(currentSucursal.id, formData);
         toast.success('Sucursal actualizada con éxito');
       } else {
-        // Crear nueva sucursal
-        // Añadir el ID del usuario actual
         const newSucursalData = {
           ...formData,
           usuario: user.id
         };
-        
         const newSucursal = await sucursalService.createSucursal(newSucursalData);
         toast.success('Sucursal creada con éxito');
-        
-        // Si es la primera sucursal, establecerla como actual
         if (sucursales.length === 0) {
           localStorage.setItem('sucursal_actual_id', newSucursal.id);
           localStorage.setItem('sucursal_actual_nombre', newSucursal.nombre);
         }
       }
-      
-      // Cerrar el formulario y recargar sucursales
       handleCloseForm();
       loadSucursales();
     } catch (error) {
-      console.error('Error al guardar sucursal:', error);
+      // Solo mostrar toast si NO es error 403
+      if (error.response && error.response.status === 403) {
+        throw error; // <-- Propaga el error al formulario
+      }
       toast.error(error.message || 'Error al guardar la sucursal');
     }
   };
