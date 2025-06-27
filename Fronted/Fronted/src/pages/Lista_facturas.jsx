@@ -52,7 +52,7 @@ const Lista_facturas = () => {
         // Asegurarnos de que cada factura tenga los campos necesarios
         return {
           id: factura.id || factura.pedido_id,
-          numero_factura: factura.numero_factura || factura.id || 'N/A',
+          numero_factura: factura.pedido_id || factura.id || 'N/A',
           fecha_emision: factura.fecha_emision || factura.fecha || new Date().toISOString(),
           cliente_nombre: factura.cliente_nombre || factura.razon_social || 'Cliente general',
           cliente_nit: factura.cliente_nit || factura.nit || '0',
@@ -307,7 +307,7 @@ const Lista_facturas = () => {
                 {filteredFacturas.map((factura) => (
                   <tr key={factura.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      #{factura.numero_factura}
+                      {factura.numero_factura}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(factura.fecha_emision)}
@@ -389,7 +389,7 @@ const Lista_facturas = () => {
             <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg md:max-w-xl lg:max-w-2xl sm:w-full">
               <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
-                  Detalle de la factura #{selectedFactura.numero_factura}
+                  Detalle de la factura - Factura #{selectedFactura.numero_factura}
                 </h3>
                 <button
                   className="text-gray-400 hover:text-gray-500"
