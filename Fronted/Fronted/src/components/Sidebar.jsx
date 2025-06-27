@@ -230,7 +230,7 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
               end={item.exact}
               className={({ isActive }) =>
                 `flex items-center px-6 py-3 transition-all ${
-                  isActive ? "bg-blue-100 text-blue-600 border-l-4 border-blue-600" : "hover:bg-gray-100"
+                  isActive ? "bg-green-100 text-green-600 border-l-4 border-green-600" : "hover:bg-gray-100"
                 }`
               }
               aria-label={item.text}
