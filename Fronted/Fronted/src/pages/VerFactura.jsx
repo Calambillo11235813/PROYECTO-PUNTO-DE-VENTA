@@ -366,13 +366,6 @@ const VerFactura = () => {
       {/* Mensaje final y códigos QR (simulados) */}
       <div className="mt-6 text-center border-t pt-4">
         <p className="text-sm text-gray-600 mb-4">¡GRACIAS POR SU COMPRA!</p>
-        
-        <div className="flex justify-center">
-          {/* Código QR simulado - En un entorno real, se generaría con la información real de la factura */}
-          <div className="w-24 h-24 bg-gray-200 flex items-center justify-center">
-            <span className="text-xs text-gray-500">Código QR</span>
-          </div>
-        </div>
       </div>
 
       {/* Modal de anulación de factura */}
