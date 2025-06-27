@@ -22,7 +22,10 @@ import {
   FaBuilding,
   FaTruck,
   FaClipboardList,
-  FaReceipt // <-- Último ícono, sin coma al final
+  FaReceipt,
+  FaStore,
+  FaWarehouse,
+  FaUserFriends
 } from "react-icons/fa";
 import authService from "../services/authService";
 import useTheme from "../hooks/useTheme";
@@ -30,6 +33,7 @@ import useTheme from "../hooks/useTheme";
 const Sidebar = ({ darkMode, toggleDarkMode }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  const [openDropdowns, setOpenDropdowns] = useState({});
   const navigate = useNavigate();
   
   const { 
@@ -55,6 +59,13 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
     setIsPaletteOpen(!isPaletteOpen);
   };
 
+  const toggleDropdown = (id) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
   const handleLogout = (e) => {
     e.preventDefault();
     localStorage.removeItem("access_token");
@@ -63,117 +74,145 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
     navigate("/login");
   };
 
-  const menuItems = [
+  // Estructura de menú organizada con desplegables
+  const menuStructure = [
     { 
       id: "Dashboard", 
       icon: <FaChartBar />, 
       text: "Dashboard", 
       path: "/admin", 
       exact: true,
-      allowedRoles: ['admin', undefined, 'Supervisor'] 
-    },
-    { 
-      id: "Caja", 
-      icon: <FaCashRegister />, 
-      text: "Administrar Caja", 
-      path: "/admin/caja",
-      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
-    },
-    { 
-      id: "Ventas", 
-      icon: <FaShoppingCart />, 
-      text: "Punto de Venta", 
-      path: "/admin/ventas",
-      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
-    },
-    { 
-      id: "Pedidos", 
-      icon: <FaShoppingBag />, 
-      text: "Lista de ventas", 
-      path: "/admin/Lista_ventas",
-      allowedRoles: [undefined, 'Supervisor', 'Cajero']
-    },
-    // Nuevo ítem para Lista de Facturas
-    { 
-      id: "Facturas", 
-      icon: <FaReceipt />, 
-      text: "Lista de facturas", 
-      path: "/admin/lista-facturas",
-      allowedRoles: [undefined, 'Supervisor', 'Cajero']
-    },
-    { 
-      id: "Inventario", 
-      icon: <FaBoxOpen />, 
-      text: "Inventario", 
-      path: "/admin/inventario",
-      allowedRoles: [undefined, 'Supervisor', 'Gestion de inventario']
-    },
-    { 
-      id: "Clientes", 
-      icon: <FaUsers />, 
-      text: "Clientes", 
-      path: "/admin/clientes",
-      allowedRoles: [undefined, 'Supervisor', 'Cajero']
-    },
-    { 
-      id: "Empleados", 
-      icon: <FaUserTie />, 
-      text: "Empleados", 
-      path: "/admin/empleados",
-      allowedRoles: [undefined, 'Supervisor'] 
-    },
-  ,
- 
-    
-    ,
-    {
-      id: "Proveedor",
-      icon: <FaTruck />,
-      text: "Proveedores",
-      path: "/admin/proveedores",
-      allowedRoles: ['admin', undefined, 'Supervisor']
+      allowedRoles: ['admin', undefined, 'Supervisor'],
+      isDropdown: false
     },
     {
-      id: "PedidoProveedor",
-      icon: <FaClipboardList />,
-      text: "Pedido a Proveedor",
-      path: "/admin/pedido-proveedor",
-      allowedRoles: ['admin', undefined, 'Supervisor']
+      id: "Ventas",
+      icon: <FaStore />,
+      text: "Ventas",
+      allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero'],
+      isDropdown: true,
+      items: [
+        { 
+          id: "Caja", 
+          icon: <FaCashRegister />, 
+          text: "Administrar Caja", 
+          path: "/admin/caja",
+          allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
+        },
+        { 
+          id: "Ventas", 
+          icon: <FaShoppingCart />, 
+          text: "Punto de Venta", 
+          path: "/admin/ventas",
+          allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
+        },
+        { 
+          id: "Pedidos", 
+          icon: <FaShoppingBag />, 
+          text: "Lista de ventas", 
+          path: "/admin/Lista_ventas",
+          allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
+        },
+        { 
+          id: "Facturas", 
+          icon: <FaReceipt />, 
+          text: "Lista de facturas", 
+          path: "/admin/lista-facturas",
+          allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
+        }
+      ]
     },
     {
-      id: "ListaPedidos",
-      icon: <FaClipboardList />,
-      text: "Lista de Pedidos",
-      path: "/admin/lista-pedidos",
-      allowedRoles: ['admin', undefined, 'Supervisor']
+      id: "Inventario",
+      icon: <FaWarehouse />,
+      text: "Inventario",
+      allowedRoles: ['admin', undefined, 'Supervisor', 'Gestion de inventario'],
+      isDropdown: true,
+      items: [
+        { 
+          id: "InventarioItems", 
+          icon: <FaBoxOpen />, 
+          text: "Inventario", 
+          path: "/admin/inventario",
+          allowedRoles: ['admin', undefined, 'Supervisor', 'Gestion de inventario']
+        },
+        {
+          id: "Proveedor",
+          icon: <FaTruck />,
+          text: "Proveedores",
+          path: "/admin/proveedores",
+          allowedRoles: ['admin', undefined, 'Supervisor']
+        },
+        {
+          id: "PedidoProveedor",
+          icon: <FaClipboardList />,
+          text: "Pedido a Proveedor",
+          path: "/admin/pedido-proveedor",
+          allowedRoles: ['admin', undefined, 'Supervisor']
+        },
+        {
+          id: "ListaPedidos",
+          icon: <FaClipboardList />,
+          text: "Lista de Pedidos",
+          path: "/admin/lista-pedidos",
+          allowedRoles: ['admin', undefined, 'Supervisor']
+        }
+      ]
+    },
+    {
+      id: "Usuarios",
+      icon: <FaUserFriends />,
+      text: "Usuarios",
+      allowedRoles: ['admin', undefined, 'Supervisor'],
+      isDropdown: true,
+      items: [
+        { 
+          id: "Clientes", 
+          icon: <FaUsers />, 
+          text: "Clientes", 
+          path: "/admin/clientes",
+          allowedRoles: ['admin', undefined, 'Supervisor', 'Cajero']
+        },
+        { 
+          id: "Empleados", 
+          icon: <FaUserTie />, 
+          text: "Empleados", 
+          path: "/admin/empleados",
+          allowedRoles: ['admin', undefined, 'Supervisor'] 
+        }
+      ]
     },
     { 
       id: "Sucursales", 
       icon: <FaBuilding />, 
       text: "Sucursales", 
       path: "/admin/sucursales",
-      allowedRoles: ['admin', undefined, 'Supervisor'] 
+      allowedRoles: ['admin', undefined, 'Supervisor'],
+      isDropdown: false 
     },
     { 
       id: "Reportes", 
       icon: <FaChartBar />, 
       text: "Reportes", 
       path: "/admin/reportes",
-      allowedRoles: ['admin', undefined, 'Supervisor'] 
+      allowedRoles: ['admin', undefined, 'Supervisor'],
+      isDropdown: false
     },
     { 
       id: "MiPlan", 
       icon: <FaStar className="h-5 w-5" />,
       text: "Mi Plan", 
       path: "/admin/mi-plan",
-      allowedRoles: ['admin', undefined, 'Supervisor'] 
+      allowedRoles: ['admin', undefined, 'Supervisor'],
+      isDropdown: false
     },
     { 
       id: "Configuracion", 
       icon: <FaCog />, 
       text: "Configuración", 
       path: "/admin/configuracion",
-      allowedRoles: ['admin', undefined, 'Supervisor']
+      allowedRoles: ['admin', undefined, 'Supervisor'],
+      isDropdown: false
     },
   ];
 
@@ -194,14 +233,101 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
     
     if (role === 'admin' || localStorage.getItem('user_type') === 'usuario') {
       console.log('Mostrando menú completo para administrador');
-      return menuItems;
+      return menuStructure;
     }
     
-    return menuItems.filter(item => {
+    return menuStructure.filter(item => {
       if (!item.allowedRoles) return true;
-      return item.allowedRoles.includes(role);
+      
+      // Para elementos normales
+      if (!item.isDropdown) {
+        return item.allowedRoles.includes(role);
+      }
+      
+      // Para desplegables, verificar si algún elemento hijo es permitido
+      const filteredItems = item.items.filter(subItem => 
+        subItem.allowedRoles.includes(role)
+      );
+      
+      // Solo mostrar el desplegable si tiene elementos permitidos
+      if (filteredItems.length > 0) {
+        item.items = filteredItems;
+        return true;
+      }
+      
+      return false;
     });
   }, []);
+
+  // Renderizar un elemento de menú (normal o desplegable)
+  const renderMenuItem = (item) => {
+    if (item.isDropdown) {
+      return (
+        <div key={item.id} className="mb-1">
+          <button
+            onClick={() => toggleDropdown(item.id)}
+            className={`flex items-center justify-between w-full px-6 py-3 transition-all hover:bg-gray-100`}
+            aria-expanded={openDropdowns[item.id]}
+          >
+            <div className="flex items-center">
+              <span className="text-lg" style={{ color: "var(--accent-color)" }}>{item.icon}</span>
+              {isOpen && <span className="ml-3">{item.text}</span>}
+            </div>
+            {isOpen && (
+              openDropdowns[item.id] ? 
+                <FaChevronUp className="text-xs" /> : 
+                <FaChevronDown className="text-xs" />
+            )}
+          </button>
+          
+          {/* Elementos del desplegable */}
+          {isOpen && (
+            <div 
+              className={`transition-all duration-300 overflow-hidden ${
+                openDropdowns[item.id] ? "max-h-96" : "max-h-0"
+              }`}
+            >
+              {item.items.map(subItem => (
+                <NavLink
+                  key={subItem.id}
+                  to={subItem.path}
+                  end={subItem.exact}
+                  className={({ isActive }) =>
+                    `flex items-center pl-10 pr-6 py-2 transition-all ${
+                      isActive ? "bg-green-100 text-green-600 border-l-4 border-green-600" : "hover:bg-gray-100"
+                    }`
+                  }
+                >
+                  <span className="text-lg" style={{ color: "var(--accent-color)" }}>{subItem.icon}</span>
+                  <span className="ml-3 truncate">{subItem.text}</span>
+                </NavLink>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    } else {
+      // Elemento de menú regular
+      return (
+        <NavLink
+          key={item.id}
+          to={item.path}
+          end={item.exact}
+          className={({ isActive }) =>
+            `flex items-center px-6 py-3 transition-all ${
+              isActive ? "bg-green-100 text-green-600 border-l-4 border-green-600" : "hover:bg-gray-100"
+            }`
+          }
+          aria-label={item.text}
+        >
+          <div className="text-lg" aria-hidden="true" style={{ color: "var(--accent-color)" }}>
+            {item.icon}
+          </div>
+          {isOpen && <span className="ml-3 truncate">{item.text}</span>}
+        </NavLink>
+      );
+    }
+  };
 
   return (
     <div
@@ -223,25 +349,7 @@ const Sidebar = ({ darkMode, toggleDarkMode }) => {
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
         <nav className="mt-2" aria-label="Menú principal">
-          {filteredMenuItems.map((item) => (
-            <NavLink
-              key={item.id}
-              to={item.path}
-              end={item.exact}
-              className={({ isActive }) =>
-                `flex items-center px-6 py-3 transition-all ${
-                  isActive ? "bg-green-100 text-green-600 border-l-4 border-green-600" : "hover:bg-gray-100"
-                }`
-              }
-              aria-label={item.text}
-            >
-              {/* Aplicar color de acento al contenedor del icono */}
-              <div className="text-lg" aria-hidden="true" style={{ color: "var(--accent-color)" }}>
-                {item.icon}
-              </div>
-              {isOpen && <span className="ml-3 truncate">{item.text}</span>}
-            </NavLink>
-          ))}
+          {filteredMenuItems.map(item => renderMenuItem(item))}
         </nav>
 
         {/* Paleta de Colores - Ahora con comportamiento colapsable */}
