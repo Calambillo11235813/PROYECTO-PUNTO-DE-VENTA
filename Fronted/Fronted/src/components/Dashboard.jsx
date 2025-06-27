@@ -224,9 +224,6 @@ const Dashboard = () => {
             <>
               <div className="text-2xl font-bold text-gray-900">{formatCurrency(ventasDelDia.total)}</div>
               <p className="text-sm text-gray-600">{ventasDelDia.cantidad} transacciones</p>
-              <p className={`text-sm ${ventasDelDia.incremento >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {ventasDelDia.incremento >= 0 ? '+' : ''}{ventasDelDia.incremento.toFixed(2)}% vs. ayer
-              </p>
             </>
           )}
         </div>
