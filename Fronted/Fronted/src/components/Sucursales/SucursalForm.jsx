@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { FaTimes } from 'react-icons/fa';
 import PropTypes from 'prop-types';
+import PlanLimitAlert from '../PlanLimitAlert';
+import { useNavigate } from 'react-router-dom';
 
 const SucursalForm = ({ sucursal, onSave, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -15,6 +17,9 @@ const SucursalForm = ({ sucursal, onSave, onCancel }) => {
   
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [showPlanLimitAlert, setShowPlanLimitAlert] = useState(false);
+  const [limitMessage, setLimitMessage] = useState('');
+  const navigate = useNavigate();
   
   // Cargar datos si es edición
   useEffect(() => {
@@ -94,10 +99,62 @@ const SucursalForm = ({ sucursal, onSave, onCancel }) => {
       
     } catch (error) {
       console.error('Error al guardar sucursal:', error);
+      
+      // Verificación mejorada para detectar error de límite
+      if (error.response && error.response.status === 403) {
+        console.log('Respuesta de error 403:', error.response.data);
+        
+        // Verificar diferentes formatos posibles del mensaje de error
+        const isLimitError = 
+          (error.response.data && error.response.data.error === 'Límite de sucursales excedido') || 
+          (error.response.data && error.response.data.detail && 
+           error.response.data.detail.includes('límite')) ||
+          (typeof error.response.data === 'string' && 
+           error.response.data.includes('límite'));
+        
+        if (isLimitError) {
+          // Extraer el mensaje según el formato
+          let mensaje = 'Has alcanzado el límite de sucursales permitido en tu plan actual. Actualiza tu plan para poder crear más sucursales.';
+          
+          if (error.response.data) {
+            if (error.response.data.detail) {
+              mensaje = error.response.data.detail;
+            } else if (typeof error.response.data === 'string') {
+              mensaje = error.response.data;
+            }
+          }
+          
+          console.log('Mostrando alerta de límite con mensaje:', mensaje);
+          
+          // Asegurar que se actualice el estado correctamente
+          setLimitMessage(mensaje);
+          setShowPlanLimitAlert(true);
+          return; // Importante: salir para evitar el toast genérico
+        }
+      }
+      
+      // Si llegamos aquí, es otro tipo de error
       toast.error('Ocurrió un error al guardar la sucursal');
     } finally {
       setSubmitting(false);
     }
+  };
+  
+  const handleUpgradePlan = () => {
+    // Cerrar el modal de alerta
+    setShowPlanLimitAlert(false);
+    // Navegar a la página de planes
+    navigate('/planes');
+  };
+  
+  // Componente para depuración (solo en desarrollo)
+  const DebugState = () => {
+    if (process.env.NODE_ENV !== 'development') return null;
+    return (
+      <div className="fixed bottom-0 right-0 bg-black text-white p-2 text-xs opacity-50">
+        showAlert: {showPlanLimitAlert ? 'true' : 'false'}
+      </div>
+    );
   };
   
   return (
@@ -247,6 +304,19 @@ const SucursalForm = ({ sucursal, onSave, onCancel }) => {
           </div>
         </form>
       </div>
+
+      {/* Alerta de límite de plan - Aseguramos que esté siempre en el DOM */}
+      {showPlanLimitAlert && (
+        <PlanLimitAlert 
+          isOpen={true}
+          message={limitMessage}
+          onClose={() => setShowPlanLimitAlert(false)}
+          onUpgrade={handleUpgradePlan}
+        />
+      )}
+      
+      {/* Componente de depuración */}
+      <DebugState />
     </div>
   );
 };

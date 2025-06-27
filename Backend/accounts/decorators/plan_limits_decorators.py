@@ -46,10 +46,47 @@ def check_branch_limit(view_func):
     @wraps(view_func)
     def wrapped_view(self, request, *args, **kwargs):
         try:
-            usuario_id = request.user.id
+            # Verificar si el usuario está autenticado
+            if request.user.is_authenticated:
+                usuario_id = request.user.id
+            else:
+                # Comportamiento de desarrollo (igual que en tu vista)
+                from django.contrib.auth import get_user_model
+                User = get_user_model()
+                primer_usuario = User.objects.first()
+                if primer_usuario:
+                    usuario_id = primer_usuario.id
+                else:
+                    return Response(
+                        {"error": "No hay usuarios en el sistema para verificar límites"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Verificar límite antes de proceder
             PlanLimitsService.check_branch_limit(usuario_id)
-            return view_func(self, request, *args, **kwargs)
+            
+            # Ejecutar la vista original
+            response = view_func(self, request, *args, **kwargs)
+            
+            # Si la creación fue exitosa, registrar el uso de sucursal
+            if request.method == 'POST' and response.status_code == status.HTTP_201_CREATED:
+                try:
+                    # No hay un método específico en PlanLimitsService para sucursales,
+                    # pero podemos agregarlo o usar un enfoque personalizado aquí
+                    # Incrementar el contador de sucursales en la suscripción
+                    from accounts.models import Suscripcion
+                    suscripcion = Suscripcion.objects.get(usuario_id=usuario_id)
+                    if hasattr(suscripcion, 'sucursales_utilizadas'):
+                        suscripcion.sucursales_utilizadas += 1
+                        suscripcion.save()
+                except Exception as e:
+                    # Loggear el error pero no fallar la operación
+                    print(f"Error registrando uso de sucursal: {str(e)}")
+                    
+            return response
+            
         except PermissionDenied as e:
+            # Asegurarse de que el mensaje de error sea el de la excepción original
             return Response(e.detail, status=status.HTTP_403_FORBIDDEN)
     return wrapped_view
 
@@ -113,3 +150,48 @@ def register_resource_usage(resource_type):
             return response
         return wrapped_view
     return decorator
+
+def unregister_branch_usage(view_func):
+    """Decorador que decrementa el contador de sucursales después de eliminar una"""
+    @wraps(view_func)
+    def wrapped_view(self, request, sucursal_id, *args, **kwargs):
+        # Primero obtenemos la sucursal para saber a qué usuario pertenece
+        from Sucursales.models import Sucursal
+        try:
+            sucursal = Sucursal.objects.get(id=sucursal_id)
+            usuario_id = sucursal.usuario.id
+            
+            # Ejecutamos la vista original (eliminación)
+            response = view_func(self, request, sucursal_id, *args, **kwargs)
+            
+            # Si la eliminación fue exitosa, decrementar el contador
+            if response.status_code == status.HTTP_204_NO_CONTENT:
+                try:
+                    # Decrementar contador en la suscripción
+                    from accounts.models import Suscripcion
+                    suscripcion = Suscripcion.objects.get(usuario_id=usuario_id)
+                    if hasattr(suscripcion, 'sucursales_utilizadas') and suscripcion.sucursales_utilizadas > 0:
+                        suscripcion.sucursales_utilizadas -= 1
+                        suscripcion.save()
+                        print(f"Contador de sucursales decrementado para usuario {usuario_id}")
+                except Exception as e:
+                    # Loggear el error pero no fallar la operación
+                    print(f"Error decrementando contador de sucursales: {str(e)}")
+            
+            return response
+            
+        except Sucursal.DoesNotExist:
+            # Si la sucursal no existe, solo devolvemos 404
+            return Response(
+                {"error": "La sucursal no existe"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            # Para cualquier otro error, devolvemos un error genérico
+            print(f"Error en decorador unregister_branch_usage: {str(e)}")
+            return Response(
+                {"error": "Ocurrió un error al procesar la solicitud"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    return wrapped_view

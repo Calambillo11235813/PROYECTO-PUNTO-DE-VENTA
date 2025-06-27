@@ -8,6 +8,8 @@ from Sucursales.serializers import SucursalSerializer
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view, permission_classes
+# Importar los decoradores necesarios
+from accounts.decorators.plan_limits_decorators import check_branch_limit, unregister_branch_usage
 
 User = get_user_model()
 
@@ -26,6 +28,7 @@ class SucursalListCreateAPIView(APIView):
         serializer = SucursalSerializer(sucursales, many=True)
         return Response(serializer.data)
     
+    @check_branch_limit
     def post(self, request):
         # Crear una copia de los datos de la solicitud
         data = request.data.copy()
@@ -77,6 +80,7 @@ class SucursalDetailAPIView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
+    @unregister_branch_usage
     def delete(self, request, sucursal_id):
         # Para pruebas, no filtrar por usuario
         sucursal = get_object_or_404(Sucursal, id=sucursal_id)
@@ -110,4 +114,3 @@ class SucursalesPorUsuarioAPIView(APIView):
         return Response(serializer.data)
 
 
-    
