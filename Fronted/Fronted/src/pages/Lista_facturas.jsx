@@ -54,7 +54,7 @@ const Lista_facturas = () => {
         return {
           id: factura.id || factura.pedido_id,
           numero_factura: factura.pedido_id || factura.id || 'N/A',
-          fecha_emision: factura.fecha_emision || factura.fecha || new Date().toISOString(),
+          fecha_emision: factura.fecha_facturacion || factura.fecha || new Date().toISOString(),
           cliente_nombre: factura.cliente_nombre || factura.razon_social || 'Cliente general',
           cliente_nit: factura.cliente_nit || factura.nit || '0',
           cliente_email: factura.cliente_email || factura.email || '',
@@ -622,6 +622,7 @@ const Lista_facturas = () => {
 
                 {/* Resumen financiero */}
                 <div className="mt-6 bg-gray-50 p-4 rounded-md">
+
                   <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-200">
                     <span className="text-base font-bold text-gray-900">Total:</span>
                     <span className="text-base font-bold text-gray-900">

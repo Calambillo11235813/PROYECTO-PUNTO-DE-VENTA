@@ -149,8 +149,6 @@ const VerFactura = () => {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
     });
   };
 
@@ -244,8 +242,8 @@ const VerFactura = () => {
         <div className="md:w-1/2 md:text-right">
           <h2 className="text-xl font-bold text-gray-800 bg-gray-100 p-2 inline-block rounded">FACTURA</h2>
           <div className="mt-2">
-            <p><strong>N° Factura:</strong> {factura?.codigo_recepcion || 'RECEP-9c12d9f3ca'}</p>
-            <p><strong>Fecha Emisión:</strong> {formatearFecha(factura?.fecha_emision)}</p>
+            <p><strong>N° Pedido:</strong> #{pedidoId}</p>
+            <p><strong>Fecha Emisión:</strong> {formatearFecha(factura?.fecha_facturacion)}</p>
             <p><strong>Estado:</strong> 
               <span className={`font-semibold ${(factura?.estado === 'Anulado' || pedido?.estado_factura === 'Anulado') 
                 ? 'text-red-600' 
@@ -356,11 +354,9 @@ const VerFactura = () => {
       {/* Información de factura electrónica */}
       <div className="mt-8 border-t-2 border-gray-300 pt-4 text-sm">
         <p className="font-semibold mb-2">INFORMACIÓN IMPORTANTE:</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p>Esta factura contribuye al desarrollo del país, el uso ilícito será sancionado penalmente de acuerdo a ley.</p>
           </div>
-        </div>
       </div>
 
       {/* Mensaje final y códigos QR (simulados) */}
@@ -373,7 +369,7 @@ const VerFactura = () => {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-900">Anular Factura</h3>
+              <h3 className="text-lg font-bold text-gray-900">Anular Factura #{pedidoId}</h3>
               <button 
                 onClick={handleCloseAnularModal}
                 disabled={anulando}
