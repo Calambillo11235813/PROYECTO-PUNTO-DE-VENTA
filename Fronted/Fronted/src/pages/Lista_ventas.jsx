@@ -169,7 +169,7 @@ const Lista_ventas = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('es-BO', { style: 'currency', currency: 'BOB' }).format(amount);
   };
 
   return (
