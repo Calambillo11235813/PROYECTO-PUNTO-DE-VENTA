@@ -44,8 +44,22 @@ export const AuthProvider = ({ children }) => {
     return user?.rol?.nombre === 'admin';
   };
 
+  const isEmployee = () => {
+    return localStorage.getItem('user_type') === 'empleado';
+  };
+
+  const getUserRole = () => {
+    const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+    
+    if (localStorage.getItem('user_type') === 'empleado') {
+      return userData.rol; // Para empleados, devolvemos el nombre del rol
+    } else {
+      return userData.rol?.id || 1; // Para usuarios, devolvemos el id del rol
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, isEmployee, getUserRole }}>
       {children}
     </AuthContext.Provider>
   );

@@ -23,6 +23,17 @@ class ProductoListaCrearVista(APIView):
     def post(self, request, usuario_id):
         data = request.data.copy()
         nombre_producto = data.get('nombre')
+        
+        # DEBUG: Imprimir información de la solicitud
+        print("Datos recibidos:", request.data)
+        print("Archivos recibidos:", request.FILES)
+        
+        # Verificar si hay una imagen y procesarla
+        if 'imagen' in request.FILES:
+            imagen = request.FILES['imagen']
+            print(f"Imagen recibida: {imagen.name}")
+            # Asegurar que la imagen se añada correctamente a los datos
+            data['imagen'] = imagen
 
         # Verificar si el producto ya existe para ese usuario
         producto_existente = Producto.objects.filter(nombre__iexact=nombre_producto, usuario_id=usuario_id).first()
@@ -45,9 +56,16 @@ class ProductoListaCrearVista(APIView):
         data['usuario_id'] = usuario_id
         serializer = ProductoSerializer(data=data)
         if serializer.is_valid():
-            serializer.save()
+            producto = serializer.save()
+            
+            # Recargar el producto para asegurarnos de tener la URL de la imagen
+            producto.refresh_from_db()
+            
+            # Usar el serializador para devolver todos los datos actualizados
+            serializer = ProductoSerializer(producto)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+        else:
+            print("Errores de validación:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
        
     
@@ -72,11 +90,20 @@ class ProductoDetalleVista(APIView):
         """
         producto = get_object_or_404(Producto, pk=pk, usuario_id=usuario_id)
         data = request.data.copy()
-        data['usuario_id'] = usuario_id  
+        data['usuario_id'] = usuario_id
+        
+        # Verificar si hay una nueva imagen
+        if 'imagen' in request.FILES:
+            imagen = request.FILES['imagen']
+            print(f"Actualizando imagen: {imagen.name}")
+            data['imagen'] = imagen
+        
         serializer = ProductoSerializer(producto, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+    
+        print("Errores de validación en PUT:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, usuario_id, pk):
